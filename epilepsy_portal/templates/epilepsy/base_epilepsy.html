@@ -1,0 +1,9 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}癫痫数据集门户{% endblock %}
+
+{# Argon already defines layout and includes sidenav/navigation.
+   We just provide a hook for page-specific content. #}
+{% block content %}
+  {% block epilepsy_content %}{% endblock %}
+{% endblock %}

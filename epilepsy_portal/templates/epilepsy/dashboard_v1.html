@@ -1,0 +1,39 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-4">全局总览</h3>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">CPU 使用率</h6>
+          <p class="display-6">{{ cpu_percent }}%</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">内存使用率</h6>
+          <p class="display-6">{{ mem_percent }}%</p>
+          <small class="text-muted">
+            {{ mem_used|filesizeformat }} / {{ mem_total|filesizeformat }}
+          </small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">磁盘使用率</h6>
+          <p class="display-6">{{ disk_percent }}%</p>
+          <small class="text-muted">
+            {{ disk_used|filesizeformat }} / {{ disk_total|filesizeformat }}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

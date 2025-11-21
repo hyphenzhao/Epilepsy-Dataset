@@ -1,0 +1,172 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block title %}浏览患者 - 癫痫数据集{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3">浏览患者</h3>
+
+  <!-- 搜索表单 -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <input type="text"
+             name="q"
+             value="{{ q }}"
+             class="form-control"
+             placeholder="搜索患者姓名 / 科室 / 床号">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-primary" type="submit">搜索</button>
+    </div>
+    {% if q %}
+    <div class="col-auto">
+      <a href="{% url 'epilepsy:patient_list' %}" class="btn btn-outline-secondary">
+        清除
+      </a>
+    </div>
+    {% endif %}
+  </form>
+
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>患者姓名</th>
+        <th>性别</th>
+        <th>生日</th>
+        <th>床号</th>
+        <th>入院时间</th>
+        <th>操作</th>
+        <th>下载</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td>{{ p.get_gender_display }}</td>
+        <td>{{ p.birthday }}</td>
+        <td>{{ p.bed_number }}</td>
+        <td>{{ p.admission_date }}</td>
+        <td>
+          {% if user.is_authenticated %}
+            {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
+              <button class="btn btn-sm btn-outline-primary"
+                      onclick="openEditPanel({{ p.id }})">
+                修改
+              </button>
+              <form method="post"
+                    action="{% url 'epilepsy:patient_delete' p.id %}"
+                    style="display:inline;">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('确认删除该患者？');">
+                  删除
+                </button>
+              </form>
+            {% endif %}
+          {% else %}
+            <span class="text-muted">只读</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if p.datasets.all %}
+            <a href="{% url 'epilepsy:patient_datasets' p.id %}"
+               class="btn btn-sm btn-outline-success">
+              下载数据
+            </a>
+          {% else %}
+            <span class="text-muted">暂无数据</span>
+          {% endif %}
+        </td>
+
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">暂无患者</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- 分页 -->
+  {% if patients.paginator.num_pages > 1 %}
+  <nav aria-label="患者分页">
+    <ul class="pagination">
+      {% if patients.has_previous %}
+      <li class="page-item">
+        <a class="page-link"
+           href="?page={{ patients.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+          上一页
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">上一页</span>
+      </li>
+      {% endif %}
+
+      {% for num in patients.paginator.page_range %}
+        {% if num == patients.number %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > patients.number|add:"-3" and num < patients.number|add:"3" %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}">
+              {{ num }}
+            </a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if patients.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+           href="?page={{ patients.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+          下一页
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">下一页</span>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+
+<!-- 下面是你之前的 offcanvas 修改面板，保留不动 -->
+<!-- <div class="offcanvas offcanvas-end" tabindex="-1" id="editPatientCanvas">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">修改患者</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas">修改患者</button>
+  </div>
+  <div class="offcanvas-body" id="editPatientBody">
+    <div class="text-center text-muted">加载中...</div>
+  </div>
+</div> -->
+
+<script>
+  function openEditPanel(patientId) {
+    const offcanvasEl = document.getElementById('editPatientCanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasEl);
+    const body = document.getElementById('editPatientBody');
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    fetch(`/epilepsy/patients/${patientId}/edit/`, {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(resp => resp.text())
+    .then(html => {
+      body.innerHTML = html;
+    })
+    .catch(err => {
+      body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+    });
+
+    offcanvas.show();
+  }
+</script>
+{% endblock %}

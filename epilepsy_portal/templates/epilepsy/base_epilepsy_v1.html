@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}癫痫数据集管理{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 from CDN -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+  <style>
+    body {
+      background-color: #f5f6fa;
+    }
+    .navbar-brand {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'epilepsy:dashboard' %}">
+      癫痫数据集门户
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'epilepsy:dashboard' %}">全局总览</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'epilepsy:patient_list' %}">浏览患者</a>
+          </li>
+
+          {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'epilepsy:patient_create' %}">新建患者</a>
+            </li>
+          {% endif %}
+
+          {% if user.profile.role == 'ADMIN' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'epilepsy:user_list' %}">管理设置</a>
+            </li>
+          {% endif %}
+        {% endif %}
+      </ul>
+
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <span class="navbar-text me-2">
+              {{ user.username }}
+              （
+              {% if user.profile.role == 'ADMIN' %}管理员
+              {% elif user.profile.role == 'STAFF' %}工作人员
+              {% else %}访客{% endif %}
+              ）
+            </span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'logout' %}">退出</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'login' %}">登录</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="container mt-4">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

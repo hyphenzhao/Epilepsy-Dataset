@@ -1,0 +1,17 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-info">
+    <h5>下载功能尚未实现</h5>
+    <p>
+      你请求下载：<strong>{{ dataset.patient.name }}</strong> - {{ dataset.name }}<br>
+      Endpoint: {{ dataset.globus_endpoint_id }}<br>
+      Path: {{ dataset.globus_path }}
+    </p>
+    <p class="mb-0">
+      将来这里会跳转到 Globus Portal 的传输页面。
+    </p>
+  </div>
+</div>
+{% endblock %}

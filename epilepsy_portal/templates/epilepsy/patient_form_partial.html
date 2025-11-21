@@ -1,0 +1,43 @@
+
+<form method="post">
+{% csrf_token %}
+{{ form.non_field_errors }}
+
+<div class="mb-3">
+  {{ form.name.label_tag }}
+  {{ form.name }}
+  {{ form.name.errors }}
+</div>
+<div class="mb-3">
+  {{ form.gender.label_tag }}
+  {{ form.gender }}
+  {{ form.gender.errors }}
+</div>
+<div class="mb-3">
+  {{ form.birthday.label_tag }}
+  {{ form.birthday }}
+  {{ form.birthday.errors }}
+</div>
+<div class="mb-3">
+  {{ form.handedness.label_tag }}
+  {{ form.handedness }}
+  {{ form.handedness.errors }}
+</div>
+<div class="mb-3">
+  {{ form.department.label_tag }}
+  {{ form.department }}
+  {{ form.department.errors }}
+</div>
+<div class="mb-3">
+  {{ form.bed_number.label_tag }}
+  {{ form.bed_number }}
+  {{ form.bed_number.errors }}
+</div>
+<div class="mb-3">
+  {{ form.admission_date.label_tag }}
+  {{ form.admission_date }}
+  {{ form.admission_date.errors }}
+</div>
+
+<button type="submit" class="btn btn-primary w-100">保存</button>
+</form>

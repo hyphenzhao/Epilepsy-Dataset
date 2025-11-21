@@ -1,0 +1,48 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3">
+    {{ patient.name }} 的数据列表
+  </h3>
+
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>数据名称</th>
+        <th>说明</th>
+        <th>存储位置</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in datasets %}
+      <tr>
+        <td>{{ d.name }}</td>
+        <td>{{ d.description|default:"-" }}</td>
+        <td>
+          <small class="text-muted">
+            Endpoint: {{ d.globus_endpoint_id }}<br>
+            Path: {{ d.globus_path }}
+          </small>
+        </td>
+        <td>
+          <a href="{% url 'epilepsy:dataset_download' d.id %}"
+             class="btn btn-sm btn-outline-success">
+            下载
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center text-muted">暂无数据</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{% url 'epilepsy:patient_list' %}" class="btn btn-outline-secondary">
+    返回患者列表
+  </a>
+</div>
+{% endblock %}

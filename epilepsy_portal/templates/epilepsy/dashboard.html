@@ -1,0 +1,54 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block title %}全局总览 - 癫痫数据集{% endblock %}
+
+{% block epilepsy_content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-xl-4 col-lg-6">
+      <div class="card card-stats">
+        <div class="card-body">
+          <div class="row">
+            <div class="col">
+              <h5 class="card-title text-uppercase text-muted mb-0">CPU 使用率</h5>
+              <span class="h2 font-weight-bold mb-0">{{ cpu_percent }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-6">
+      <div class="card card-stats">
+        <div class="card-body">
+          <div class="row">
+            <div class="col">
+              <h5 class="card-title text-uppercase text-muted mb-0">内存使用率</h5>
+              <span class="h2 font-weight-bold mb-0">{{ mem_percent }}%</span><br>
+              <small class="text-muted">
+                {{ mem_used|filesizeformat }} / {{ mem_total|filesizeformat }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-6">
+      <div class="card card-stats">
+        <div class="card-body">
+          <div class="row">
+            <div class="col">
+              <h5 class="card-title text-uppercase text-muted mb-0">磁盘使用率</h5>
+              <span class="h2 font-weight-bold mb-0">{{ disk_percent }}%</span><br>
+              <small class="text-muted">
+                {{ disk_used|filesizeformat }} / {{ disk_total|filesizeformat }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

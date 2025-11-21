@@ -1,0 +1,17 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block title %}新建患者 - 癫痫数据集{% endblock %}
+
+{% block epilepsy_content %}
+<div class="container-fluid mt-4">
+  <div class="card">
+    <div class="card-header border-0">
+      <h3 class="mb-0">新建患者</h3>
+    </div>
+    <div class="card-body">
+      {# 复用你已经写好的表单局部模板 #}
+      {% include "epilepsy/patient_form_partial.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
