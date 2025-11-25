@@ -1,43 +1,548 @@
-
 <form method="post">
-{% csrf_token %}
-{{ form.non_field_errors }}
+  {% csrf_token %}
+  {{ form.non_field_errors }}
 
-<div class="mb-3">
-  {{ form.name.label_tag }}
-  {{ form.name }}
-  {{ form.name.errors }}
-</div>
-<div class="mb-3">
-  {{ form.gender.label_tag }}
-  {{ form.gender }}
-  {{ form.gender.errors }}
-</div>
-<div class="mb-3">
-  {{ form.birthday.label_tag }}
-  {{ form.birthday }}
-  {{ form.birthday.errors }}
-</div>
-<div class="mb-3">
-  {{ form.handedness.label_tag }}
-  {{ form.handedness }}
-  {{ form.handedness.errors }}
-</div>
-<div class="mb-3">
-  {{ form.department.label_tag }}
-  {{ form.department }}
-  {{ form.department.errors }}
-</div>
-<div class="mb-3">
-  {{ form.bed_number.label_tag }}
-  {{ form.bed_number }}
-  {{ form.bed_number.errors }}
-</div>
-<div class="mb-3">
-  {{ form.admission_date.label_tag }}
-  {{ form.admission_date }}
-  {{ form.admission_date.errors }}
-</div>
+  <div id="patientAccordion">
 
-<button type="submit" class="btn btn-primary w-100">保存</button>
+    <!-- 一、基本信息（默认展开） -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingBasic">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left" type="button"
+                  data-toggle="collapse" data-target="#collapseBasic"
+                  aria-expanded="true" aria-controls="collapseBasic">
+            一、基本信息
+          </button>
+        </h5>
+      </div>
+      <div id="collapseBasic" class="collapse show"
+           aria-labelledby="headingBasic" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.name.label_tag }}
+              {{ form.name }}
+              {{ form.name.errors }}
+            </div>
+            <div class="col-md-2 mb-3">
+              {{ form.gender.label_tag }}
+              {{ form.gender }}
+              {{ form.gender.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.birthday.label_tag }}
+              {{ form.birthday }}
+              {{ form.birthday.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.handedness.label_tag }}
+              {{ form.handedness }}
+              {{ form.handedness.errors }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.department.label_tag }}
+              {{ form.department }}
+              {{ form.department.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.bed_number.label_tag }}
+              {{ form.bed_number }}
+              {{ form.bed_number.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.admission_date.label_tag }}
+              {{ form.admission_date }}
+              {{ form.admission_date.errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 二、病史 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingHistory">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseHistory"
+                  aria-expanded="false" aria-controls="collapseHistory">
+            二、病史
+          </button>
+        </h5>
+      </div>
+      <div id="collapseHistory" class="collapse"
+           aria-labelledby="headingHistory" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.pregnancy_birth_history.label_tag }}
+            {{ form.pregnancy_birth_history }}
+            {{ form.pregnancy_birth_history.errors }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.education_level.label_tag }}
+              {{ form.education_level }}
+              {{ form.education_level.errors }}
+            </div>
+            <div class="col-md-8 mb-3">
+              {{ form.occupation.label_tag }}
+              {{ form.occupation }}
+              {{ form.occupation.errors }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.past_medical_history.label_tag }}
+            <div>
+              {{ form.past_medical_history }}
+            </div>
+            {{ form.past_medical_history.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.other_medical_history.label_tag }}
+            <div>
+              {{ form.other_medical_history }}
+            </div>
+            {{ form.other_medical_history.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.family_history.label_tag }}
+            {{ form.family_history }}
+            {{ form.family_history.errors }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.first_seizure_age.label_tag }}
+              {{ form.first_seizure_age }}
+              {{ form.first_seizure_age.errors }}
+            </div>
+            <div class="col-md-8 mb-3">
+              {{ form.first_seizure_description.label_tag }}
+              {{ form.first_seizure_description }}
+              {{ form.first_seizure_description.errors }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.medication_history.label_tag }}
+            {{ form.medication_history }}
+            {{ form.medication_history.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 三、发作症状学 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingSemiology">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseSemiology"
+                  aria-expanded="false" aria-controls="collapseSemiology">
+            三、发作症状学
+          </button>
+        </h5>
+      </div>
+      <div id="collapseSemiology" class="collapse"
+           aria-labelledby="headingSemiology" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.aura.label_tag }}
+              {{ form.aura }}
+              {{ form.aura.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.typical_seizure_time.label_tag }}
+              {{ form.typical_seizure_time }}
+              {{ form.typical_seizure_time.errors }}
+            </div>
+            <div class="col-md-6 mb-3">
+              {{ form.typical_seizure_semiology.label_tag }}
+              {{ form.typical_seizure_semiology }}
+              {{ form.typical_seizure_semiology.errors }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              {{ form.seizure_duration_seconds.label_tag }}
+              {{ form.seizure_duration_seconds }}
+              {{ form.seizure_duration_seconds.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.seizure_duration_minutes.label_tag }}
+              {{ form.seizure_duration_minutes }}
+              {{ form.seizure_duration_minutes.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.seizure_freq_per_day.label_tag }}
+              {{ form.seizure_freq_per_day }}
+              {{ form.seizure_freq_per_day.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.seizure_freq_per_week.label_tag }}
+              {{ form.seizure_freq_per_week }}
+              {{ form.seizure_freq_per_week.errors }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              {{ form.seizure_freq_per_month.label_tag }}
+              {{ form.seizure_freq_per_month }}
+              {{ form.seizure_freq_per_month.errors }}
+            </div>
+            <div class="col-md-6 mb-3">
+              {{ form.seizure_freq_per_year.label_tag }}
+              {{ form.seizure_freq_per_year }}
+              {{ form.seizure_freq_per_year.errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 四、神经系统检查 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingNeuro">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseNeuro"
+                  aria-expanded="false" aria-controls="collapseNeuro">
+            四、神经系统检查
+          </button>
+        </h5>
+      </div>
+      <div id="collapseNeuro" class="collapse"
+           aria-labelledby="headingNeuro" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              {{ form.neuro_exam.label_tag }}
+              {{ form.neuro_exam }}
+              {{ form.neuro_exam.errors }}
+            </div>
+            <div class="col-md-9 mb-3">
+              {{ form.neuro_exam_description.label_tag }}
+              {{ form.neuro_exam_description }}
+              {{ form.neuro_exam_description.errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 五、认知和精神量表 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingCognitive">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseCognitive"
+                  aria-expanded="false" aria-controls="collapseCognitive">
+            五、认知和精神量表
+          </button>
+        </h5>
+      </div>
+      <div id="collapseCognitive" class="collapse"
+           aria-labelledby="headingCognitive" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.moca_score.label_tag }}
+              {{ form.moca_score }}
+              {{ form.moca_score.errors }}
+            </div>
+            <div class="col-md-2 mb-3">
+              {{ form.hama_score.label_tag }}
+              {{ form.hama_score }}
+              {{ form.hama_score.errors }}
+            </div>
+            <div class="col-md-2 mb-3">
+              {{ form.hamd_score.label_tag }}
+              {{ form.hamd_score }}
+              {{ form.hamd_score.errors }}
+            </div>
+            <div class="col-md-2 mb-3">
+              {{ form.bai_score.label_tag }}
+              {{ form.bai_score }}
+              {{ form.bai_score.errors }}
+            </div>
+            <div class="col-md-2 mb-3">
+              {{ form.bdi_score.label_tag }}
+              {{ form.bdi_score }}
+              {{ form.bdi_score.errors }}
+            </div>
+            <div class="col-md-2 mb-3">
+              {{ form.epilepsy_scale_score.label_tag }}
+              {{ form.epilepsy_scale_score }}
+              {{ form.epilepsy_scale_score.errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 六、视频头皮 EEG 检查 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingEEG">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseEEG"
+                  aria-expanded="false" aria-controls="collapseEEG">
+            六、视频头皮 EEG 检查
+          </button>
+        </h5>
+      </div>
+      <div id="collapseEEG" class="collapse"
+           aria-labelledby="headingEEG" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.eeg_interictal.label_tag }}
+            {{ form.eeg_interictal }}
+            {{ form.eeg_interictal.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.eeg_ictal.label_tag }}
+            {{ form.eeg_ictal }}
+            {{ form.eeg_ictal.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.eeg_clinical_correlation.label_tag }}
+            {{ form.eeg_clinical_correlation }}
+            {{ form.eeg_clinical_correlation.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 七、影像学检查 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingImaging">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseImaging"
+                  aria-expanded="false" aria-controls="collapseImaging">
+            七、影像学检查
+          </button>
+        </h5>
+      </div>
+      <div id="collapseImaging" class="collapse"
+           aria-labelledby="headingImaging" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.mri_brief.label_tag }}
+            {{ form.mri_brief }}
+            {{ form.mri_brief.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.mri_link.label_tag }}
+            {{ form.mri_link }}
+            {{ form.mri_link.errors }}
+            {% if form.instance.pk and form.instance.mri_link %}
+              <a href="{{ form.instance.mri_link }}" target="_blank"
+                 class="btn btn-sm btn-outline-primary mt-2">
+                下载 MRI 图像
+              </a>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.pet_brief.label_tag }}
+            {{ form.pet_brief }}
+            {{ form.pet_brief.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.pet_link.label_tag }}
+            {{ form.pet_link }}
+            {{ form.pet_link.errors }}
+            {% if form.instance.pk and form.instance.pet_link %}
+              <a href="{{ form.instance.pet_link }}" target="_blank"
+                 class="btn btn-sm btn-outline-primary mt-2">
+                下载 PET 图像
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 八、一期无创性评估结果 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingFirstStage">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseFirstStage"
+                  aria-expanded="false" aria-controls="collapseFirstStage">
+            八、一期无创性评估结果
+          </button>
+        </h5>
+      </div>
+      <div id="collapseFirstStage" class="collapse"
+           aria-labelledby="headingFirstStage" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.first_stage_lateralization.label_tag }}
+              {{ form.first_stage_lateralization }}
+              {{ form.first_stage_lateralization.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.first_stage_region.label_tag }}
+              {{ form.first_stage_region }}
+              {{ form.first_stage_region.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.first_stage_location.label_tag }}
+              {{ form.first_stage_location }}
+              {{ form.first_stage_location.errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 九、SEEG 发作间期及发作期放电 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingSEEG">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseSEEG"
+                  aria-expanded="false" aria-controls="collapseSEEG">
+            九、SEEG 发作间期及发作期放电
+          </button>
+        </h5>
+      </div>
+      <div id="collapseSEEG" class="collapse"
+           aria-labelledby="headingSEEG" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.seeg_interictal_overall.label_tag }}
+            {{ form.seeg_interictal_overall }}
+            {{ form.seeg_interictal_overall.errors }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.seeg_group1.label_tag }}
+              {{ form.seeg_group1 }}
+              {{ form.seeg_group1.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.seeg_group2.label_tag }}
+              {{ form.seeg_group2 }}
+              {{ form.seeg_group2.errors }}
+            </div>
+            <div class="col-md-4 mb-3">
+              {{ form.seeg_group3.label_tag }}
+              {{ form.seeg_group3 }}
+              {{ form.seeg_group3.errors }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.seeg_ictal.label_tag }}
+            {{ form.seeg_ictal }}
+            {{ form.seeg_ictal.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 十、二期有创性评估结果 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingSecondStage">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseSecondStage"
+                  aria-expanded="false" aria-controls="collapseSecondStage">
+            十、二期有创性评估结果
+          </button>
+        </h5>
+      </div>
+      <div id="collapseSecondStage" class="collapse"
+           aria-labelledby="headingSecondStage" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.second_stage_core_zone.label_tag }}
+            {{ form.second_stage_core_zone }}
+            {{ form.second_stage_core_zone.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.second_stage_hypothesis_zone.label_tag }}
+            {{ form.second_stage_hypothesis_zone }}
+            {{ form.second_stage_hypothesis_zone.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 十一、外科切除计划 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingResection">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseResection"
+                  aria-expanded="false" aria-controls="collapseResection">
+            十一、外科切除计划
+          </button>
+        </h5>
+      </div>
+      <div id="collapseResection" class="collapse"
+           aria-labelledby="headingResection" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.resection_plan_convex.label_tag }}
+            {{ form.resection_plan_convex }}
+            {{ form.resection_plan_convex.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.resection_plan_concave.label_tag }}
+            {{ form.resection_plan_concave }}
+            {{ form.resection_plan_concave.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 十二、评估信息 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingEvaluation">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseEvaluation"
+                  aria-expanded="false" aria-controls="collapseEvaluation">
+            十二、评估信息
+          </button>
+        </h5>
+      </div>
+      <div id="collapseEvaluation" class="collapse"
+           aria-labelledby="headingEvaluation" data-parent="#patientAccordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              {{ form.evaluator.label_tag }}
+              {{ form.evaluator }}
+              {{ form.evaluator.errors }}
+            </div>
+            <div class="col-md-6 mb-3">
+              {{ form.evaluation_date.label_tag }}
+              {{ form.evaluation_date }}
+              {{ form.evaluation_date.errors }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>  {# /patientAccordion #}
+
+  <button type="submit" class="btn btn-primary w-100 mt-3">保存</button>
 </form>
