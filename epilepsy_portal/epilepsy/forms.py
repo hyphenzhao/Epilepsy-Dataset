@@ -65,12 +65,17 @@ class PatientForm(forms.ModelForm):
             "handedness",
             "department",
             "bed_number",
+            "medical_record_number",
             "admission_date",
+            "education_level",
+            "imaging_number",
+            "admission_diagnosis",
+            "occupation",
 
             # 病史
-            "pregnancy_birth_history",
-            "education_level",
-            "occupation",
+            # "pregnancy_birth_history",
+            # "education_level",
+            # "occupation",
             "past_medical_history",
             "other_medical_history",
             "family_history",
@@ -136,6 +141,8 @@ class PatientForm(forms.ModelForm):
             "evaluator",
             "evaluation_date",
         ]
+        # widgets = {
+        #     'name': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100px;'}),}
         labels = {
             "name": "患者姓名",
             "gender": "性别",

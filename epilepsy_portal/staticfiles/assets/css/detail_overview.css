@@ -1,0 +1,7 @@
+#id_past_medical_history > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_name, #id_admission_diagnosis {
+    width: 150px !important;
+}

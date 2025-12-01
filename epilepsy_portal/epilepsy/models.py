@@ -61,23 +61,33 @@ class Patient(models.Model):
     NEURO_EXAM_CHOICES = [("N", "正常"),("A", "异常"),]
 
     # 基本信息
-    name = models.CharField("患者姓名", max_length=100)
+    name = models.CharField("患者姓名", max_length=20)
     gender = models.CharField("性别", max_length=1, choices=GENDER_CHOICES)
     birthday = models.DateField("生日")
     handedness = models.CharField("左右利手", max_length=1, choices=HAND_CHOICES)
-    department = models.CharField("科室", max_length=100, blank=True)
+    department = models.CharField("科室", max_length=20, blank=True)
     bed_number = models.CharField("床号", max_length=20, blank=True)
+    medical_record_number = models.CharField("病历号", max_length=20, blank=True)
     admission_date = models.DateField("入院时间")
-
-    # 【病史】
-    pregnancy_birth_history = models.TextField("母孕出生史", blank=True)
     education_level = models.CharField(
         "受教育程度",
         max_length=20,
         choices=EDUCATION_CHOICES,
         blank=True,
     )
-    occupation = models.CharField("职业", max_length=100, blank=True)
+    occupation = models.CharField("职业", max_length=20, blank=True)
+    imaging_number = models.CharField("影像号", max_length=20, blank=True)
+    admission_diagnosis = models.CharField("入院诊断", max_length=20, blank=True)
+
+    # 【病史】
+    # pregnancy_birth_history = models.TextField("母孕出生史", blank=True)
+    # education_level = models.CharField(
+    #     "受教育程度",
+    #     max_length=20,
+    #     choices=EDUCATION_CHOICES,
+    #     blank=True,
+    # )
+    #occupation = models.CharField("职业", max_length=100, blank=True)
 
     # 既往不良病史（用逗号分隔的编码存储）
     past_medical_history = models.CharField(

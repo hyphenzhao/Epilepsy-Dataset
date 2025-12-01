@@ -19,45 +19,74 @@
            aria-labelledby="headingBasic" data-parent="#patientAccordion">
         <div class="card-body">
           <div class="row">
-            <div class="col-md-4 mb-3">
-              {{ form.name.label_tag }}
+            <div class="col-md-3 mb-3">
+              {{ form.name.label_tag }} 
               {{ form.name }}
               {{ form.name.errors }}
             </div>
-            <div class="col-md-2 mb-3">
+            <div class="col-md-3 mb-3">
               {{ form.gender.label_tag }}
               {{ form.gender }}
               {{ form.gender.errors }}
-            </div>
-            <div class="col-md-3 mb-3">
-              {{ form.birthday.label_tag }}
-              {{ form.birthday }}
-              {{ form.birthday.errors }}
             </div>
             <div class="col-md-3 mb-3">
               {{ form.handedness.label_tag }}
               {{ form.handedness }}
               {{ form.handedness.errors }}
             </div>
+            <div class="col-md-3 mb-3">
+              {{ form.birthday.label_tag }}
+              {{ form.birthday }}
+              {{ form.birthday.errors }}
+            </div>
           </div>
 
           <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
               {{ form.department.label_tag }}
               {{ form.department }}
               {{ form.department.errors }}
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
               {{ form.bed_number.label_tag }}
               {{ form.bed_number }}
               {{ form.bed_number.errors }}
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
+              {{ form.medical_record_number.label_tag }}
+              {{ form.medical_record_number }}
+              {{ form.medical_record_number.errors }}
+            </div>
+
+            <div class="col-md-3 mb-3">
               {{ form.admission_date.label_tag }}
               {{ form.admission_date }}
               {{ form.admission_date.errors }}
             </div>
+
           </div>
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              {{ form.education_level.label_tag }}
+              {{ form.education_level }}
+              {{ form.education_level.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.occupation.label_tag }}
+              {{ form.occupation }}
+              {{ form.occupation.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+              {{ form.imaging_number.label_tag }}
+              {{ form.imaging_number }}
+              {{ form.imaging_number.errors }}
+            </div>
+
+            <div class="col-md-3 mb-3">
+              {{ form.admission_diagnosis.label_tag }}
+              {{ form.admission_diagnosis }}
+              {{ form.admission_diagnosis.errors }}
+            </div>
         </div>
       </div>
     </div>
@@ -76,32 +105,36 @@
       <div id="collapseHistory" class="collapse"
            aria-labelledby="headingHistory" data-parent="#patientAccordion">
         <div class="card-body">
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             {{ form.pregnancy_birth_history.label_tag }}
             {{ form.pregnancy_birth_history }}
             {{ form.pregnancy_birth_history.errors }}
-          </div>
+          </div> -->
 
-          <div class="row">
+          <!-- <div class="row">
             <div class="col-md-4 mb-3">
               {{ form.education_level.label_tag }}
               {{ form.education_level }}
-              {{ form.education_level.errors }}
+              {{ form.education_level.errors }} 
             </div>
             <div class="col-md-8 mb-3">
               {{ form.occupation.label_tag }}
               {{ form.occupation }}
               {{ form.occupation.errors }}
+            </div> 
+          </div> -->
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.past_medical_history.label_tag }}
             </div>
-          </div>
-
-          <div class="mb-3">
-            {{ form.past_medical_history.label_tag }}
-            <div>
+            <div class="col-md-8 mb-3">
               {{ form.past_medical_history }}
             </div>
-            {{ form.past_medical_history.errors }}
+              {{ form.past_medical_history.errors }}
           </div>
+          
+
+          
 
           <div class="mb-3">
             {{ form.other_medical_history.label_tag }}
@@ -546,3 +579,11 @@
 
   <button type="submit" class="btn btn-primary w-100 mt-3">保存</button>
 </form>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+
+<!-- Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
