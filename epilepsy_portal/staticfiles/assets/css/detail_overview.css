@@ -5,3 +5,7 @@
 #id_name, #id_admission_diagnosis {
     width: 150px !important;
 }
+#id_other_medical_history > div {
+    display: inline-block;
+    margin-right: 20px;
+}

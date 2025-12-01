@@ -123,25 +123,24 @@
               {{ form.occupation.errors }}
             </div> 
           </div> -->
-          <div class="row">
+          
             <div class="col-md-4 mb-3">
               {{ form.past_medical_history.label_tag }}
             </div>
-            <div class="col-md-8 mb-3">
+            <div>
               {{ form.past_medical_history }}
             </div>
               {{ form.past_medical_history.errors }}
-          </div>
           
-
           
-
-          <div class="mb-3">
-            {{ form.other_medical_history.label_tag }}
-            <div>
-              {{ form.other_medical_history }}
+          <div class="row">
+            <div class="col-md-4 mb-3">
+             {{ form.other_medical_history.label_tag }}
+            <div class="col-md-8 mb-3">
+             {{ form.other_medical_history }}
             </div>
-            {{ form.other_medical_history.errors }}
+             {{ form.other_medical_history.errors }}
+            </div>
           </div>
 
           <div class="mb-3">
