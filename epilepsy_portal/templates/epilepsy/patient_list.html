@@ -50,8 +50,11 @@
         <td>
           {% if user.is_authenticated %}
             {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
-              <button class="btn btn-sm btn-outline-primary"
-                      onclick="openEditPanel({{ p.id }})">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-edit-url="{% url 'epilepsy:patient_edit' p.id %}"
+                onclick="openEditPanel({{ p.id }})">
                 修改
               </button>
               <form method="post"
@@ -68,6 +71,7 @@
             <span class="text-muted">只读</span>
           {% endif %}
         </td>
+
         <td>
           {% if p.datasets.all %}
             <a href="{% url 'epilepsy:patient_datasets' p.id %}"
@@ -137,36 +141,159 @@
   {% endif %}
 </div>
 
-<!-- 下面是你之前的 offcanvas 修改面板，保留不动 -->
-<!-- <div class="offcanvas offcanvas-end" tabindex="-1" id="editPatientCanvas">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title">修改患者</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas">修改患者</button>
+<!-- 左侧滑出编辑面板（自定义 drawer，不依赖 Bootstrap Offcanvas） -->
+<style>
+  /* 背景遮罩 */
+  #editPatientBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, .5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease;
+    z-index: 1040;
+  }
+  #editPatientBackdrop.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* 右侧滑出的面板 */
+  #editPatientDrawer {
+    position: fixed;
+    top: 0;
+    right: 0;               /* 👈 改成 right: 0 */
+    height: 100%;
+    width: 70%;
+    max-width: 900px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,.3);
+    transform: translateX(100%);  /* 👈 初始在屏幕右外侧 */
+    transition: transform .3s ease;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+  }
+  #editPatientDrawer.show {
+    transform: translateX(0);     /* 👈 显示时滑入 */
+  }
+
+
+
+  #editPatientDrawer .drawer-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+  #editPatientDrawer .drawer-body {
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+  }
+</style>
+
+<div id="editPatientBackdrop"></div>
+
+<div id="editPatientDrawer">
+  <div class="drawer-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">修改患者</h5>
+    <button type="button" class="close" aria-label="关闭" onclick="closeEditPanel()">
+      <span aria-hidden="true">&times;</span>
+    </button>
   </div>
-  <div class="offcanvas-body" id="editPatientBody">
-    <div class="text-center text-muted">加载中...</div>
+  <div class="drawer-body" id="editPatientBody">
+    <div class="text-center text-muted">请选择要修改的患者</div>
   </div>
-</div> -->
+</div>
 
 <script>
   function openEditPanel(patientId) {
-    const offcanvasEl = document.getElementById('editPatientCanvas');
-    const offcanvas = new bootstrap.Offcanvas(offcanvasEl);
+    const drawer = document.getElementById('editPatientDrawer');
+    const backdrop = document.getElementById('editPatientBackdrop');
     const body = document.getElementById('editPatientBody');
+
+    // 打开面板 + 遮罩
+    drawer.classList.add('show');
+    backdrop.classList.add('show');
+
     body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
 
-    fetch(`/epilepsy/patients/${patientId}/edit/`, {
-      headers: {'X-Requested-With': 'XMLHttpRequest'}
-    })
-    .then(resp => resp.text())
-    .then(html => {
-      body.innerHTML = html;
-    })
-    .catch(err => {
-      body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
-    });
+    const url = `/epilepsy/patients/${patientId}/edit/`;
 
-    offcanvas.show();
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;       // 渲染 patient_form_partial.html
+        attachEditFormHandler(url);  // 绑定表单提交
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
+  }
+
+  function closeEditPanel() {
+    const drawer = document.getElementById('editPatientDrawer');
+    const backdrop = document.getElementById('editPatientBackdrop');
+    drawer.classList.remove('show');
+    backdrop.classList.remove('show');
+  }
+
+  // 点击遮罩也关闭
+  document.getElementById('editPatientBackdrop')
+          .addEventListener('click', closeEditPanel);
+
+  // 绑定面板中表单的 AJAX 提交逻辑
+  function attachEditFormHandler(url) {
+    const body = document.getElementById('editPatientBody');
+    const form = body.querySelector('form');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
+      const csrfToken = csrfInput ? csrfInput.value : '';
+
+      fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfToken
+        }
+      })
+        .then(response => {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.indexOf('application/json') !== -1) {
+            return response.json();
+          }
+          return response.text();
+        })
+        .then(data => {
+          // 后端返回 JSON：保存成功
+          if (typeof data === 'object' && data.success) {
+            closeEditPanel();
+            // 刷新列表，看到最新数据
+            window.location.reload();
+          }
+          // 后端返回 HTML：校验失败，把带错误信息的表单重新放进 drawer
+          else if (typeof data === 'string') {
+            body.innerHTML = data;
+            attachEditFormHandler(url);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert('保存失败，请稍后再试');
+        });
+    }, { once: true });
   }
 </script>
+
 {% endblock %}
+

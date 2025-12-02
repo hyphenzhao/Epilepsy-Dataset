@@ -15,7 +15,9 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.contrib.auth import logout
-from django.shortcuts import redirect
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
 
 User = get_user_model()
 
@@ -141,3 +143,30 @@ def patient_dataset_download(request, pk):
 def simple_logout(request):
     logout(request)
     return redirect("login")  # "login" 是 accounts/login/ 的 url name
+
+def patient_edit(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+
+    if request.method == "POST":
+        form = PatientForm(request.POST, instance=patient)
+        if form.is_valid():
+            form.save()
+            # AJAX 保存成功返回 JSON
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"success": True})
+            # 非 AJAX 情况下，正常重定向回列表
+            return redirect("epilepsy:patient_list")
+    else:
+        form = PatientForm(instance=patient)
+
+    # AJAX 请求：仅返回 partial（不包 base 模板）
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "epilepsy/patient_form_partial.html", {
+            "form": form,
+        })
+
+    # 直接访问 /patients/<id>/edit/ 的 fallback，全页编辑也能用
+    return render(request, "epilepsy/patient_edit.html", {
+        "form": form,
+        "patient": patient,
+    })
