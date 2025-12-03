@@ -27,7 +27,7 @@
     {% endif %}
   </form>
 
-  <table class="table table-striped align-middle">
+  <table class="table table-striped table-hover align-middle">
     <thead>
       <tr>
         <th>患者姓名</th>
@@ -39,57 +39,54 @@
         <th>下载</th>
       </tr>
     </thead>
-    <tbody>
-      {% for p in patients %}
-      <tr>
-        <td>{{ p.name }}</td>
-        <td>{{ p.get_gender_display }}</td>
-        <td>{{ p.birthday }}</td>
-        <td>{{ p.bed_number }}</td>
-        <td>{{ p.admission_date }}</td>
-        <td>
-          {% if user.is_authenticated %}
-            {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-primary"
-                data-edit-url="{% url 'epilepsy:patient_edit' p.id %}"
-                onclick="openEditPanel({{ p.id }})">
-                修改
-              </button>
-              <form method="post"
-                    action="{% url 'epilepsy:patient_delete' p.id %}"
-                    style="display:inline;">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-danger"
-                        onclick="return confirm('确认删除该患者？');">
-                  删除
-                </button>
-              </form>
-            {% endif %}
-          {% else %}
-            <span class="text-muted">只读</span>
-          {% endif %}
-        </td>
+<tbody>
+  {% for p in patients %}
+  <tr class="patient-row" onclick="openViewPanel({{ p.id }})">
+    <td>{{ p.name }}</td>
+    <td>{{ p.get_gender_display }}</td>
+    <td>{{ p.birthday }}</td>
+    <td>{{ p.bed_number }}</td>
+    <td>{{ p.admission_date }}</td>
+    <td>
+      {% if user.is_authenticated %}
+        {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
+          <button class="btn btn-sm btn-outline-primary"
+                  onclick="event.stopPropagation(); openEditPanel({{ p.id }});">
+            修改
+          </button>
+          <form method="post"
+                action="{% url 'epilepsy:patient_delete' p.id %}"
+                style="display:inline;">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger"
+                    onclick="event.stopPropagation(); return confirm('确认删除该患者？');">
+              删除
+            </button>
+          </form>
+        {% endif %}
+      {% else %}
+        <span class="text-muted">只读</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if p.datasets.all %}
+        <a href="{% url 'epilepsy:patient_datasets' p.id %}"
+           class="btn btn-sm btn-outline-success"
+           onclick="event.stopPropagation();">
+          下载数据
+        </a>
+      {% else %}
+        <span class="text-muted">暂无数据</span>
+      {% endif %}
+    </td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="6" class="text-center text-muted">暂无患者</td>
+  </tr>
+  {% endfor %}
+</tbody>
 
-        <td>
-          {% if p.datasets.all %}
-            <a href="{% url 'epilepsy:patient_datasets' p.id %}"
-               class="btn btn-sm btn-outline-success">
-              下载数据
-            </a>
-          {% else %}
-            <span class="text-muted">暂无数据</span>
-          {% endif %}
-        </td>
-
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" class="text-center text-muted">暂无患者</td>
-      </tr>
-      {% endfor %}
-    </tbody>
   </table>
 
   <!-- 分页 -->
@@ -143,6 +140,17 @@
 
 <!-- 左侧滑出编辑面板（自定义 drawer，不依赖 Bootstrap Offcanvas） -->
 <style>
+  /* 行悬停时略微浮起 */
+  .patient-row {
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+    cursor: pointer;
+  }
+  .patient-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,.06);
+    background-color: #f8f9fe;
+  }
+
   /* 背景遮罩 */
   #editPatientBackdrop {
     position: fixed;
@@ -161,27 +169,25 @@
     visibility: visible;
   }
 
-  /* 右侧滑出的面板 */
+  /* 右侧滑出的抽屉（编辑 + 查看共用） */
   #editPatientDrawer {
     position: fixed;
     top: 0;
-    right: 0;               /* 👈 改成 right: 0 */
+    right: 0;              /* 右侧 */
     height: 100%;
     width: 70%;
     max-width: 900px;
     background: #fff;
     box-shadow: 0 0 10px rgba(0,0,0,.3);
-    transform: translateX(100%);  /* 👈 初始在屏幕右外侧 */
+    transform: translateX(100%);    /* 初始藏在右边 */
     transition: transform .3s ease;
     z-index: 1050;
     display: flex;
     flex-direction: column;
   }
   #editPatientDrawer.show {
-    transform: translateX(0);     /* 👈 显示时滑入 */
+    transform: translateX(0);       /* 显示时滑入 */
   }
-
-
 
   #editPatientDrawer .drawer-header {
     padding: 1rem 1.5rem;
@@ -197,25 +203,43 @@
 
 <div id="editPatientDrawer">
   <div class="drawer-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">修改患者</h5>
+    <h5 class="mb-0" id="editPatientDrawerTitle">修改患者</h5>
     <button type="button" class="close" aria-label="关闭" onclick="closeEditPanel()">
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
   <div class="drawer-body" id="editPatientBody">
-    <div class="text-center text-muted">请选择要修改的患者</div>
+    <div class="text-center text-muted">请选择要查看的患者</div>
   </div>
 </div>
 
+
 <script>
-  function openEditPanel(patientId) {
+  function showDrawer() {
     const drawer = document.getElementById('editPatientDrawer');
     const backdrop = document.getElementById('editPatientBackdrop');
-    const body = document.getElementById('editPatientBody');
-
-    // 打开面板 + 遮罩
     drawer.classList.add('show');
     backdrop.classList.add('show');
+  }
+
+  function closeEditPanel() {
+    const drawer = document.getElementById('editPatientDrawer');
+    const backdrop = document.getElementById('editPatientBackdrop');
+    drawer.classList.remove('show');
+    backdrop.classList.remove('show');
+  }
+
+  // 点击遮罩关闭
+  document.getElementById('editPatientBackdrop')
+          .addEventListener('click', closeEditPanel);
+
+  // 点击「修改」按钮 -> 可编辑表单（沿用 patient_form_partial.html）
+  function openEditPanel(patientId) {
+    const body = document.getElementById('editPatientBody');
+    const titleEl = document.getElementById('editPatientDrawerTitle');
+
+    titleEl.textContent = '修改患者';
+    showDrawer();
 
     body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
 
@@ -226,8 +250,8 @@
     })
       .then(resp => resp.text())
       .then(html => {
-        body.innerHTML = html;       // 渲染 patient_form_partial.html
-        attachEditFormHandler(url);  // 绑定表单提交
+        body.innerHTML = html;       // 载入 patient_form_partial.html
+        attachEditFormHandler(url);  // 绑定保存
       })
       .catch(err => {
         console.error(err);
@@ -235,18 +259,32 @@
       });
   }
 
-  function closeEditPanel() {
-    const drawer = document.getElementById('editPatientDrawer');
-    const backdrop = document.getElementById('editPatientBackdrop');
-    drawer.classList.remove('show');
-    backdrop.classList.remove('show');
+  // 点击整行 -> 只读详情
+  function openViewPanel(patientId) {
+    const body = document.getElementById('editPatientBody');
+    const titleEl = document.getElementById('editPatientDrawerTitle');
+
+    titleEl.textContent = '患者详情';
+    showDrawer();
+
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    const url = `/epilepsy/patients/${patientId}/detail/`;
+
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;   // 这里是只读模板，不需要绑定表单
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
   }
 
-  // 点击遮罩也关闭
-  document.getElementById('editPatientBackdrop')
-          .addEventListener('click', closeEditPanel);
-
-  // 绑定面板中表单的 AJAX 提交逻辑
+  // 编辑表单的 AJAX 提交（沿用你同事的 patient_form_partial.html）
   function attachEditFormHandler(url) {
     const body = document.getElementById('editPatientBody');
     const form = body.querySelector('form');
@@ -275,14 +313,10 @@
           return response.text();
         })
         .then(data => {
-          // 后端返回 JSON：保存成功
           if (typeof data === 'object' && data.success) {
             closeEditPanel();
-            // 刷新列表，看到最新数据
             window.location.reload();
-          }
-          // 后端返回 HTML：校验失败，把带错误信息的表单重新放进 drawer
-          else if (typeof data === 'string') {
+          } else if (typeof data === 'string') {
             body.innerHTML = data;
             attachEditFormHandler(url);
           }
@@ -294,6 +328,7 @@
     }, { once: true });
   }
 </script>
+
 
 {% endblock %}
 

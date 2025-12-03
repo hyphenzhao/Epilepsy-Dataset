@@ -170,3 +170,63 @@ def patient_edit(request, pk):
         "form": form,
         "patient": patient,
     })
+
+# def patient_detail(request, pk):
+#     patient = get_object_or_404(Patient, pk=pk)
+
+#     # 抽屉里用 AJAX 获取部分 HTML
+#     if request.headers.get("x-requested-with") == "XMLHttpRequest":
+#         return render(request, "epilepsy/patient_detail_partial.html", {
+#             "patient": patient,
+#         })
+
+#     # 可选：直接访问详情页时用完整页面
+#     return render(request, "epilepsy/patient_detail.html", {
+#         "patient": patient,
+#     })
+
+def patient_detail(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+
+    # 用和编辑时同一个 PatientForm，保证字段一致
+    form = PatientForm(instance=patient)
+
+    fields = []
+    for bound_field in form:   # 依次遍历表单字段
+        if bound_field.is_hidden:
+            continue
+
+        field = bound_field.field
+        raw_val = bound_field.value()
+        display_val = raw_val
+
+        # 处理 choices 字段，显示中文而不是内部代码
+        if getattr(field, "choices", None):
+            choices_dict = dict(field.choices)
+            if isinstance(raw_val, (list, tuple)):
+                labels = [choices_dict.get(v, v) for v in raw_val]
+                display_val = ", ".join(str(x) for x in labels if x not in [None, ""])
+            else:
+                display_val = choices_dict.get(raw_val, raw_val)
+
+        # 简单格式化：None -> 空字符串
+        if display_val is None:
+            display_val = ""
+
+        fields.append({
+            "name": bound_field.name,
+            "label": bound_field.label,
+            "value": display_val,
+        })
+
+    context = {
+        "patient": patient,
+        "fields": fields,
+    }
+
+    # 抽屉里用的：AJAX 请求只要这一块 HTML
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "epilepsy/patient_detail_partial.html", context)
+
+    # 直接访问完整详情页（可选）
+    return render(request, "epilepsy/patient_detail.html", context)

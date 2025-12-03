@@ -14,5 +14,6 @@ urlpatterns = [
     path("datasets/<int:pk>/download/", views.patient_dataset_download,
          name="dataset_download"),
     path("patients/<int:pk>/edit/", views.patient_edit, name="patient_edit"),
+    path("patients/<int:pk>/detail/", views.patient_detail, name="patient_detail"),
     path("settings/users/", views.UserListView.as_view(), name="user_list"),  # 管理设置
 ]
