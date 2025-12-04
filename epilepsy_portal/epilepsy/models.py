@@ -54,6 +54,9 @@ class Patient(models.Model):
     # 其他病史（多选）
     OTHER_MEDICAL_HISTORY_CHOICES = [ ("DM", "糖尿病"),("HTN", "高血压"),]
 
+    # 自然发作状态 清醒 / 睡眠 / 清醒或睡眠
+    SEIZURE_STATE_CHOICES = [("AWAKE", "清醒"),("SLEEP", "睡眠"),("BOTH", "清醒和睡眠")]
+
     # 先兆 有 / 无
     AURA_CHOICES = [("Y", "有"),("N", "无"),]
 
@@ -111,41 +114,50 @@ class Patient(models.Model):
         "首次发作年龄（岁）", blank=True, null=True
     )
     first_seizure_description = models.TextField(
-        "首次发作简要表现形式", blank=True
+        "首次发作症状", blank=True
     )
 
     medication_history = models.TextField("药物治疗过程", blank=True)
 
     # 【发作症状学】
+    seizure_state = models.CharField(
+    "自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,
+)
     aura = models.CharField(
         "先兆", max_length=1, choices=AURA_CHOICES, blank=True
     )
-    typical_seizure_time = models.CharField(
-        "惯常发作时间", max_length=100, blank=True
+    # typical_seizure_time = models.CharField(
+    #     "惯常发作时间", max_length=100, blank=True
+    # )
+    # typical_seizure_semiology = models.TextField(
+    #     "惯常发作表现形式", blank=True
+    # )
+    initial_seizure_symptom = models.TextField(
+        "首发症状",max_length=150, blank=True,
     )
-    typical_seizure_semiology = models.TextField(
-        "惯常发作表现形式", blank=True
+    evolution_symptom = models.TextField(
+        "演变症状",max_length=150, blank=True,
     )
 
-    seizure_duration_seconds = models.PositiveIntegerField(
-        "发作持续时间（秒）", blank=True, null=True
+    seizure_duration_seconds = models.CharField(
+        "发作持续时间", blank=True, null=True
     )
-    seizure_duration_minutes = models.PositiveIntegerField(
-        "发作持续时间（分钟）", blank=True, null=True
-    )
+    # seizure_duration_minutes = models.PositiveIntegerField(
+    #     "发作持续时间（分钟）", blank=True, null=True
+    # )
 
-    seizure_freq_per_day = models.PositiveIntegerField(
-        "发作频率（次/天）", blank=True, null=True
+    seizure_freq_per_day = models.CharField(
+        "发作频率", blank=True, null=True
     )
-    seizure_freq_per_week = models.PositiveIntegerField(
-        "发作频率（次/周）", blank=True, null=True
-    )
-    seizure_freq_per_month = models.PositiveIntegerField(
-        "发作频率（次/月）", blank=True, null=True
-    )
-    seizure_freq_per_year = models.PositiveIntegerField(
-        "发作频率（次/年）", blank=True, null=True
-    )
+    # seizure_freq_per_week = models.PositiveIntegerField(
+    #     "发作频率（次/周）", blank=True, null=True
+    # )
+    # seizure_freq_per_month = models.PositiveIntegerField(
+    #     "发作频率（次/月）", blank=True, null=True
+    # )
+    # seizure_freq_per_year = models.PositiveIntegerField(
+    #     "发作频率（次/年）", blank=True, null=True
+    # )
 
     # 【神经系统检查】
     neuro_exam = models.CharField(

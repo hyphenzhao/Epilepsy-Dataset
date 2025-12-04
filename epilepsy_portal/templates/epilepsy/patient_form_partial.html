@@ -15,6 +15,7 @@
           </button>
         </h5>
       </div>
+
       <div id="collapseBasic" class="collapse show"
            aria-labelledby="headingBasic" data-parent="#patientAccordion">
         <div class="card-body">
@@ -63,8 +64,8 @@
               {{ form.admission_date }}
               {{ form.admission_date.errors }}
             </div>
-
           </div>
+
           <div class="row">
             <div class="col-md-3 mb-3">
               {{ form.education_level.label_tag }}
@@ -87,8 +88,9 @@
               {{ form.admission_diagnosis }}
               {{ form.admission_diagnosis.errors }}
             </div>
-        </div>
+          </div>
       </div>
+     </div>
     </div>
 
     <!-- 二、病史 -->
@@ -123,31 +125,6 @@
               {{ form.occupation.errors }}
             </div> 
           </div> -->
-          
-            <div class="col-md-4 mb-3">
-              {{ form.past_medical_history.label_tag }}
-            </div>
-            <div>
-              {{ form.past_medical_history }}
-            </div>
-              {{ form.past_medical_history.errors }}
-          
-          
-          <div class="row">
-            <div class="col-md-4 mb-3">
-             {{ form.other_medical_history.label_tag }}
-            <div class="col-md-8 mb-3">
-             {{ form.other_medical_history }}
-            </div>
-             {{ form.other_medical_history.errors }}
-            </div>
-          </div>
-
-          <div class="mb-3">
-            {{ form.family_history.label_tag }}
-            {{ form.family_history }}
-            {{ form.family_history.errors }}
-          </div>
 
           <div class="row">
             <div class="col-md-4 mb-3">
@@ -155,11 +132,42 @@
               {{ form.first_seizure_age }}
               {{ form.first_seizure_age.errors }}
             </div>
-            <div class="col-md-8 mb-3">
+            <div class="col-md-2 mb-3">
               {{ form.first_seizure_description.label_tag }}
-              {{ form.first_seizure_description }}
-              {{ form.first_seizure_description.errors }}
             </div>
+            <div class="col-md-6 mb-3">
+              {{ form.first_seizure_description }}
+            </div>
+              
+              {{ form.first_seizure_description.errors }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.past_medical_history.label_tag }}
+            </div>
+            <div>
+              {{ form.past_medical_history }}
+            </div>
+              {{ form.past_medical_history.errors }}
+          </div>
+            
+          
+          
+          <div class="row">
+            <div class="col-md-2 mb-3">
+             {{ form.other_medical_history.label_tag }}
+            </div>
+            <div class="col-md-8 mb-3">
+             {{ form.other_medical_history }}
+            </div>
+             {{ form.other_medical_history.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.family_history.label_tag }}
+            {{ form.family_history }}
+            {{ form.family_history.errors }}
           </div>
 
           <div class="mb-3">
@@ -185,7 +193,17 @@
       <div id="collapseSemiology" class="collapse"
            aria-labelledby="headingSemiology" data-parent="#patientAccordion">
         <div class="card-body">
-          <div class="row">
+          <div class="col-md-3 mb-3">
+          {{ form.seizure_state.label_tag }}
+          {{ form.seizure_state }}
+          {{ form.seizure_state.errors }}
+         </div>
+         <div class="col-md-2 mb-3">
+              {{ form.aura.label_tag }}
+              {{ form.aura }}
+              {{ form.aura.errors }}
+            </div>
+          <!-- <div class="row">
             <div class="col-md-2 mb-3">
               {{ form.aura.label_tag }}
               {{ form.aura }}
@@ -201,6 +219,16 @@
               {{ form.typical_seizure_semiology }}
               {{ form.typical_seizure_semiology.errors }}
             </div>
+          </div> -->
+          <div class="mb-3">
+            {{ form.initial_seizure_symptom.label_tag }}
+            {{ form.initial_seizure_symptom }}
+            {{ form.initial_seizure_symptom.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.evolution_symptom.label_tag }}
+            {{ form.evolution_symptom }}
+            {{ form.evolution_symptom.errors }}
           </div>
 
           <div class="row">
@@ -209,24 +237,24 @@
               {{ form.seizure_duration_seconds }}
               {{ form.seizure_duration_seconds.errors }}
             </div>
-            <div class="col-md-3 mb-3">
+            <!-- <div class="col-md-3 mb-3">
               {{ form.seizure_duration_minutes.label_tag }}
               {{ form.seizure_duration_minutes }}
               {{ form.seizure_duration_minutes.errors }}
-            </div>
+            </div> -->
             <div class="col-md-3 mb-3">
               {{ form.seizure_freq_per_day.label_tag }}
               {{ form.seizure_freq_per_day }}
               {{ form.seizure_freq_per_day.errors }}
             </div>
-            <div class="col-md-3 mb-3">
+            <!-- <div class="col-md-3 mb-3">
               {{ form.seizure_freq_per_week.label_tag }}
               {{ form.seizure_freq_per_week }}
               {{ form.seizure_freq_per_week.errors }}
-            </div>
+            </div> -->
           </div>
 
-          <div class="row">
+          <!-- <div class="row">
             <div class="col-md-6 mb-3">
               {{ form.seizure_freq_per_month.label_tag }}
               {{ form.seizure_freq_per_month }}
@@ -237,7 +265,7 @@
               {{ form.seizure_freq_per_year }}
               {{ form.seizure_freq_per_year.errors }}
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>

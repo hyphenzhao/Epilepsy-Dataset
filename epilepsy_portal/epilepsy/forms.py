@@ -84,15 +84,18 @@ class PatientForm(forms.ModelForm):
             "medication_history",
 
             # 发作症状学
+            "seizure_state",
             "aura",
-            "typical_seizure_time",
-            "typical_seizure_semiology",
+            # "typical_seizure_time",
+            # "typical_seizure_semiology",
+            "initial_seizure_symptom",
+            "evolution_symptom",
             "seizure_duration_seconds",
-            "seizure_duration_minutes",
+            # "seizure_duration_minutes",
             "seizure_freq_per_day",
-            "seizure_freq_per_week",
-            "seizure_freq_per_month",
-            "seizure_freq_per_year",
+            # "seizure_freq_per_week",
+            # "seizure_freq_per_month",
+            # "seizure_freq_per_year",
 
             # 神经系统检查
             "neuro_exam",
@@ -141,8 +144,33 @@ class PatientForm(forms.ModelForm):
             "evaluator",
             "evaluation_date",
         ]
-        # widgets = {
-        #     'name': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100px;'}),}
+        widgets = {
+            'first_seizure_description': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+            'family_history': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+            'medication_history': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'initial_seizure_symptom': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'evolution_symptom': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+            }
         labels = {
             "name": "患者姓名",
             "gender": "性别",
@@ -158,18 +186,21 @@ class PatientForm(forms.ModelForm):
             "other_medical_history": "其他病史",
             "family_history": "家族病史",
             "first_seizure_age": "首次发作年龄（岁）",
-            "first_seizure_description": "首次发作简要表现形式",
+            "first_seizure_description": "首次发作症状",
             "medication_history": "药物治疗过程",
 
             "aura": "先兆",
-            "typical_seizure_time": "惯常发作时间",
-            "typical_seizure_semiology": "惯常发作表现形式",
-            "seizure_duration_seconds": "发作持续时间（秒）",
-            "seizure_duration_minutes": "发作持续时间（分钟）",
-            "seizure_freq_per_day": "发作频率（次/天）",
-            "seizure_freq_per_week": "发作频率（次/周）",
-            "seizure_freq_per_month": "发作频率（次/月）",
-            "seizure_freq_per_year": "发作频率（次/年）",
+            "seizure_state":"自然发作状态",
+            # "typical_seizure_time": "惯常发作时间",
+            # "typical_seizure_semiology": "惯常发作表现形式",
+            "initial_seizure_symptom":"首发症状",
+            "evolution_symptom":"演变症状",
+            "seizure_duration_seconds": "发作持续时间",
+            # "seizure_duration_minutes": "发作持续时间（分钟）",
+            "seizure_freq_per_day": "发作频率",
+            # "seizure_freq_per_week": "发作频率（次/周）",
+            # "seizure_freq_per_month": "发作频率（次/月）",
+            # "seizure_freq_per_year": "发作频率（次/年）",
 
             "neuro_exam": "神经系统检查",
             "neuro_exam_description": "神经系统检查异常描述",
