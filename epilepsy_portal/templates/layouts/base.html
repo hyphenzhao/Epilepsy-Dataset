@@ -15,7 +15,7 @@
 -->
 <!DOCTYPE html>
 <html lang="en">
-
+{% load static %}
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -36,6 +36,14 @@
   <!-- Argon CSS -->
   <link rel="stylesheet" href="/static/assets/css/argon.css?v=1.2.0" type="text/css">
   <link rel="stylesheet" href="/static/assets/css/detail_overview.css" type="text/css">
+  <!-- jQuery (local) -->
+  <script src="{% static 'js/jquery.min.js' %}"></script>
+
+  <!-- Popper.js (local) -->
+  <script src="{% static 'js/popper.min.js' %}"></script>
+
+  <!-- Bootstrap JS (local) -->
+  <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
 
   <!-- Specific CSS goes HERE -->
   {% block stylesheets %}{% endblock stylesheets %}
