@@ -183,6 +183,34 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
+            {% if form.first_seizure_age %}{{ form.first_seizure_age.label }}{% else %}first_seizure_age{% endif %}
+          </div>
+          <div>
+            {% if form.first_seizure_age %}
+              {{ form.first_seizure_age.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.first_seizure_description %}{{ form.first_seizure_description.label }}{% else %}first_seizure_description{% endif %}
+          </div>
+          <div>
+            {% if form.first_seizure_description %}
+              {{ form.first_seizure_description.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
             {% if form.past_medical_history %}{{ form.past_medical_history.label }}{% else %}past_medical_history{% endif %}
           </div>
           <div>
@@ -225,34 +253,6 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.first_seizure_age %}{{ form.first_seizure_age.label }}{% else %}first_seizure_age{% endif %}
-          </div>
-          <div>
-            {% if form.first_seizure_age %}
-              {{ form.first_seizure_age.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.first_seizure_description %}{{ form.first_seizure_description.label }}{% else %}first_seizure_description{% endif %}
-          </div>
-          <div>
-            {% if form.first_seizure_description %}
-              {{ form.first_seizure_description.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
             {% if form.medication_history %}{{ form.medication_history.label }}{% else %}medication_history{% endif %}
           </div>
           <div>
@@ -272,6 +272,20 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
+            {% if form.seizure_state %}{{ form.seizure_state.label }}{% else %}seizure_state{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_state %}
+              {{ form.seizure_state.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
             {% if form.aura %}{{ form.aura.label }}{% else %}aura{% endif %}
           </div>
           <div>
@@ -286,11 +300,11 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.typical_seizure_time %}{{ form.typical_seizure_time.label }}{% else %}typical_seizure_time{% endif %}
+            {% if form.initial_seizure_symptom %}{{ form.initial_seizure_symptom.label }}{% else %}initial_seizure_symptom{% endif %}
           </div>
           <div>
-            {% if form.typical_seizure_time %}
-              {{ form.typical_seizure_time.value|default:"-"|linebreaksbr }}
+            {% if form.initial_seizure_symptom %}
+              {{ form.initial_seizure_symptom.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -300,11 +314,11 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.typical_seizure_semiology %}{{ form.typical_seizure_semiology.label }}{% else %}typical_seizure_semiology{% endif %}
+            {% if form.evolution_symptom %}{{ form.evolution_symptom.label }}{% else %}evolution_symptom{% endif %}
           </div>
           <div>
-            {% if form.typical_seizure_semiology %}
-              {{ form.typical_seizure_semiology.value|default:"-"|linebreaksbr }}
+            {% if form.evolution_symptom %}
+              {{ form.evolution_symptom.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -328,67 +342,11 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.seizure_duration_minutes %}{{ form.seizure_duration_minutes.label }}{% else %}seizure_duration_minutes{% endif %}
-          </div>
-          <div>
-            {% if form.seizure_duration_minutes %}
-              {{ form.seizure_duration_minutes.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
             {% if form.seizure_freq_per_day %}{{ form.seizure_freq_per_day.label }}{% else %}seizure_freq_per_day{% endif %}
           </div>
           <div>
             {% if form.seizure_freq_per_day %}
               {{ form.seizure_freq_per_day.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seizure_freq_per_week %}{{ form.seizure_freq_per_week.label }}{% else %}seizure_freq_per_week{% endif %}
-          </div>
-          <div>
-            {% if form.seizure_freq_per_week %}
-              {{ form.seizure_freq_per_week.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seizure_freq_per_month %}{{ form.seizure_freq_per_month.label }}{% else %}seizure_freq_per_month{% endif %}
-          </div>
-          <div>
-            {% if form.seizure_freq_per_month %}
-              {{ form.seizure_freq_per_month.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seizure_freq_per_year %}{{ form.seizure_freq_per_year.label }}{% else %}seizure_freq_per_year{% endif %}
-          </div>
-          <div>
-            {% if form.seizure_freq_per_year %}
-              {{ form.seizure_freq_per_year.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -558,6 +516,20 @@
           <div>
             {% if form.eeg_clinical_correlation %}
               {{ form.eeg_clinical_correlation.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_file_link %}{{ form.eeg_file_link.label }}{% else %}eeg_file_link{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_file_link %}
+              {{ form.eeg_file_link.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -741,6 +713,20 @@
           <div>
             {% if form.seeg_ictal %}
               {{ form.seeg_ictal.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_file_link %}{{ form.seeg_file_link.label }}{% else %}seeg_file_link{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_file_link %}
+              {{ form.seeg_file_link.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
