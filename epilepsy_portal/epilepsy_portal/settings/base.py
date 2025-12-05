@@ -175,3 +175,5 @@ try:
 except ImportError:
     expected_path = Path(__file__).resolve().parent / 'search.py'
     log.warning(f'You should create a file for your search settings at {expected_path}')
+
+LARGE_FILE_BASE_DIR = "/Volumes/Workspace/large_files"    

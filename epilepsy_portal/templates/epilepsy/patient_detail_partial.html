@@ -1,60 +1,852 @@
-<!-- <div class="card">
+<!-- AUTO-GENERATED from patient_form_partial.html
+   请不要手动修改本文件。修改表单后请重新运行 generate_patient_detail_partial.py -->
+
+<div class="card">
   <div class="card-body">
     <h4 class="mb-3">{{ patient.name }}</h4>
 
-    <div class="row mb-2">
-      <div class="col-sm-6">
-        <strong>性别：</strong> {{ patient.get_gender_display }}
-      </div>
-      <div class="col-sm-6">
-        <strong>生日：</strong> {{ patient.birthday }}
-      </div>
-    </div>
-
-    <div class="row mb-2">
-      <div class="col-sm-6">
-        <strong>左右利手：</strong> {{ patient.get_handedness_display }}
-      </div>
-      <div class="col-sm-6">
-        <strong>科室：</strong> {{ patient.department }}
-      </div>
-    </div>
-
-    <div class="row mb-2">
-      <div class="col-sm-6">
-        <strong>床号：</strong> {{ patient.bed_number }}
-      </div>
-      <div class="col-sm-6">
-        <strong>入院时间：</strong> {{ patient.admission_date }}
-      </div>
-    </div>
-
-    <hr class="my-3">
-
-    <p class="text-muted mb-0">
-      <small>病历号：{{ patient.medical_record_number|default:"-" }}</small>
-    </p>
-  </div>
-</div>
- -->
-
- <div class="card">
-  <div class="card-body">
-    <h4 class="mb-3">{{ patient.name }}</h4>
-
+    <h5 class="mb-3">一、基本信息（默认展开）</h5>
     <div class="row">
-      {% for f in fields %}
-        <div class="col-md-6 mb-3">
-          <div class="border rounded p-2">
-            <div class="text-muted small mb-1">
-              {{ f.label }}
-            </div>
-            <div>
-              {{ f.value|default:"-"|linebreaksbr }}
-            </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.name %}{{ form.name.label }}{% else %}name{% endif %}
+          </div>
+          <div>
+            {% if form.name %}
+              {{ form.name.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
           </div>
         </div>
-      {% endfor %}
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.gender %}{{ form.gender.label }}{% else %}gender{% endif %}
+          </div>
+          <div>
+            {% if form.gender %}
+              {{ form.gender.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.handedness %}{{ form.handedness.label }}{% else %}handedness{% endif %}
+          </div>
+          <div>
+            {% if form.handedness %}
+              {{ form.handedness.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.birthday %}{{ form.birthday.label }}{% else %}birthday{% endif %}
+          </div>
+          <div>
+            {% if form.birthday %}
+              {{ form.birthday.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.department %}{{ form.department.label }}{% else %}department{% endif %}
+          </div>
+          <div>
+            {% if form.department %}
+              {{ form.department.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.bed_number %}{{ form.bed_number.label }}{% else %}bed_number{% endif %}
+          </div>
+          <div>
+            {% if form.bed_number %}
+              {{ form.bed_number.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.medical_record_number %}{{ form.medical_record_number.label }}{% else %}medical_record_number{% endif %}
+          </div>
+          <div>
+            {% if form.medical_record_number %}
+              {{ form.medical_record_number.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.admission_date %}{{ form.admission_date.label }}{% else %}admission_date{% endif %}
+          </div>
+          <div>
+            {% if form.admission_date %}
+              {{ form.admission_date.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.education_level %}{{ form.education_level.label }}{% else %}education_level{% endif %}
+          </div>
+          <div>
+            {% if form.education_level %}
+              {{ form.education_level.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.occupation %}{{ form.occupation.label }}{% else %}occupation{% endif %}
+          </div>
+          <div>
+            {% if form.occupation %}
+              {{ form.occupation.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.imaging_number %}{{ form.imaging_number.label }}{% else %}imaging_number{% endif %}
+          </div>
+          <div>
+            {% if form.imaging_number %}
+              {{ form.imaging_number.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.admission_diagnosis %}{{ form.admission_diagnosis.label }}{% else %}admission_diagnosis{% endif %}
+          </div>
+          <div>
+            {% if form.admission_diagnosis %}
+              {{ form.admission_diagnosis.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
     </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">二、病史</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.past_medical_history %}{{ form.past_medical_history.label }}{% else %}past_medical_history{% endif %}
+          </div>
+          <div>
+            {% if form.past_medical_history %}
+              {{ form.past_medical_history.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.other_medical_history %}{{ form.other_medical_history.label }}{% else %}other_medical_history{% endif %}
+          </div>
+          <div>
+            {% if form.other_medical_history %}
+              {{ form.other_medical_history.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.family_history %}{{ form.family_history.label }}{% else %}family_history{% endif %}
+          </div>
+          <div>
+            {% if form.family_history %}
+              {{ form.family_history.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.first_seizure_age %}{{ form.first_seizure_age.label }}{% else %}first_seizure_age{% endif %}
+          </div>
+          <div>
+            {% if form.first_seizure_age %}
+              {{ form.first_seizure_age.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.first_seizure_description %}{{ form.first_seizure_description.label }}{% else %}first_seizure_description{% endif %}
+          </div>
+          <div>
+            {% if form.first_seizure_description %}
+              {{ form.first_seizure_description.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.medication_history %}{{ form.medication_history.label }}{% else %}medication_history{% endif %}
+          </div>
+          <div>
+            {% if form.medication_history %}
+              {{ form.medication_history.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">三、发作症状学</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.aura %}{{ form.aura.label }}{% else %}aura{% endif %}
+          </div>
+          <div>
+            {% if form.aura %}
+              {{ form.aura.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.typical_seizure_time %}{{ form.typical_seizure_time.label }}{% else %}typical_seizure_time{% endif %}
+          </div>
+          <div>
+            {% if form.typical_seizure_time %}
+              {{ form.typical_seizure_time.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.typical_seizure_semiology %}{{ form.typical_seizure_semiology.label }}{% else %}typical_seizure_semiology{% endif %}
+          </div>
+          <div>
+            {% if form.typical_seizure_semiology %}
+              {{ form.typical_seizure_semiology.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seizure_duration_seconds %}{{ form.seizure_duration_seconds.label }}{% else %}seizure_duration_seconds{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_duration_seconds %}
+              {{ form.seizure_duration_seconds.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seizure_duration_minutes %}{{ form.seizure_duration_minutes.label }}{% else %}seizure_duration_minutes{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_duration_minutes %}
+              {{ form.seizure_duration_minutes.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seizure_freq_per_day %}{{ form.seizure_freq_per_day.label }}{% else %}seizure_freq_per_day{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_freq_per_day %}
+              {{ form.seizure_freq_per_day.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seizure_freq_per_week %}{{ form.seizure_freq_per_week.label }}{% else %}seizure_freq_per_week{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_freq_per_week %}
+              {{ form.seizure_freq_per_week.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seizure_freq_per_month %}{{ form.seizure_freq_per_month.label }}{% else %}seizure_freq_per_month{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_freq_per_month %}
+              {{ form.seizure_freq_per_month.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seizure_freq_per_year %}{{ form.seizure_freq_per_year.label }}{% else %}seizure_freq_per_year{% endif %}
+          </div>
+          <div>
+            {% if form.seizure_freq_per_year %}
+              {{ form.seizure_freq_per_year.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">四、神经系统检查</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.neuro_exam %}{{ form.neuro_exam.label }}{% else %}neuro_exam{% endif %}
+          </div>
+          <div>
+            {% if form.neuro_exam %}
+              {{ form.neuro_exam.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.neuro_exam_description %}{{ form.neuro_exam_description.label }}{% else %}neuro_exam_description{% endif %}
+          </div>
+          <div>
+            {% if form.neuro_exam_description %}
+              {{ form.neuro_exam_description.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">五、认知和精神量表</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.moca_score %}{{ form.moca_score.label }}{% else %}moca_score{% endif %}
+          </div>
+          <div>
+            {% if form.moca_score %}
+              {{ form.moca_score.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.hama_score %}{{ form.hama_score.label }}{% else %}hama_score{% endif %}
+          </div>
+          <div>
+            {% if form.hama_score %}
+              {{ form.hama_score.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.hamd_score %}{{ form.hamd_score.label }}{% else %}hamd_score{% endif %}
+          </div>
+          <div>
+            {% if form.hamd_score %}
+              {{ form.hamd_score.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.bai_score %}{{ form.bai_score.label }}{% else %}bai_score{% endif %}
+          </div>
+          <div>
+            {% if form.bai_score %}
+              {{ form.bai_score.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.bdi_score %}{{ form.bdi_score.label }}{% else %}bdi_score{% endif %}
+          </div>
+          <div>
+            {% if form.bdi_score %}
+              {{ form.bdi_score.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.epilepsy_scale_score %}{{ form.epilepsy_scale_score.label }}{% else %}epilepsy_scale_score{% endif %}
+          </div>
+          <div>
+            {% if form.epilepsy_scale_score %}
+              {{ form.epilepsy_scale_score.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">六、视频头皮 EEG 检查</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal %}{{ form.eeg_interictal.label }}{% else %}eeg_interictal{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal %}
+              {{ form.eeg_interictal.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_ictal %}{{ form.eeg_ictal.label }}{% else %}eeg_ictal{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_ictal %}
+              {{ form.eeg_ictal.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_clinical_correlation %}{{ form.eeg_clinical_correlation.label }}{% else %}eeg_clinical_correlation{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_clinical_correlation %}
+              {{ form.eeg_clinical_correlation.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">七、影像学检查</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.mri_brief %}{{ form.mri_brief.label }}{% else %}mri_brief{% endif %}
+          </div>
+          <div>
+            {% if form.mri_brief %}
+              {{ form.mri_brief.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.mri_link %}{{ form.mri_link.label }}{% else %}mri_link{% endif %}
+          </div>
+          <div>
+            {% if form.mri_link %}
+              {{ form.mri_link.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.pet_brief %}{{ form.pet_brief.label }}{% else %}pet_brief{% endif %}
+          </div>
+          <div>
+            {% if form.pet_brief %}
+              {{ form.pet_brief.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.pet_link %}{{ form.pet_link.label }}{% else %}pet_link{% endif %}
+          </div>
+          <div>
+            {% if form.pet_link %}
+              {{ form.pet_link.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">八、一期无创性评估结果</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.first_stage_lateralization %}{{ form.first_stage_lateralization.label }}{% else %}first_stage_lateralization{% endif %}
+          </div>
+          <div>
+            {% if form.first_stage_lateralization %}
+              {{ form.first_stage_lateralization.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.first_stage_region %}{{ form.first_stage_region.label }}{% else %}first_stage_region{% endif %}
+          </div>
+          <div>
+            {% if form.first_stage_region %}
+              {{ form.first_stage_region.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.first_stage_location %}{{ form.first_stage_location.label }}{% else %}first_stage_location{% endif %}
+          </div>
+          <div>
+            {% if form.first_stage_location %}
+              {{ form.first_stage_location.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">九、SEEG 发作间期及发作期放电</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_interictal_overall %}{{ form.seeg_interictal_overall.label }}{% else %}seeg_interictal_overall{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_interictal_overall %}
+              {{ form.seeg_interictal_overall.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_group1 %}{{ form.seeg_group1.label }}{% else %}seeg_group1{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_group1 %}
+              {{ form.seeg_group1.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_group2 %}{{ form.seeg_group2.label }}{% else %}seeg_group2{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_group2 %}
+              {{ form.seeg_group2.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_group3 %}{{ form.seeg_group3.label }}{% else %}seeg_group3{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_group3 %}
+              {{ form.seeg_group3.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal %}{{ form.seeg_ictal.label }}{% else %}seeg_ictal{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal %}
+              {{ form.seeg_ictal.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">十、二期有创性评估结果</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.second_stage_core_zone %}{{ form.second_stage_core_zone.label }}{% else %}second_stage_core_zone{% endif %}
+          </div>
+          <div>
+            {% if form.second_stage_core_zone %}
+              {{ form.second_stage_core_zone.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.second_stage_hypothesis_zone %}{{ form.second_stage_hypothesis_zone.label }}{% else %}second_stage_hypothesis_zone{% endif %}
+          </div>
+          <div>
+            {% if form.second_stage_hypothesis_zone %}
+              {{ form.second_stage_hypothesis_zone.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">十一、外科切除计划</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.resection_plan_convex %}{{ form.resection_plan_convex.label }}{% else %}resection_plan_convex{% endif %}
+          </div>
+          <div>
+            {% if form.resection_plan_convex %}
+              {{ form.resection_plan_convex.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.resection_plan_concave %}{{ form.resection_plan_concave.label }}{% else %}resection_plan_concave{% endif %}
+          </div>
+          <div>
+            {% if form.resection_plan_concave %}
+              {{ form.resection_plan_concave.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">十二、评估信息</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.evaluator %}{{ form.evaluator.label }}{% else %}evaluator{% endif %}
+          </div>
+          <div>
+            {% if form.evaluator %}
+              {{ form.evaluator.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.evaluation_date %}{{ form.evaluation_date.label }}{% else %}evaluation_date{% endif %}
+          </div>
+          <div>
+            {% if form.evaluation_date %}
+              {{ form.evaluation_date.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>

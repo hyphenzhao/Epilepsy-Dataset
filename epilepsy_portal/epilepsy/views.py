@@ -1,50 +1,50 @@
-import shutil
-import psutil
+# epilepsy/views.py
+
+import os
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model, logout
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseForbidden
-from django.views.generic import ListView, CreateView, UpdateView
+from django.http import JsonResponse, HttpResponseForbidden, FileResponse, Http404
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.urls import reverse_lazy
+from django.db.models import Q
 
 from .mixins import RoleRequiredMixin
-from .models import Patient, UserProfile, UserRole, PatientDataset
-from django.contrib.auth import get_user_model
-from django.urls import reverse_lazy
-from .forms import *
-from django.db.models import Q
-from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
-from django.contrib.auth import logout
+from .models import (
+    Patient, UserRole,
+    PatientDataset,
+    MRIFile, PETFile, EEGFile, SEEGFile,
+)
+from .forms import PatientForm, UserWithRoleForm
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+# 新增：导入 helper
+from .views_helper import (
+    build_dashboard_context,
+    require_admin,
+    handle_patient_file_uploads,
+    build_patient_file_path,
+    generate_patient_info_file,
+)
 
 User = get_user_model()
 
 
 @login_required
 def dashboard(request):
-    cpu = psutil.cpu_percent(interval=0.1)
-    mem = psutil.virtual_memory()
-    disk = shutil.disk_usage("/")
-
-    context = {
-        "cpu_percent": cpu,
-        "mem_percent": mem.percent,
-        "mem_used": mem.used,
-        "mem_total": mem.total,
-        "disk_percent": round(disk.used / disk.total * 100, 1),
-        "disk_used": disk.used,
-        "disk_total": disk.total,
-    }
+    """
+    仪表盘视图：只负责请求 + 渲染，业务逻辑放在 helper。
+    """
+    context = build_dashboard_context()
     return render(request, "epilepsy/dashboard.html", context)
 
 
 class PatientListView(RoleRequiredMixin, ListView):
+    # 原样保留
     model = Patient
     template_name = "epilepsy/patient_list.html"
     context_object_name = "patients"
-    paginate_by = 20  # 每页 20 条，可按需要调整
+    paginate_by = 20
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]
 
     def get_queryset(self):
@@ -71,16 +71,35 @@ class PatientCreateView(RoleRequiredMixin, CreateView):
     success_url = reverse_lazy("epilepsy:patient_list")
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF]
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # 使用 helper 处理上传
+        handle_patient_file_uploads(self.request, self.object)
+
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": True,
+                "patient_id": self.object.pk,
+            })
+        return response
+
+    def form_invalid(self, form):
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": False,
+                "errors": form.errors,
+            })
+        return super().form_invalid(form)
+
 
 class PatientUpdateView(RoleRequiredMixin, UpdateView):
     model = Patient
     form_class = PatientForm
-    template_name = "epilepsy/patient_form_partial.html"  # for slide-in panel
+    template_name = "epilepsy/patient_form_partial.html"
     success_url = reverse_lazy("epilepsy:patient_list")
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF]
 
     def get_template_names(self):
-        # If AJAX request (for slide-in), use partial template
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             return ["epilepsy/patient_form_partial.html"]
         return ["epilepsy/patient_form.html"]
@@ -98,11 +117,95 @@ def patient_delete(request, pk):
         return redirect("epilepsy:patient_list")
     return render(request, "epilepsy/patient_confirm_delete.html", {"patient": patient})
 
+
 class UserListView(RoleRequiredMixin, ListView):
     model = User
     template_name = "epilepsy/user_list.html"
     context_object_name = "users"
     allowed_roles = [UserRole.ADMIN]
+
+
+def user_create(request):
+    deny = require_admin(request)
+    if deny:
+        return deny
+
+    if request.method == "POST":
+        form = UserWithRoleForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "id": user.id})
+            return redirect("epilepsy:user_list")
+    else:
+        form = UserWithRoleForm()
+
+    template = (
+        "epilepsy/user_form_partial.html"
+        if request.headers.get("x-requested-with") == "XMLHttpRequest"
+        else "epilepsy/user_form.html"
+    )
+    return render(request, template, {"form": form})
+
+
+def user_edit(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+
+    user_obj = get_object_or_404(User, pk=pk)
+
+    if request.method == "POST":
+        form = UserWithRoleForm(request.POST, instance=user_obj)
+        if form.is_valid():
+            form.save()
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"success": True})
+            return redirect("epilepsy:user_list")
+    else:
+        form = UserWithRoleForm(instance=user_obj)
+
+    template = (
+        "epilepsy/user_form_partial.html"
+        if request.headers.get("x-requested-with") == "XMLHttpRequest"
+        else "epilepsy/user_form.html"
+    )
+    return render(request, template, {"form": form})
+
+
+def user_toggle_active(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+
+    user_obj = get_object_or_404(User, pk=pk)
+
+    if request.method != "POST":
+        return HttpResponseForbidden("只允许 POST 请求")
+
+    user_obj.is_active = not user_obj.is_active
+    user_obj.save()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "is_active": user_obj.is_active})
+
+    return redirect("epilepsy:user_list")
+
+
+def user_delete(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+
+    user_obj = get_object_or_404(User, pk=pk)
+
+    if request.method == "POST":
+        user_obj.delete()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": True})
+        return redirect("epilepsy:user_list")
+
+    return render(request, "epilepsy/user_confirm_delete.html", {"user_obj": user_obj})
 
 
 class PatientDatasetListView(RoleRequiredMixin, DetailView):
@@ -128,105 +231,130 @@ def patient_dataset_download(request, pk):
     ]:
         return HttpResponseForbidden("无权限下载")
 
-    # TODO: 在这里和 DGPF 集成
-    # - 可以根据 dataset.globus_endpoint_id / dataset.globus_path
-    #   构造一个链接跳转到 DGPF 的 transfer 页面
-    # - 或者调用你 portal 中封装好的 transfer 视图
-
     return render(
         request,
         "epilepsy/download_not_implemented.html",
         {"dataset": dataset},
-        status=501,  # 501 Not Implemented
+        status=501,
     )
+
+
+@login_required
+def patient_files_panel(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [
+        UserRole.ADMIN,
+        UserRole.STAFF,
+        UserRole.GUEST,
+    ]:
+        return HttpResponseForbidden("无权限查看")
+
+    context = {
+        "patient": patient,
+        "mri_files": patient.mri_files.all().order_by("-created_at"),
+        "pet_files": patient.pet_files.all().order_by("-created_at"),
+        "eeg_files": patient.eeg_files.all().order_by("-created_at"),
+        "seeg_files": patient.seeg_files.all().order_by("-created_at"),
+    }
+    return render(request, "epilepsy/patient_files_panel.html", context)
+
+
+@login_required
+def patient_file_download(request, file_type, file_id):
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [
+        UserRole.ADMIN,
+        UserRole.STAFF,
+        UserRole.GUEST,
+    ]:
+        return HttpResponseForbidden("无权限下载")
+
+    model_map = {
+        "mri": MRIFile,
+        "pet": PETFile,
+        "eeg": EEGFile,
+        "seeg": SEEGFile,
+    }
+    model_cls = model_map.get(file_type)
+    if model_cls is None:
+        raise Http404("未知文件类型")
+
+    file_obj, file_path = build_patient_file_path(model_cls, file_id)
+    if not os.path.exists(file_path):
+        raise Http404("文件不存在")
+
+    return FileResponse(
+        open(file_path, "rb"),
+        as_attachment=True,
+        filename=file_obj.file_name,
+    )
+
 
 def simple_logout(request):
     logout(request)
-    return redirect("login")  # "login" 是 accounts/login/ 的 url name
+    return redirect("login")
+
 
 def patient_edit(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
 
     if request.method == "POST":
-        form = PatientForm(request.POST, instance=patient)
+        form = PatientForm(request.POST, request.FILES, instance=patient)
         if form.is_valid():
-            form.save()
-            # AJAX 保存成功返回 JSON
+            patient = form.save()
+            handle_patient_file_uploads(request, patient)
+
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JsonResponse({"success": True})
-            # 非 AJAX 情况下，正常重定向回列表
             return redirect("epilepsy:patient_list")
     else:
         form = PatientForm(instance=patient)
 
-    # AJAX 请求：仅返回 partial（不包 base 模板）
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return render(request, "epilepsy/patient_form_partial.html", {
-            "form": form,
-        })
+        return render(request, "epilepsy/patient_form_partial.html", {"form": form})
 
-    # 直接访问 /patients/<id>/edit/ 的 fallback，全页编辑也能用
     return render(request, "epilepsy/patient_edit.html", {
         "form": form,
         "patient": patient,
     })
 
-# def patient_detail(request, pk):
-#     patient = get_object_or_404(Patient, pk=pk)
-
-#     # 抽屉里用 AJAX 获取部分 HTML
-#     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-#         return render(request, "epilepsy/patient_detail_partial.html", {
-#             "patient": patient,
-#         })
-
-#     # 可选：直接访问详情页时用完整页面
-#     return render(request, "epilepsy/patient_detail.html", {
-#         "patient": patient,
-#     })
 
 def patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
-
-    # 用和编辑时同一个 PatientForm，保证字段一致
     form = PatientForm(instance=patient)
+    context = {"patient": patient, "form": form}
 
-    fields = []
-    for bound_field in form:   # 依次遍历表单字段
-        if bound_field.is_hidden:
-            continue
-
-        field = bound_field.field
-        raw_val = bound_field.value()
-        display_val = raw_val
-
-        # 处理 choices 字段，显示中文而不是内部代码
-        if getattr(field, "choices", None):
-            choices_dict = dict(field.choices)
-            if isinstance(raw_val, (list, tuple)):
-                labels = [choices_dict.get(v, v) for v in raw_val]
-                display_val = ", ".join(str(x) for x in labels if x not in [None, ""])
-            else:
-                display_val = choices_dict.get(raw_val, raw_val)
-
-        # 简单格式化：None -> 空字符串
-        if display_val is None:
-            display_val = ""
-
-        fields.append({
-            "name": bound_field.name,
-            "label": bound_field.label,
-            "value": display_val,
-        })
-
-    context = {
-        "patient": patient,
-        "fields": fields,
-    }
-
-    # 抽屉里用的：AJAX 请求只要这一块 HTML
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "epilepsy/patient_detail_partial.html", context)
 
-    # 直接访问完整详情页（可选）
     return render(request, "epilepsy/patient_detail.html", context)
+
+
+@login_required
+def patient_export(request, pk, fmt):
+    """
+    导出单个患者信息，view 只做权限 + 响应，
+    实际文件生成在 helper 中完成。
+    """
+    patient = get_object_or_404(Patient, pk=pk)
+
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [
+        UserRole.ADMIN,
+        UserRole.STAFF,
+        UserRole.GUEST,
+    ]:
+        return HttpResponseForbidden("无权限导出")
+
+    try:
+        final_path, download_filename, _ = generate_patient_info_file(patient, fmt)
+    except ValueError:
+        raise Http404("未知导出格式")
+
+    return FileResponse(
+        open(final_path, "rb"),
+        as_attachment=True,
+        filename=download_filename,
+    )

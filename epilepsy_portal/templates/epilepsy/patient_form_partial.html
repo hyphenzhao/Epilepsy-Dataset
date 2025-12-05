@@ -1,4 +1,4 @@
-<form method="post">
+<form method="post" enctype="multipart/form-data">
   {% csrf_token %}
   {{ form.non_field_errors }}
 
@@ -379,11 +379,72 @@
             {{ form.eeg_clinical_correlation }}
             {{ form.eeg_clinical_correlation.errors }}
           </div>
+          <div class="mb-3">
+            {{ form.eeg_file_link.label_tag }}
+            {{ form.eeg_file_link }}
+            {{ form.eeg_file_link.errors }}
+          </div>
+
+          {# ========= EEG 文件列表区域 ========= #}
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">EEG 文件列表</h6>
+            <button type="button"
+                    class="btn btn-sm btn-outline-success js-add-file-btn"
+                    data-input-selector="#id_eeg_files">
+              添加文件
+            </button>
+          </div>
+
+          <input type="file" id="id_eeg_files" name="eeg_files" multiple style="display:none;">
+          <input type="hidden" id="id_delete_eeg_file_ids" name="delete_eeg_file_ids" value="">
+
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>文件名</th>
+                  <th>上传状态</th>
+                  <th>SHA256 校验码</th>
+                  <th>管理</th>
+                </tr>
+              </thead>
+              <tbody data-file-type="eeg">
+                {% with form.instance as p %}
+                  {% if p.pk and p.eeg_files.all %}
+                    {% for f in p.eeg_files.all %}
+                      <tr data-file-id="{{ f.id }}">
+                        <td>{{ f.file_name }}</td>
+                        <td>已上传</td>
+                        <td><code>{{ f.sha256_code }}</code></td>
+                        <td>
+                          <a href="{% url 'epilepsy:patient_file_download' 'eeg' f.id %}"
+                             class="btn btn-sm btn-outline-primary">
+                            下载
+                          </a>
+                          <button type="button"
+                                  class="btn btn-sm btn-outline-danger js-row-remove">
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr class="js-empty-row">
+                      <td colspan="4" class="text-muted">暂无文件</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
+              </tbody>
+            </table>
+          </div>
+          {# ========= /EEG 文件列表区域 ========= #}
         </div>
       </div>
     </div>
 
-    <!-- 七、影像学检查 -->
+
+     <!-- 七、影像学检查 -->
     <div class="card mb-3">
       <div class="card-header" id="headingImaging">
         <h5 class="mb-0">
@@ -409,10 +470,64 @@
             {% if form.instance.pk and form.instance.mri_link %}
               <a href="{{ form.instance.mri_link }}" target="_blank"
                  class="btn btn-sm btn-outline-primary mt-2">
-                下载 MRI 图像
+                下载 MRI 图像（外部链接）
               </a>
             {% endif %}
           </div>
+
+          {# ========= MRI 文件列表 ========= #}
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">MRI 文件列表</h6>
+            <button type="button"
+                    class="btn btn-sm btn-outline-success js-add-file-btn"
+                    data-input-selector="#id_mri_files">
+              添加文件
+            </button>
+          </div>
+
+          <input type="file" id="id_mri_files" name="mri_files" multiple style="display:none;">
+          <input type="hidden" id="id_delete_mri_file_ids" name="delete_mri_file_ids" value="">
+
+          <div class="table-responsive mb-3">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>文件名</th>
+                  <th>上传状态</th>
+                  <th>SHA256 校验码</th>
+                  <th>管理</th>
+                </tr>
+              </thead>
+              <tbody data-file-type="mri">
+                {% with form.instance as p %}
+                  {% if p.pk and p.mri_files.all %}
+                    {% for f in p.mri_files.all %}
+                      <tr data-file-id="{{ f.id }}">
+                        <td>{{ f.file_name }}</td>
+                        <td>已上传</td>
+                        <td><code>{{ f.sha256_code }}</code></td>
+                        <td>
+                          <a href="{% url 'epilepsy:patient_file_download' 'mri' f.id %}"
+                             class="btn btn-sm btn-outline-primary">
+                            下载
+                          </a>
+                          <button type="button"
+                                  class="btn btn-sm btn-outline-danger js-row-remove">
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr class="js-empty-row">
+                      <td colspan="4" class="text-muted">暂无文件</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
+              </tbody>
+            </table>
+          </div>
+          {# ========= /MRI 文件列表 ========= #}
 
           <div class="mb-3">
             {{ form.pet_brief.label_tag }}
@@ -426,13 +541,68 @@
             {% if form.instance.pk and form.instance.pet_link %}
               <a href="{{ form.instance.pet_link }}" target="_blank"
                  class="btn btn-sm btn-outline-primary mt-2">
-                下载 PET 图像
+                下载 PET 图像（外部链接）
               </a>
             {% endif %}
           </div>
+
+          {# ========= PET 文件列表 ========= #}
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">PET 文件列表</h6>
+            <button type="button"
+                    class="btn btn-sm btn-outline-success js-add-file-btn"
+                    data-input-selector="#id_pet_files">
+              添加文件
+            </button>
+          </div>
+
+          <input type="file" id="id_pet_files" name="pet_files" multiple style="display:none;">
+          <input type="hidden" id="id_delete_pet_file_ids" name="delete_pet_file_ids" value="">
+
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>文件名</th>
+                  <th>上传状态</th>
+                  <th>SHA256 校验码</th>
+                  <th>管理</th>
+                </tr>
+              </thead>
+              <tbody data-file-type="pet">
+                {% with form.instance as p %}
+                  {% if p.pk and p.pet_files.all %}
+                    {% for f in p.pet_files.all %}
+                      <tr data-file-id="{{ f.id }}">
+                        <td>{{ f.file_name }}</td>
+                        <td>已上传</td>
+                        <td><code>{{ f.sha256_code }}</code></td>
+                        <td>
+                          <a href="{% url 'epilepsy:patient_file_download' 'pet' f.id %}"
+                             class="btn btn-sm btn-outline-primary">
+                            下载
+                          </a>
+                          <button type="button"
+                                  class="btn btn-sm btn-outline-danger js-row-remove">
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr class="js-empty-row">
+                      <td colspan="4" class="text-muted">暂无文件</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
+              </tbody>
+            </table>
+          </div>
+          {# ========= /PET 文件列表 ========= #}
         </div>
       </div>
     </div>
+
 
     <!-- 八、一期无创性评估结果 -->
     <div class="card mb-3">
@@ -512,9 +682,71 @@
             {{ form.seeg_ictal }}
             {{ form.seeg_ictal.errors }}
           </div>
+          
+          <div class="mb-3">
+            {{ form.seeg_file_link.label_tag }}
+            {{ form.seeg_file_link }}
+            {{ form.seeg_file_link.errors }}
+          </div>
+
+          {# ========= SEEG 文件列表 ========= #}
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">SEEG 文件列表</h6>
+            <button type="button"
+                    class="btn btn-sm btn-outline-success js-add-file-btn"
+                    data-input-selector="#id_seeg_files">
+              添加文件
+            </button>
+          </div>
+
+          <input type="file" id="id_seeg_files" name="seeg_files" multiple style="display:none;">
+          <input type="hidden" id="id_delete_seeg_file_ids" name="delete_seeg_file_ids" value="">
+
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>文件名</th>
+                  <th>上传状态</th>
+                  <th>SHA256 校验码</th>
+                  <th>管理</th>
+                </tr>
+              </thead>
+              <tbody data-file-type="seeg">
+                {% with form.instance as p %}
+                  {% if p.pk and p.seeg_files.all %}
+                    {% for f in p.seeg_files.all %}
+                      <tr data-file-id="{{ f.id }}">
+                        <td>{{ f.file_name }}</td>
+                        <td>已上传</td>
+                        <td><code>{{ f.sha256_code }}</code></td>
+                        <td>
+                          <a href="{% url 'epilepsy:patient_file_download' 'seeg' f.id %}"
+                             class="btn btn-sm btn-outline-primary">
+                            下载
+                          </a>
+                          <button type="button"
+                                  class="btn btn-sm btn-outline-danger js-row-remove">
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr class="js-empty-row">
+                      <td colspan="4" class="text-muted">暂无文件</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
+              </tbody>
+            </table>
+          </div>
+          {# ========= /SEEG 文件列表 ========= #}
         </div>
       </div>
     </div>
+
 
     <!-- 十、二期有创性评估结果 -->
     <div class="card mb-3">
@@ -606,6 +838,32 @@
 
   <button type="submit" class="btn btn-primary w-100 mt-3">保存</button>
 </form>
+
+{# 上传进度弹窗，阻塞页面操作 #}
+<div class="modal fade" id="uploadProgressModal" tabindex="-1" role="dialog"
+     aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0">正在上传文件...</h6>
+      </div>
+      <div class="modal-body">
+        <div class="progress">
+          <div id="uploadProgressBar"
+               class="progress-bar"
+               role="progressbar"
+               style="width: 0%;">
+            0%
+          </div>
+        </div>
+        <small class="text-muted d-block mt-2">
+          如果存在待上传文件，本窗口会一直打开直到上传完成。
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 
@@ -614,3 +872,156 @@
 
 <!-- Bootstrap JS -->
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+(function() {
+  var form = document.querySelector("#patientAccordion");
+  if (!form) return;
+  form = form.closest("form");
+  if (!form) return;
+
+  //========= 工具函数 =========//
+  function hasFilesToUpload() {
+    var names = ["mri_files", "pet_files", "eeg_files", "seeg_files"];
+    for (var i = 0; i < names.length; i++) {
+      var input = form.querySelector('input[name="' + names[i] + '"]');
+      if (input && input.files && input.files.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  //========= “添加文件” 按钮：触发隐藏的 <input type="file"> =========//
+  form.querySelectorAll(".js-add-file-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var sel = btn.getAttribute("data-input-selector");
+      var input = form.querySelector(sel);
+      if (input) {
+        input.click();
+      }
+    });
+  });
+
+  //========= 文件 input 变更时，在表格中增加“待上传”行 =========//
+  function bindFileInput(fieldType) {
+    var inputName = fieldType + "_files";
+    var input = form.querySelector('input[name="' + inputName + '"]');
+    var tbody = form.querySelector('tbody[data-file-type="' + fieldType + '"]');
+    if (!input || !tbody) return;
+
+    input.addEventListener("change", function() {
+      var files = Array.from(input.files || []);
+      if (!files.length) return;
+
+      var emptyRow = tbody.querySelector(".js-empty-row");
+      if (emptyRow) {
+        emptyRow.parentNode.removeChild(emptyRow);
+      }
+
+      files.forEach(function(f) {
+        var tr = document.createElement("tr");
+        tr.setAttribute("data-new-file", "1");
+        tr.innerHTML =
+          "<td>" + f.name + "</td>" +
+          "<td>待上传</td>" +
+          "<td>—</td>" +
+          '<td><button type="button" class="btn btn-sm btn-outline-danger js-row-remove">删除</button></td>';
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  ["mri", "pet", "eeg", "seeg"].forEach(bindFileInput);
+
+  //========= 点击“删除”按钮：对已有文件记录，记入隐藏字段；对新文件直接移除行 =========//
+  form.addEventListener("click", function(evt) {
+    var target = evt.target;
+    if (!target.classList.contains("js-row-remove")) return;
+
+    var tr = target.closest("tr");
+    if (!tr) return;
+
+    var fileId = tr.getAttribute("data-file-id");
+    var tbody = tr.closest("tbody");
+    var type = tbody ? tbody.getAttribute("data-file-type") : null;
+
+    // 已存在的文件（数据库中已有），记录到 delete_xxx_file_ids
+    if (fileId && type) {
+      var hiddenName = "delete_" + type + "_file_ids";
+      var hidden = form.querySelector('input[name="' + hiddenName + '"]');
+      if (hidden) {
+        var current = hidden.value ? hidden.value.split(",") : [];
+        if (current.indexOf(fileId) === -1) {
+          current.push(fileId);
+        }
+        hidden.value = current.join(",");
+      }
+    }
+
+    // 从表格中移除行
+    tr.parentNode.removeChild(tr);
+  });
+
+  //========= 表单提交：统一走 XHR；如有文件则弹出进度条窗口 =========//
+  form.addEventListener("submit", function(evt) {
+    evt.preventDefault();
+
+    var hasFiles = hasFilesToUpload();
+    var modalEl = document.getElementById("uploadProgressModal");
+    var progressBar = document.getElementById("uploadProgressBar");
+
+    // 有待上传文件 -> 弹出阻塞窗口
+    if (hasFiles && modalEl && typeof $ !== "undefined" && $.fn.modal) {
+      $(modalEl).modal("show");
+      if (progressBar) {
+        progressBar.style.width = "0%";
+        progressBar.textContent = "0%";
+      }
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open(form.method || "POST", form.action);
+    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+    xhr.upload.addEventListener("progress", function(e) {
+      if (!hasFiles || !e.lengthComputable || !progressBar) return;
+      var percent = Math.round((e.loaded / e.total) * 100);
+      progressBar.style.width = percent + "%";
+      progressBar.textContent = percent + "%";
+    });
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+
+      if (hasFiles && modalEl && typeof $ !== "undefined" && $.fn.modal) {
+        $(modalEl).modal("hide");
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        var data = {};
+        try {
+          data = JSON.parse(xhr.responseText || "{}");
+        } catch (e) {}
+
+        if (data.success) {
+          // 如果外层页面定义了关闭抽屉的回调，就调用；否则直接刷新
+          if (window.onPatientFormSaved) {
+            window.onPatientFormSaved();
+          } else {
+            window.location.reload();
+          }
+        } else {
+          alert("保存失败，请检查表单错误。");
+        }
+      } else {
+        alert("上传失败，HTTP 状态码: " + xhr.status);
+      }
+    };
+
+    var formData = new FormData(form);
+    xhr.send(formData);
+  });
+})();
+</script>
+

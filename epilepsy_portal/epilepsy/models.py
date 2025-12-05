@@ -1,13 +1,12 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
+import os
 
 class UserRole(models.TextChoices):
     ADMIN = "ADMIN", _("管理员")
     STAFF = "STAFF", _("工作人员")
     GUEST = "GUEST", _("访客")
-
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
@@ -186,6 +185,12 @@ class Patient(models.Model):
     eeg_clinical_correlation = models.TextField(
         "EEG 同步发作临床症状", blank=True
     )
+    # EEG 文件链接（可选）
+    eeg_file_link = models.URLField(
+        "EEG 原始数据下载链接",
+        max_length=500,
+        blank=True
+    )
 
     # 【影像学检查结果】
     mri_brief = models.TextField("MRI 简要描述", blank=True)
@@ -216,7 +221,12 @@ class Patient(models.Model):
     seeg_group2 = models.TextField("SEEG 发作间期 Group 2", blank=True)
     seeg_group3 = models.TextField("SEEG 发作间期 Group 3", blank=True)
     seeg_ictal = models.TextField("SEEG 发作期放电", blank=True)
-
+    # SEEG 文件链接（可选）
+    seeg_file_link = models.URLField(
+        "SEEG 原始数据下载链接",
+        max_length=500,
+        blank=True
+    )
     # 【二期有创性评估结果】
     second_stage_core_zone = models.TextField(
         "二期有创评估核心区域", blank=True
@@ -290,3 +300,137 @@ class PatientDataset(models.Model):
 
     def __str__(self):
         return f"{self.patient.name} - {self.name}"
+
+class BasePatientFile(models.Model):
+    """
+    患者相关文件的抽象基类：
+    - parent_path: 存储在服务器/存储系统中的父路径
+    - file_name: 原始文件名（带扩展名）
+    - hash_code: 自定义哈希（例如 MD5 或你自己的规则）
+    - sha256_code: 文件内容的 SHA256 校验码
+    - save_name: 实际保存的文件名 = hash_code + 原文件扩展名
+    """
+    parent_path = models.CharField("父路径", max_length=1024, blank=True)
+    file_name = models.CharField("原始文件名", max_length=255)
+    hash_code = models.CharField("哈希码", max_length=64)
+    sha256_code = models.CharField("SHA256 校验码", max_length=64)
+    save_name = models.CharField("保存文件名", max_length=300, editable=False)
+    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+
+    class Meta:
+        abstract = True  # 不单独建表，只做基类
+
+    def save(self, *args, **kwargs):
+        # 自动根据 file_name 的扩展名生成 save_name = hash_code + ext
+        if self.file_name and self.hash_code:
+            _, ext = os.path.splitext(self.file_name)
+            ext = ext.lower()
+            self.save_name = f"{self.hash_code}{ext}"
+        super().save(*args, **kwargs)
+
+class MRIFile(BasePatientFile):
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="mri_files",
+        verbose_name="患者"
+    )
+
+    class Meta:
+        verbose_name = "MRI 文件"
+        verbose_name_plural = "MRI 文件"
+
+    def __str__(self):
+        return f"MRI: {self.patient.name} - {self.file_name}"
+
+
+class PETFile(BasePatientFile):
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="pet_files",
+        verbose_name="患者"
+    )
+
+    class Meta:
+        verbose_name = "PET 文件"
+        verbose_name_plural = "PET 文件"
+
+    def __str__(self):
+        return f"PET: {self.patient.name} - {self.file_name}"
+
+
+class EEGFile(BasePatientFile):
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="eeg_files",
+        verbose_name="患者"
+    )
+
+    class Meta:
+        verbose_name = "EEG 文件"
+        verbose_name_plural = "EEG 文件"
+
+    def __str__(self):
+        return f"EEG: {self.patient.name} - {self.file_name}"
+
+
+class SEEGFile(BasePatientFile):
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="seeg_files",
+        verbose_name="患者"
+    )
+
+    class Meta:
+        verbose_name = "SEEG 文件"
+        verbose_name_plural = "SEEG 文件"
+
+    def __str__(self):
+        return f"SEEG: {self.patient.name} - {self.file_name}"
+
+class PatientInfoFile(BasePatientFile):
+    """
+    患者信息导出文件：
+    - file_name：显示名，如 “张三_123456”
+    - save_name：hashcode + .csv/.docx/.pdf
+    - format：导出格式
+    """
+    class Format(models.TextChoices):
+        CSV = "CSV", "CSV"
+        WORD = "WORD", "Word"
+        PDF = "PDF", "PDF"
+
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="info_files",
+        verbose_name="患者",
+    )
+    format = models.CharField(
+        "导出格式",
+        max_length=10,
+        choices=Format.choices,
+    )
+
+    class Meta:
+        verbose_name = "患者信息导出文件"
+        verbose_name_plural = "患者信息导出文件"
+
+    def __str__(self):
+        return f"患者信息导出: {self.patient.name} - {self.file_name} ({self.format})"
+
+    def save(self, *args, **kwargs):
+        # 根据 format 决定扩展名，强制 save_name = hash_code + ext
+        ext_map = {
+            self.Format.CSV: ".csv",
+            self.Format.WORD: ".docx",
+            self.Format.PDF: ".pdf",
+        }
+        if self.hash_code:
+            ext = ext_map.get(self.format, "")
+            self.save_name = f"{self.hash_code}{ext}"
+        # 跳过 BasePatientFile.save 的扩展名逻辑，直接走 Model.save
+        super(BasePatientFile, self).save(*args, **kwargs)

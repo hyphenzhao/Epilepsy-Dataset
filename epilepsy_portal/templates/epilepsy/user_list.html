@@ -2,7 +2,14 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h3 class="mb-3">管理设置 - 用户管理</h3>
+
+  <!-- 标题 + 右上角新建按钮 -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">管理设置 - 用户管理</h3>
+    <button class="btn btn-success" type="button" onclick="openCreateUserPanel()">
+      + 新建用户
+    </button>
+  </div>
 
   <table class="table table-striped align-middle">
     <thead>
@@ -11,6 +18,7 @@
         <th>邮箱</th>
         <th>角色</th>
         <th>状态</th>
+        <th>操作</th>
       </tr>
     </thead>
     <tbody>
@@ -20,13 +28,227 @@
         <td>{{ u.email }}</td>
         <td>{{ u.profile.get_role_display }}</td>
         <td>{{ u.is_active|yesno:"启用,禁用" }}</td>
+        <td>
+          <!-- 启用 / 停用 -->
+          <form method="post"
+                action="{% url 'epilepsy:user_toggle_active' u.id %}"
+                style="display:inline;">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-sm btn-outline-secondary">
+              {% if u.is_active %}停用{% else %}启用{% endif %}
+            </button>
+          </form>
+
+          <!-- 修改：抽屉 -->
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  onclick="openEditUserPanel({{ u.id }})">
+            修改
+          </button>
+
+          <!-- 删除 -->
+          <form method="post"
+                action="{% url 'epilepsy:user_delete' u.id %}"
+                style="display:inline;"
+                onsubmit="return confirm('确认删除用户 {{ u.username }} ？');">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-sm btn-outline-danger">
+              删除
+            </button>
+          </form>
+        </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="4" class="text-center text-muted">暂无用户</td>
+        <td colspan="5" class="text-center text-muted">暂无用户</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+<!-- ===== 右侧抽屉 & 遮罩，参考 patient_list.html ===== -->
+
+<style>
+  #editUserBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, .5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease;
+    z-index: 1040;
+  }
+  #editUserBackdrop.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #editUserDrawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 50%;
+    max-width: 700px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,.3);
+    transform: translateX(100%);
+    transition: transform .3s ease;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+  }
+  #editUserDrawer.show {
+    transform: translateX(0);
+  }
+
+  #editUserDrawer .drawer-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+  #editUserDrawer .drawer-body {
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+  }
+</style>
+
+<div id="editUserBackdrop"></div>
+
+<div id="editUserDrawer">
+  <div class="drawer-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0" id="editUserDrawerTitle">新建用户</h5>
+    <button type="button" class="close" aria-label="关闭" onclick="closeUserPanel()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="drawer-body" id="editUserBody">
+    <div class="text-center text-muted">加载中...</div>
+  </div>
+</div>
+
+<script>
+  const userCreateUrl = "{% url 'epilepsy:user_create' %}";
+
+  function showUserDrawer() {
+    const drawer = document.getElementById('editUserDrawer');
+    const backdrop = document.getElementById('editUserBackdrop');
+    drawer.classList.add('show');
+    backdrop.classList.add('show');
+  }
+
+  function closeUserPanel() {
+    const drawer = document.getElementById('editUserDrawer');
+    const backdrop = document.getElementById('editUserBackdrop');
+    drawer.classList.remove('show');
+    backdrop.classList.remove('show');
+  }
+
+  document.getElementById('editUserBackdrop')
+          .addEventListener('click', closeUserPanel);
+
+  function openCreateUserPanel() {
+    const body = document.getElementById('editUserBody');
+    const titleEl = document.getElementById('editUserDrawerTitle');
+
+    titleEl.textContent = '新建用户';
+    showUserDrawer();
+
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    const url = userCreateUrl;
+
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;
+        attachUserFormHandler(url);
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
+  }
+
+  function openEditUserPanel(userId) {
+    const body = document.getElementById('editUserBody');
+    const titleEl = document.getElementById('editUserDrawerTitle');
+
+    titleEl.textContent = '修改用户';
+    showUserDrawer();
+
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    const url = `/epilepsy/users/${userId}/edit/`;
+
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;
+        attachUserFormHandler(url);
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
+  }
+
+  function attachUserFormHandler(url) {
+    const body = document.getElementById('editUserBody');
+    const form = body.querySelector('form');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
+      const csrfToken = csrfInput ? csrfInput.value : '';
+
+      fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfToken
+        }
+      })
+        .then(response => {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.indexOf('application/json') !== -1) {
+            return response.json();
+          }
+          return response.text();
+        })
+        .then(data => {
+          if (typeof data === 'object' && data.success) {
+            window.alert('保存成功');
+            closeUserPanel();
+            // 这里刷新列表，避免手动更新状态
+            window.location.reload();
+          } else if (typeof data === 'string') {
+            // 表单校验失败，重新渲染 partial
+            body.innerHTML = data;
+            attachUserFormHandler(url);
+          } else {
+            window.alert('保存失败：服务器返回了未知响应。');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          window.alert('保存失败：网络或服务器错误，请稍后再试。');
+        });
+    }, { once: true });
+  }
+</script>
+
 {% endblock %}

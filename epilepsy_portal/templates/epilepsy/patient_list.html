@@ -69,9 +69,16 @@
       {% endif %}
     </td>
     <td>
-      {% if p.datasets.all %}
+      {# 如果有任意 MRI / PET / EEG / SEEG 文件，则显示“下载管理”按钮 #}
+      {% if p.mri_files.exists or p.pet_files.exists or p.eeg_files.exists or p.seeg_files.exists %}
+        <button class="btn btn-sm btn-outline-success"
+                onclick="event.stopPropagation(); openDownloadPanel({{ p.id }});">
+          下载管理
+        </button>
+      {% elif p.datasets.all %}
+        {# 否则如果还有旧的数据集接口，保留原来的“下载数据”入口 #}
         <a href="{% url 'epilepsy:patient_datasets' p.id %}"
-           class="btn btn-sm btn-outline-success"
+           class="btn btn-sm btn-outline-secondary"
            onclick="event.stopPropagation();">
           下载数据
         </a>
@@ -79,6 +86,7 @@
         <span class="text-muted">暂无数据</span>
       {% endif %}
     </td>
+
   </tr>
   {% empty %}
   <tr>
@@ -233,7 +241,118 @@
   document.getElementById('editPatientBackdrop')
           .addEventListener('click', closeEditPanel);
 
-  // 点击「修改」按钮 -> 可编辑表单（沿用 patient_form_partial.html）
+  // ================== 只读详情（不改） ==================
+  function openViewPanel(patientId) {
+    const body = document.getElementById('editPatientBody');
+    const titleEl = document.getElementById('editPatientDrawerTitle');
+
+    titleEl.textContent = '患者详情';
+    showDrawer();
+
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    const url = `/epilepsy/patients/${patientId}/detail/`;
+
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;   // 只读模板
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
+  }
+
+  // ================== 初始化“添加文件 / 删除”UI ==================
+  function initLargeFileUploadUI(form) {
+    if (!form) return;
+
+    // 检查当前 form 中是否有待上传文件
+    form._hasFilesToUpload = function() {
+      var names = ['mri_files', 'pet_files', 'eeg_files', 'seeg_files'];
+      for (var i = 0; i < names.length; i++) {
+        var input = form.querySelector('input[name="' + names[i] + '"]');
+        if (input && input.files && input.files.length > 0) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // “添加文件”按钮 -> 触发隐藏的 <input type="file">
+    form.querySelectorAll('.js-add-file-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var sel = btn.getAttribute('data-input-selector');
+        var input = form.querySelector(sel);
+        if (input) {
+          input.click();
+        }
+      });
+    });
+
+    // 某一类文件 input 变更时，在对应表格添加“待上传”行
+    function bindFileInput(fieldType) {
+      var inputName = fieldType + '_files';
+      var input = form.querySelector('input[name="' + inputName + '"]');
+      var tbody = form.querySelector('tbody[data-file-type="' + fieldType + '"]');
+      if (!input || !tbody) return;
+
+      input.addEventListener('change', function() {
+        var files = Array.from(input.files || []);
+        if (!files.length) return;
+
+        var emptyRow = tbody.querySelector('.js-empty-row');
+        if (emptyRow) {
+          emptyRow.parentNode.removeChild(emptyRow);
+        }
+
+        files.forEach(function(f) {
+          var tr = document.createElement('tr');
+          tr.setAttribute('data-new-file', '1');
+          tr.innerHTML =
+            '<td>' + f.name + '</td>' +
+            '<td>待上传</td>' +
+            '<td>—</td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger js-row-remove">删除</button></td>';
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    ['mri', 'pet', 'eeg', 'seeg'].forEach(bindFileInput);
+
+    // 删除按钮：已有记录 -> 记录到 delete_xxx_file_ids；新添加的 -> 直接从表格删
+    form.addEventListener('click', function(evt) {
+      var target = evt.target;
+      if (!target.classList.contains('js-row-remove')) return;
+
+      var tr = target.closest('tr');
+      if (!tr) return;
+
+      var fileId = tr.getAttribute('data-file-id');
+      var tbody = tr.closest('tbody');
+      var type = tbody ? tbody.getAttribute('data-file-type') : null;
+
+      if (fileId && type) {
+        var hiddenName = 'delete_' + type + '_file_ids';
+        var hidden = form.querySelector('input[name="' + hiddenName + '"]');
+        if (hidden) {
+          var current = hidden.value ? hidden.value.split(',') : [];
+          if (current.indexOf(fileId) === -1) {
+            current.push(fileId);
+          }
+          hidden.value = current.join(',');
+        }
+      }
+
+      tr.parentNode.removeChild(tr);
+    });
+  }
+
+  // ================== 编辑抽屉：载入可编辑表单 ==================
   function openEditPanel(patientId) {
     const body = document.getElementById('editPatientBody');
     const titleEl = document.getElementById('editPatientDrawerTitle');
@@ -251,32 +370,32 @@
       .then(resp => resp.text())
       .then(html => {
         body.innerHTML = html;       // 载入 patient_form_partial.html
-        attachEditFormHandler(url);  // 绑定保存
+        attachEditFormHandler(url);  // 绑定保存 + 大文件上传
       })
       .catch(err => {
         console.error(err);
         body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
       });
   }
-
-  // 点击整行 -> 只读详情
-  function openViewPanel(patientId) {
+  
+  // ================== 下载管理抽屉：显示各类大文件列表 ==================
+  function openDownloadPanel(patientId) {
     const body = document.getElementById('editPatientBody');
     const titleEl = document.getElementById('editPatientDrawerTitle');
 
-    titleEl.textContent = '患者详情';
+    titleEl.textContent = '下载管理';
     showDrawer();
 
     body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
 
-    const url = `/epilepsy/patients/${patientId}/detail/`;
+    const url = `/epilepsy/patients/${patientId}/files/`;
 
     fetch(url, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
       .then(resp => resp.text())
       .then(html => {
-        body.innerHTML = html;   // 这里是只读模板，不需要绑定表单
+        body.innerHTML = html;   // 只读文件列表
       })
       .catch(err => {
         console.error(err);
@@ -284,50 +403,95 @@
       });
   }
 
-  // 编辑表单的 AJAX 提交（沿用你同事的 patient_form_partial.html）
+  // ================== 编辑表单的 AJAX + 上传进度条 ==================
+
+  // ================== 编辑表单的 AJAX + 上传进度条 ==================
   function attachEditFormHandler(url) {
     const body = document.getElementById('editPatientBody');
     const form = body.querySelector('form');
     if (!form) return;
 
+    // 初始化 “添加文件/删除” 相关 UI
+    initLargeFileUploadUI(form);
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
 
-      const formData = new FormData(form);
-      const csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
-      const csrfToken = csrfInput ? csrfInput.value : '';
+      var hasFiles = form._hasFilesToUpload ? form._hasFilesToUpload() : false;
+      var modalEl = document.getElementById('uploadProgressModal');
+      var progressBar = document.getElementById('uploadProgressBar');
 
-      fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': csrfToken
+      // 有待上传文件 -> 弹出阻塞窗口（依赖 Bootstrap + jQuery）
+      if (hasFiles && modalEl && typeof $ !== 'undefined' && $.fn.modal) {
+        $(modalEl).modal('show');
+        if (progressBar) {
+          progressBar.style.width = '0%';
+          progressBar.textContent = '0%';
         }
-      })
-        .then(response => {
-          const contentType = response.headers.get('content-type') || '';
+      }
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+      // CSRF
+      var csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
+      var csrfToken = csrfInput ? csrfInput.value : '';
+      if (csrfToken) {
+        xhr.setRequestHeader('X-CSRFToken', csrfToken);
+      }
+
+      // 上传进度
+      xhr.upload.addEventListener('progress', function (ev) {
+        if (!hasFiles || !ev.lengthComputable || !progressBar) return;
+        var percent = Math.round((ev.loaded / ev.total) * 100);
+        progressBar.style.width = percent + '%';
+        progressBar.textContent = percent + '%';
+      });
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+
+        if (hasFiles && modalEl && typeof $ !== 'undefined' && $.fn.modal) {
+          $(modalEl).modal('hide');
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          var contentType = xhr.getResponseHeader('content-type') || '';
+          // ✅ 成功：后端返回 JSON {"success": true}
           if (contentType.indexOf('application/json') !== -1) {
-            return response.json();
+            var data = {};
+            try {
+              data = JSON.parse(xhr.responseText || '{}');
+            } catch (e) {
+              data = {};
+            }
+            if (data.success) {
+              window.alert('保存成功');
+              // 这里可以根据需要选择是否刷新列表页面
+              // window.location.reload();
+              closeEditPanel();
+            } else {
+              window.alert('保存失败，请检查表单。');
+            }
           }
-          return response.text();
-        })
-        .then(data => {
-          if (typeof data === 'object' && data.success) {
-            closeEditPanel();
-            window.location.reload();
-          } else if (typeof data === 'string') {
-            body.innerHTML = data;
+          // ❌ 表单校验失败：后端重新渲染了 patient_form_partial.html
+          else {
+            body.innerHTML = xhr.responseText;
+            // 重新绑定（包括“添加文件”按钮）
             attachEditFormHandler(url);
           }
-        })
-        .catch(err => {
-          console.error(err);
-          alert('保存失败，请稍后再试');
-        });
+        } else {
+          window.alert('上传失败，HTTP 状态码: ' + xhr.status);
+        }
+      };
+
+      var formData = new FormData(form);
+      xhr.send(formData);
     }, { once: true });
   }
 </script>
+
 
 
 {% endblock %}

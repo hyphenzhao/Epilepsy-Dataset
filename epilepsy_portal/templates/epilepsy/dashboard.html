@@ -4,51 +4,216 @@
 
 {% block epilepsy_content %}
 <div class="container-fluid mt-4">
-  <div class="row">
+
+  {# ================= 患者概览 ================= #}
+  <div class="row mb-3">
+    <div class="col-12">
+      <h3 class="mb-3">患者概览</h3>
+    </div>
+
+    {# 总人数卡片，饼图永远 100% #}
+    <div class="col-xl-3 col-lg-4 col-md-6">
+      <div class="card card-stats">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="card-title text-uppercase text-muted mb-0">
+                数据库录入总人数
+              </h5>
+              <span class="h2 font-weight-bold mb-0">
+                {{ total_patients }}
+              </span>
+            </div>
+            <div class="col-auto">
+              <div style="width:80px;height:80px;">
+                <canvas id="patientTotalPie"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# 各子类完善率卡片 #}
+    {% for g in group_stats %}
+      <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="card card-stats">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col">
+                <h5 class="card-title text-uppercase text-muted mb-0">
+                  {{ g.label }}
+                </h5>
+                <span class="h2 font-weight-bold mb-0">
+                  {{ g.percent }}%
+                </span>
+                <small class="d-block text-muted mt-1">
+                  完成 {{ g.completed }} / 总数 {{ g.total }}
+                </small>
+              </div>
+              <div class="col-auto">
+                <div style="width:80px;height:80px;">
+                  <canvas id="groupPie-{{ g.key }}"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# ================= 系统资源 ================= #}
+  <div class="row mt-4">
+    <div class="col-12">
+      <h3 class="mb-3">系统资源</h3>
+    </div>
+
+    <!-- CPU -->
     <div class="col-xl-4 col-lg-6">
       <div class="card card-stats">
         <div class="card-body">
-          <div class="row">
+          <div class="row align-items-center">
             <div class="col">
               <h5 class="card-title text-uppercase text-muted mb-0">CPU 使用率</h5>
               <span class="h2 font-weight-bold mb-0">{{ cpu_percent }}%</span>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-4 col-lg-6">
-      <div class="card card-stats">
-        <div class="card-body">
-          <div class="row">
-            <div class="col">
-              <h5 class="card-title text-uppercase text-muted mb-0">内存使用率</h5>
-              <span class="h2 font-weight-bold mb-0">{{ mem_percent }}%</span><br>
-              <small class="text-muted">
-                {{ mem_used|filesizeformat }} / {{ mem_total|filesizeformat }}
-              </small>
+            <div class="col-auto">
+              <div style="width:80px;height:80px;">
+                <canvas id="cpuPie"></canvas>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- 内存 -->
     <div class="col-xl-4 col-lg-6">
       <div class="card card-stats">
         <div class="card-body">
-          <div class="row">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="card-title text-uppercase text-muted mb-0">内存使用率</h5>
+              <span class="h2 font-weight-bold mb-0">{{ mem_percent }}%</span><br>
+              <small class="text-muted d-block">
+                {{ mem_used|filesizeformat }} / {{ mem_total|filesizeformat }}
+              </small>
+            </div>
+            <div class="col-auto">
+              <div style="width:80px;height:80px;">
+                <canvas id="memPie"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 磁盘 -->
+    <div class="col-xl-4 col-lg-6">
+      <div class="card card-stats">
+        <div class="card-body">
+          <div class="row align-items-center">
             <div class="col">
               <h5 class="card-title text-uppercase text-muted mb-0">磁盘使用率</h5>
               <span class="h2 font-weight-bold mb-0">{{ disk_percent }}%</span><br>
-              <small class="text-muted">
+              <small class="text-muted d-block">
                 {{ disk_used|filesizeformat }} / {{ disk_total|filesizeformat }}
               </small>
+            </div>
+            <div class="col-auto">
+              <div style="width:80px;height:80px;">
+                <canvas id="diskPie"></canvas>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  {# ================ 图表脚本 ================ #}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      function makePie(canvasId, usedPercent, freePercent) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas || typeof Chart === "undefined") {
+          return;
+        }
+
+        new Chart(canvas.getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: ["完成/使用", "未完成/空余"],
+            datasets: [{
+              data: [usedPercent, freePercent],
+              backgroundColor: [
+                "#5e72e4",  // 使用/完成
+                "#e9ecef"   // 空余/未完成
+              ],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "60%",
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    var label = ctx.label || "";
+                    var value = ctx.parsed || 0;
+                    return label + ": " + value.toFixed(1) + "%";
+                  }
+                }
+              }
+            },
+            animation: {
+              animateRotate: true,
+              animateScale: true,
+              duration: 800
+            }
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // 患者总人数：饼图固定 100%
+        makePie("patientTotalPie", 100, 0);
+
+        // 各分组完善率（由后端计算）
+        {% for g in group_stats %}
+          makePie(
+            "groupPie-{{ g.key }}",
+            {{ g.percent|default:0 }},
+            {{ g.incomplete_percent|default:0 }}
+          );
+        {% endfor %}
+
+        // 系统资源
+        makePie(
+          "cpuPie",
+          {{ cpu_percent|default:0 }},
+          {{ cpu_free_percent|default:0 }}
+        );
+        makePie(
+          "memPie",
+          {{ mem_percent|default:0 }},
+          {{ mem_free_percent|default:0 }}
+        );
+        makePie(
+          "diskPie",
+          {{ disk_percent|default:0 }},
+          {{ disk_free_percent|default:0 }}
+        );
+      });
+    })();
+  </script>
 </div>
 {% endblock %}

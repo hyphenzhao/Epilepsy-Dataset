@@ -5,15 +5,17 @@
 自动从 patient_form_partial.html 生成只读详情模板
 templates/epilepsy/patient_detail_partial.html
 
-用法：
-    python generate_patient_detail_partial.py
+规则：
+- 用 <!-- 一、基本信息（默认展开） --> 这类注释做分组标题
+- 忽略所有被注释掉的代码（任何在 <!-- ... --> 里面的 {{ form.xxx.label_tag }} 不会被采集）
+- 生成的模板只负责纯展示（label + value），不复用任何样式结构
 """
 
-import re
 from pathlib import Path
 from collections import OrderedDict
+import re
 
-# === 路径设置，根据实际项目调整 ===
+# === 路径设置：根据你的项目调整 ===
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates" / "epilepsy"
 
@@ -21,50 +23,69 @@ FORM_TEMPLATE = TEMPLATES_DIR / "patient_form_partial.html"
 DETAIL_TEMPLATE = TEMPLATES_DIR / "patient_detail_partial.html"
 
 
-def load_source():
+def load_source() -> str:
     if not FORM_TEMPLATE.exists():
         raise SystemExit(f"找不到 patient_form_partial.html: {FORM_TEMPLATE}")
     return FORM_TEMPLATE.read_text(encoding="utf-8")
 
 
-def parse_sections_and_fields(src: str):
+def parse_sections_and_fields(src: str) -> "OrderedDict[str, list[str]]":
     """
-    从 patient_form_partial.html 里解析：
-    - 注释中的大标题（用来做 section）
-    - 每个 {{ form.xxx.label_tag }} 属于哪个 section
-    返回 OrderedDict[section_title] = [field_name, ...]
-    """
-    # 找出所有注释
-    comment_re = re.compile(r"<!--(.*?)-->", re.DOTALL)
-    comments = []
-    for m in comment_re.finditer(src):
-        comments.append((m.start(), m.group(1).strip()))
+    从 patient_form_partial.html 中解析：
+    - 注释里的大标题（用来做 section）
+    - 每个 {{ form.xxx.label_tag }} 字段属于哪个 section
 
-    # 找出所有 label_tag
-    field_re = re.compile(r"{{\s*form\.(\w+)\.label_tag\s*}}")
+    关键点：任何在 <!-- ... --> 里的 label_tag 都会被忽略。
+    """
+
+    # 1) 收集所有注释（用来做：a) heading 候选，b) comment range）
+    comment_iter = list(re.finditer(r"<!--(.*?)-->", src, re.DOTALL))
+    # (start, end, text)
+    comment_ranges = [
+        (m.start(), m.end(), m.group(1).strip())
+        for m in comment_iter
+    ]
+
+    def in_comment(pos: int) -> bool:
+        """判断某个位置是否处于 <!-- ... --> 注释块内部。"""
+        for start, end, _ in comment_ranges:
+            if start <= pos <= end:
+                return True
+        return False
+
+    # 2) 提取“纯文字的注释”作为 section 标题
+    headings = []
+    for start, end, text in comment_ranges:
+        # 过滤掉真正被注释掉的 HTML/模板代码（里面通常有 < 或 {{ 之类）
+        if "<" in text or "{{" in text or "}}" in text or "script" in text.lower():
+            continue
+        # 剩下的就认为是类似 “一、基本信息（默认展开）” 这种标题
+        headings.append((start, text.strip()))
+    headings.sort(key=lambda x: x[0])
+
+    # 3) 找出所有不在注释里的 {{ form.xxx.label_tag }}
     fields = []
+    field_re = re.compile(r"{{\s*form\.(\w+)\.label_tag\s*}}")
     for m in field_re.finditer(src):
-        fields.append((m.start(), m.group(1)))
+        pos = m.start()
+        if in_comment(pos):
+            # 在 <!-- ... --> 里的 label_tag，一律忽略
+            continue
+        fname = m.group(1)
+        fields.append((pos, fname))
 
-    def is_heading(text: str) -> bool:
-        # 过滤掉被注释掉的 HTML 代码和 JS 标记
-        if "<" in text or "jQuery" in text or "Popper" in text or "Bootstrap" in text:
-            return False
-        # 这里简单认为剩下的都是「大标题」，例如：一、基本信息 / 二、病史 ...
-        return True
-
-    sections = OrderedDict()
+    # 4) 按“就近之前的 heading 注释”把字段分组
+    sections: "OrderedDict[str, list[str]]" = OrderedDict()
     for pos, fname in fields:
         section_title = None
-        for cpos, ctext in comments:
-            if cpos < pos and is_heading(ctext):
-                section_title = ctext
-            elif cpos >= pos:
+        for h_pos, h_text in headings:
+            if h_pos < pos:
+                section_title = h_text
+            else:
                 break
         if section_title is None:
             section_title = "其他"
 
-        # 按顺序记录，避免重复字段
         sections.setdefault(section_title, [])
         if fname not in sections[section_title]:
             sections[section_title].append(fname)
@@ -72,14 +93,15 @@ def parse_sections_and_fields(src: str):
     return sections
 
 
-def generate_detail_template(sections: OrderedDict[str, list[str]]) -> str:
+def generate_detail_template(sections: "OrderedDict[str, list[str]]") -> str:
     """
-    根据 {section_title: [field_name, ...]} 生成 patient_detail_partial.html 内容
-    使用 form.<field>.label 和 form.<field>.value 做只读展示
+    根据 {section_title: [field_name, ...]} 生成 patient_detail_partial.html 内容。
+    使用 form.<field>.label & form.<field>.value 做只读展示，不引入原来的样式结构。
     """
-    lines = []
-    lines.append('{# AUTO-GENERATED from patient_form_partial.html')
-    lines.append('   请不要手动修改本文件。修改表单后请重新运行 generate_patient_detail_partial.py #}')
+    lines: list[str] = []
+
+    lines.append('<!-- AUTO-GENERATED from patient_form_partial.html')
+    lines.append('   请不要手动修改本文件。修改表单后请重新运行 generate_patient_detail_partial.py -->')
     lines.append("")
     lines.append('<div class="card">')
     lines.append('  <div class="card-body">')
@@ -95,7 +117,6 @@ def generate_detail_template(sections: OrderedDict[str, list[str]]) -> str:
             lines.append('    <hr class="my-4">')
         first_section = False
 
-        # Section title
         lines.append(f'    <h5 class="mb-3">{section_title}</h5>')
         lines.append('    <div class="row">')
 
@@ -103,12 +124,16 @@ def generate_detail_template(sections: OrderedDict[str, list[str]]) -> str:
             lines.append('      <div class="col-md-6 mb-3">')
             lines.append('        <div class="border rounded p-2 h-100">')
             lines.append('          <div class="text-muted small mb-1">')
-            lines.append(f'            {{% if form.{fname} %}}{{{{ form.{fname}.label }}}}{{% else %}}{fname}{{% endif %}}')
+            # 优先用 form.<field>.label；如果表单里没这个字段，就直接显示字段名
+            lines.append(
+                f'            {{% if form.{fname} %}}{{{{ form.{fname}.label }}}}{{% else %}}{fname}{{% endif %}}'
+            )
             lines.append('          </div>')
             lines.append('          <div>')
-            # 这里使用 value + linebreaksbr，简单处理多行文本
             lines.append(f'            {{% if form.{fname} %}}')
-            lines.append(f'              {{{{ form.{fname}.value|default:"-"|linebreaksbr }}}}')
+            lines.append(
+                f'              {{{{ form.{fname}.value|default:"-"|linebreaksbr }}}}'
+            )
             lines.append('            {% else %}')
             lines.append('              -')
             lines.append('            {% endif %}')
@@ -132,7 +157,7 @@ def main():
     content = generate_detail_template(sections)
     DETAIL_TEMPLATE.write_text(content, encoding="utf-8")
     print(f"已生成: {DETAIL_TEMPLATE}")
-    print("请确保在 patient_detail 视图中传入 patient 和 form=PatientForm(instance=patient)。")
+    print("注意：patient_detail 视图需要传入 patient 和 form=PatientForm(instance=patient)。")
 
 
 if __name__ == "__main__":

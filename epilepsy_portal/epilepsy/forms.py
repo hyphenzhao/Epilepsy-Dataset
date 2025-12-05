@@ -1,5 +1,5 @@
 from django import forms
-from .models import Patient, UserProfile, UserRole
+from .models import *
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -113,6 +113,8 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal",
             "eeg_ictal",
             "eeg_clinical_correlation",
+            "eeg_file_link",
+
 
             # 影像学检查
             "mri_brief",
@@ -131,6 +133,7 @@ class PatientForm(forms.ModelForm):
             "seeg_group2",
             "seeg_group3",
             "seeg_ictal",
+            "seeg_file_link",
 
             # 二期有创评估
             "second_stage_core_zone",
@@ -215,6 +218,7 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal": "EEG 发作间期放电",
             "eeg_ictal": "EEG 发作期放电",
             "eeg_clinical_correlation": "EEG 同步发作临床症状",
+            "eeg_file_link": "EEG 数据下载链接",
 
             "mri_brief": "MRI 简要描述",
             "mri_link": "MRI 图像下载链接",
@@ -230,6 +234,7 @@ class PatientForm(forms.ModelForm):
             "seeg_group2": "SEEG 发作间期 Group 2",
             "seeg_group3": "SEEG 发作间期 Group 3",
             "seeg_ictal": "SEEG 发作期放电",
+            "seeg_file_link": "SEEG 数据下载链接",
 
             "second_stage_core_zone": "二期有创评估核心区域",
             "second_stage_hypothesis_zone": "二期有创评估假设区域",
@@ -272,6 +277,18 @@ class UserWithRoleForm(forms.ModelForm):
         choices=UserRole.choices,
     )
 
+    # 新增两个密码字段
+    password1 = forms.CharField(
+        label="密码",
+        required=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+    password2 = forms.CharField(
+        label="确认密码",
+        required=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+
     class Meta:
         model = User
         fields = ["username", "email", "is_active"]
@@ -280,11 +297,138 @@ class UserWithRoleForm(forms.ModelForm):
             "email": "邮箱",
             "is_active": "启用",
         }
+        widgets = {
+            "username": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 编辑用户时，把当前 profile.role 填入表单初始值
+        if self.instance and self.instance.pk:
+            profile = getattr(self.instance, "profile", None)
+            if profile:
+                self.initial.setdefault("role", profile.role)
+        else:
+            # 新建用户默认角色
+            self.initial.setdefault("role", UserRole.GUEST)
+            # 新建用户必须填密码
+            self.fields["password1"].required = True
+            self.fields["password2"].required = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get("password1")
+        p2 = cleaned_data.get("password2")
+
+        is_create = not (self.instance and self.instance.pk)
+
+        # 新建必须有密码
+        if is_create:
+            if not p1 or not p2:
+                raise forms.ValidationError("新建用户必须设置密码。")
+
+        # 只要有任意一项填写，就按“修改密码”处理
+        if p1 or p2:
+            if p1 != p2:
+                raise forms.ValidationError("两次输入的密码不一致。")
+            if len(p1) < 8:
+                raise forms.ValidationError("密码长度至少为 8 位。")
+
+        return cleaned_data
 
     def save(self, commit=True):
-        user = super().save(commit=commit)
+        # 不直接提交，先处理密码
+        user = super().save(commit=False)
+
+        password = self.cleaned_data.get("password1")
+        if password:
+            # 使用 Django 内置加密
+            user.set_password(password)
+
+        if commit:
+            user.save()
+
+        # 处理角色到 UserProfile
         role = self.cleaned_data["role"]
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.role = role
         profile.save()
         return user
+
+class MRIFileForm(forms.ModelForm):
+    class Meta:
+        model = MRIFile
+        # save_name 自动生成，不用在表单里填
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
+
+
+class PETFileForm(forms.ModelForm):
+    class Meta:
+        model = PETFile
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
+
+
+class EEGFileForm(forms.ModelForm):
+    class Meta:
+        model = EEGFile
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
+
+
+class SEEGFileForm(forms.ModelForm):
+    class Meta:
+        model = SEEGFile
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
