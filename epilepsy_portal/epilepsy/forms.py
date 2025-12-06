@@ -110,6 +110,10 @@ class PatientForm(forms.ModelForm):
             "epilepsy_scale_score",
 
             # 视频头皮 EEG
+            "eeg_recording_electrodes",
+            "eeg_recording_duration_days",
+            "eeg_bg_occipital_rhythm",
+            "eeg_eye_response",
             "eeg_interictal",
             "eeg_ictal",
             "eeg_clinical_correlation",
@@ -173,6 +177,11 @@ class PatientForm(forms.ModelForm):
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
+                    'neuro_exam_description': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
             }
         labels = {
             "name": "患者姓名",
@@ -215,6 +224,10 @@ class PatientForm(forms.ModelForm):
             "bdi_score": "BDI 评分",
             "epilepsy_scale_score": "癫痫量表评分",
 
+            "eeg_recording_electrodes": "EEG 记录电极",
+            "eeg_recording_duration_days": "记录时间（天）",
+            "eeg_bg_occipital_rhythm":"枕区优势节律（闭目安静状态）",
+            "eeg_eye_response": "睁/闭眼反应", 
             "eeg_interictal": "EEG 发作间期放电",
             "eeg_ictal": "EEG 发作期放电",
             "eeg_clinical_correlation": "EEG 同步发作临床症状",

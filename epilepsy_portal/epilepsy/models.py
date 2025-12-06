@@ -59,6 +59,9 @@ class Patient(models.Model):
     # 先兆 有 / 无
     AURA_CHOICES = [("Y", "有"),("N", "无"),]
 
+    # EEG 记录电极 10-20 系统 / 10-10 系统
+    EEG_RECORDING_ELECTRODES_CHOICES = [("10-20 system", "10-20 系统"),("10-10 system", "10-10 系统"),]
+
     # 神经系统检查 正常 / 异常
     NEURO_EXAM_CHOICES = [("N", "正常"),("A", "异常"),]
 
@@ -120,34 +123,24 @@ class Patient(models.Model):
 
     # 【发作症状学】
     seizure_state = models.CharField(
-    "自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,
-)
+    "自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,)
     aura = models.CharField(
-        "先兆", max_length=1, choices=AURA_CHOICES, blank=True
-    )
+        "先兆", max_length=1, choices=AURA_CHOICES, blank=True)
     # typical_seizure_time = models.CharField(
     #     "惯常发作时间", max_length=100, blank=True
     # )
     # typical_seizure_semiology = models.TextField(
     #     "惯常发作表现形式", blank=True
     # )
-    initial_seizure_symptom = models.TextField(
-        "首发症状",max_length=150, blank=True,
-    )
-    evolution_symptom = models.TextField(
-        "演变症状",max_length=150, blank=True,
-    )
-
-    seizure_duration_seconds = models.CharField(
-        "发作持续时间", blank=True, null=True
-    )
+    initial_seizure_symptom = models.TextField( "首发症状",max_length=150, blank=True, )
+    evolution_symptom = models.TextField("演变症状",max_length=150, blank=True,)
+    seizure_duration_seconds = models.CharField("发作持续时间", blank=True, null=True )
     # seizure_duration_minutes = models.PositiveIntegerField(
     #     "发作持续时间（分钟）", blank=True, null=True
     # )
 
     seizure_freq_per_day = models.CharField(
-        "发作频率", blank=True, null=True
-    )
+        "发作频率", blank=True, null=True)
     # seizure_freq_per_week = models.PositiveIntegerField(
     #     "发作频率（次/周）", blank=True, null=True
     # )
@@ -163,11 +156,9 @@ class Patient(models.Model):
         "神经系统检查",
         max_length=1,
         choices=NEURO_EXAM_CHOICES,
-        blank=True,
-    )
+        blank=True,)
     neuro_exam_description = models.TextField(
-        "神经系统检查异常描述", blank=True
-    )
+        "神经系统检查异常描述", blank=True)
 
     # 【认知和精神量表】
     moca_score = models.PositiveIntegerField("MoCA 评分", blank=True, null=True)
@@ -176,10 +167,14 @@ class Patient(models.Model):
     bai_score = models.PositiveIntegerField("BAI 评分", blank=True, null=True)
     bdi_score = models.PositiveIntegerField("BDI 评分", blank=True, null=True)
     epilepsy_scale_score = models.PositiveIntegerField(
-        "癫痫量表评分", blank=True, null=True
-    )
+        "癫痫量表评分", blank=True, null=True )
 
     # 【视频头皮 EEG 检查】
+    eeg_recording_electrodes = models.CharField( "EEG 记录电极", max_length=20, choices=EEG_RECORDING_ELECTRODES_CHOICES, blank=True)
+    eeg_recording_duration_days = models.PositiveIntegerField("记录时间 (天)", blank=True, null=True)
+    eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True,)
+    eeg_eye_response = models.CharField(
+    "睁/闭眼反应", max_length=100, choices=AURA_CHOICES, blank=True)
     eeg_interictal = models.TextField("EEG 发作间期放电", blank=True)
     eeg_ictal = models.TextField("EEG 发作期放电", blank=True)
     eeg_clinical_correlation = models.TextField(

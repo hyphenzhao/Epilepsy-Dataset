@@ -365,6 +365,28 @@
       <div id="collapseEEG" class="collapse"
            aria-labelledby="headingEEG" data-parent="#patientAccordion">
         <div class="card-body">
+         <div class="mb-3 d-flex align-items-center">
+          <div class="me-3">
+           {{ form.eeg_recording_electrodes.label_tag }}
+           {{ form.eeg_recording_electrodes }}
+           {{ form.eeg_recording_electrodes.errors }}
+          </div>
+          <div>
+           {{ form.eeg_recording_duration_days.label_tag }}
+           {{ form.eeg_recording_duration_days }}
+           {{ form.eeg_recording_duration_days.errors }}
+         </div>
+        </div>
+<div class="mb-3">
+            {{ form.eeg_bg_occipital_rhythm.label_tag }}
+            {{ form.eeg_bg_occipital_rhythm }}
+            {{ form.eeg_bg_occipital_rhythm.errors }}
+          </div>
+          <div class="mb-3">
+            {{ form.eeg_eye_response.label_tag }}
+            {{ form.eeg_eye_response }}
+            {{ form.eeg_eye_response.errors }}
+          </div>
           <div class="mb-3">
             {{ form.eeg_interictal.label_tag }}
             {{ form.eeg_interictal }}
