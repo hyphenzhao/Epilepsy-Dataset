@@ -365,29 +365,146 @@
       <div id="collapseEEG" class="collapse"
            aria-labelledby="headingEEG" data-parent="#patientAccordion">
         <div class="card-body">
-         <div class="mb-3 d-flex align-items-center">
-          <div class="me-3">
-           {{ form.eeg_recording_electrodes.label_tag }}
-           {{ form.eeg_recording_electrodes }}
-           {{ form.eeg_recording_electrodes.errors }}
+        <div class="row">
+          <div class="col-md-3 mb-3">
+          {{ form.eeg_recording_electrodes.label_tag }}
+          {{ form.eeg_recording_electrodes }}
+          {{ form.eeg_recording_electrodes.errors }}
           </div>
-          <div>
-           {{ form.eeg_recording_duration_days.label_tag }}
-           {{ form.eeg_recording_duration_days }}
-           {{ form.eeg_recording_duration_days.errors }}
-         </div>
-        </div>
-<div class="mb-3">
+
+          <div class="col-md-4 mb-3">
+            {{ form.eeg_recording_duration_days.label_tag }}
+            {{ form.eeg_recording_duration_days }}
+            {{ form.eeg_recording_duration_days.errors }}
+          </div>
+
+          <div class="col-md-5 mb-3">
             {{ form.eeg_bg_occipital_rhythm.label_tag }}
             {{ form.eeg_bg_occipital_rhythm }}
             {{ form.eeg_bg_occipital_rhythm.errors }}
           </div>
-          <div class="mb-3">
+        </div>
+          <div class="row">
+          <div class="col-md-4 mb-3">
             {{ form.eeg_eye_response.label_tag }}
             {{ form.eeg_eye_response }}
             {{ form.eeg_eye_response.errors }}
           </div>
-          <div class="mb-3">
+
+          <div class="col-md-4 mb-3">
+            {{ form.eeg_symmetry.label_tag }}
+            {{ form.eeg_symmetry }}
+            {{ form.eeg_symmetry.errors }}
+          </div>
+
+          <div class="col-md-4 mb-3">
+            {{ form.eeg_awake_background.label_tag }}
+            {{ form.eeg_awake_background }}
+            {{ form.eeg_awake_background.errors }}
+          </div>
+        </div>
+
+          <div class="d-flex align-items-center mt-3 mb-2">
+            <strong class="mr-3">● HV 过度换气诱发：</strong>
+            <div>
+              {{ form.eeg_hv_result }}
+              {{ form.eeg_hv_result.errors }}
+            </div>
+          </div>
+
+          <div class="row mt-2">
+            <div class="col-md-4 mb-3">
+              {{ form.eeg_hv_slow_wave_build.label_tag }}
+              {{ form.eeg_hv_slow_wave_build }}
+              {{ form.eeg_hv_slow_wave_build.errors }}
+            </div>
+
+            <div class="col-md-4 mb-3">
+              {{ form.eeg_hv_slow_wave_frequency.label_tag }}
+              {{ form.eeg_hv_slow_wave_frequency }}
+              {{ form.eeg_hv_slow_wave_frequency.errors }}
+            </div>
+
+            <div class="col-md-4 mb-3">
+              {{ form.eeg_hv_slow_wave_symmetry.label_tag }}
+              {{ form.eeg_hv_slow_wave_symmetry }}
+              {{ form.eeg_hv_slow_wave_symmetry.errors }}
+            </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.eeg_hv_epileptiform_discharge.label_tag }}
+            {{ form.eeg_hv_epileptiform_discharge }}
+            {{ form.eeg_hv_epileptiform_discharge.errors }}
+          </div>
+
+          <div class="col-md-6 mb-3">
+            {{ form.eeg_hv_discharge_laterality.label_tag }}
+            {{ form.eeg_hv_discharge_laterality }}
+            {{ form.eeg_hv_discharge_laterality.errors }}
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center mt-3 mb-2">
+            <strong class="d-block mt-3 mb-2">● IPS 闪光刺激诱发：</strong>
+            <div>
+              {{ form.ips_result }}
+              {{ form.ips.errors }}
+            </div>
+          </div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label><strong>光驱动：</strong></label>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            {{ form.frequency.label_tag }}
+            {{ form.frequency }}
+          </div>
+
+          <div class="col-md-4">
+            {{ form.laterality.label_tag }}
+            {{ form.laterality }}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label><strong>PPR 光阵发性反应：</strong></label>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            {{ form.frequency.label_tag }}
+            {{ form.frequency }}
+          </div>
+
+          <div class="col-md-4">
+            {{ form.laterality.label_tag }}
+            {{ form.laterality }}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label><strong>PCR 光惊厥反应：</strong></label>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            {{ form.frequency.label_tag }}
+            {{ form.frequency }}
+          </div>
+        </div>
+
+
+
+          <!-- <div class="mb-3">
             {{ form.eeg_interictal.label_tag }}
             {{ form.eeg_interictal }}
             {{ form.eeg_interictal.errors }}
@@ -406,7 +523,7 @@
             {{ form.eeg_file_link.label_tag }}
             {{ form.eeg_file_link }}
             {{ form.eeg_file_link.errors }}
-          </div>
+          </div> -->
 
           {# ========= EEG 文件列表区域 ========= #}
           <hr>

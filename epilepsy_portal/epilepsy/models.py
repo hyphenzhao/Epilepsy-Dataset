@@ -62,6 +62,24 @@ class Patient(models.Model):
     # EEG 记录电极 10-20 系统 / 10-10 系统
     EEG_RECORDING_ELECTRODES_CHOICES = [("10-20 system", "10-20 系统"),("10-10 system", "10-10 系统"),]
 
+    # 对称性
+    EEG_SYMMETRY_CHOICES = [("bilateral", "双侧"),("left_attenuated", "左侧衰减"),("right_attenuated", "右侧衰减"),]
+
+    # 清醒期背景
+    EEG_AWAKE_BACKGROUND_CHOICES = [("normal", "正常"), ("diffuse_slow", "弥漫性慢波"), ("unilateral_slow", "偏侧性慢波"), ("focal_slow", "局灶性慢波")]
+    
+    # 结果选项
+    RESULT_CHOICES = [("normal", "未见异常"), ("not_done", "未作"), ("changed", "相关改变")]
+
+    # 慢波建立
+    EEG_HV_SLOW_WAVE_BUILD_CHOICES = [("none", "无"), ("frontal", "前头部"), ("occipital", "后头部"), ("diffuse", "广泛性"), ("mild", "少量不明显")]
+    
+    # 慢波对称性
+    EEG_HV_SLOW_WAVE_SYMMETRY_CHOICES = [("bilateral", "双侧"), ("left_stronger", "左侧较强"), ("right_stronger", "右侧较强")]
+    
+    # 放电对侧性
+    EEG_HV_DISCHARGE_LATERALITY_CHOICES = [("bilateral", "双侧"), ("left", "左侧"), ("right", "右侧")]
+
     # 神经系统检查 正常 / 异常
     NEURO_EXAM_CHOICES = [("N", "正常"),("A", "异常"),]
 
@@ -74,12 +92,7 @@ class Patient(models.Model):
     bed_number = models.CharField("床号", max_length=20, blank=True)
     medical_record_number = models.CharField("病历号", max_length=20, blank=True)
     admission_date = models.DateField("入院时间")
-    education_level = models.CharField(
-        "受教育程度",
-        max_length=20,
-        choices=EDUCATION_CHOICES,
-        blank=True,
-    )
+    education_level = models.CharField("受教育程度",max_length=20,choices=EDUCATION_CHOICES,blank=True,)
     occupation = models.CharField("职业", max_length=20, blank=True)
     imaging_number = models.CharField("影像号", max_length=20, blank=True)
     admission_diagnosis = models.CharField("入院诊断", max_length=20, blank=True)
@@ -175,6 +188,19 @@ class Patient(models.Model):
     eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True,)
     eeg_eye_response = models.CharField(
     "睁/闭眼反应", max_length=100, choices=AURA_CHOICES, blank=True)
+    eeg_symmetry = models.CharField(
+    "对称性", max_length=100, choices=EEG_SYMMETRY_CHOICES, blank=True)
+    eeg_awake_background = models.CharField(
+    "清醒期背景", max_length=100, choices=EEG_AWAKE_BACKGROUND_CHOICES, blank=True)
+    eeg_hv_result = models.CharField("HV 结果", max_length=20, choices=RESULT_CHOICES, blank=True, null=True)
+    eeg_hv_slow_wave_build = models.CharField("慢波建立", max_length=100, choices=EEG_HV_SLOW_WAVE_BUILD_CHOICES, blank=True, null=True)
+    eeg_hv_slow_wave_frequency = models.CharField("慢波频率(Hz)", max_length=50, blank=True, null=True)
+    eeg_hv_slow_wave_symmetry = models.CharField("慢波对称性", max_length=100, choices=EEG_HV_SLOW_WAVE_SYMMETRY_CHOICES, blank=True, null=True)
+    eeg_hv_epileptiform_discharge = models.CharField("诱发癫痫样放电", max_length=50, choices=AURA_CHOICES, blank=True, null=True)
+    eeg_hv_discharge_laterality = models.CharField("放电对侧性", max_length=100, choices=EEG_HV_DISCHARGE_LATERALITY_CHOICES, blank=True, null=True)
+    ips_result = models.CharField("IPS 结果", max_length=20, choices=RESULT_CHOICES, blank=True, null=True)
+    frequency = models.CharField("闪光频率(Hz)", max_length=50, blank=True, null=True)
+    laterality = models.CharField("侧别", max_length=20, choices=EEG_HV_DISCHARGE_LATERALITY_CHOICES, blank=True, null=True)
     eeg_interictal = models.TextField("EEG 发作间期放电", blank=True)
     eeg_ictal = models.TextField("EEG 发作期放电", blank=True)
     eeg_clinical_correlation = models.TextField(
