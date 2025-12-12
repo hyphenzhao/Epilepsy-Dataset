@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from docx import Document
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from .json import PATIENT_GROUP_FIELDS, FIELDS_FOR_EXPORT
 
 from .models import (
     Patient,
@@ -23,99 +24,6 @@ from .models import (
 # =======================
 #  Dashboard 配置 & 计算
 # =======================
-
-PATIENT_GROUP_FIELDS = {
-    "basic": {
-        "label": "一、基本信息",
-        "fields": [
-            "name", "gender", "handedness", "birthday",
-            "department", "bed_number", "medical_record_number",
-            "admission_date", "education_level", "occupation",
-            "imaging_number", "admission_diagnosis",
-        ],
-    },
-    "history": {
-        "label": "二、病史",
-        "fields": [
-            "past_medical_history", "other_medical_history",
-            "family_history", "first_seizure_age",
-            "first_seizure_description", "medication_history",
-        ],
-    },
-    "semiology": {
-        "label": "三、发作症状学",
-        "fields": [
-                "aura", "typical_seizure_time", "typical_seizure_semiology",
-                "seizure_duration_seconds", "seizure_duration_minutes",
-                "seizure_freq_per_day", "seizure_freq_per_week",
-                "seizure_freq_per_month", "seizure_freq_per_year",
-        ],
-    },
-    "neuro": {
-        "label": "四、神经系统检查",
-        "fields": [
-            "neuro_exam", "neuro_exam_description",
-        ],
-    },
-    "cognitive": {
-        "label": "五、认知和精神量表",
-        "fields": [
-            "moca_score", "hama_score", "hamd_score",
-            "bai_score", "bdi_score", "epilepsy_scale_score",
-        ],
-    },
-    "eeg": {
-        "label": "六、视频头皮 EEG 检查",
-        "fields": [
-            "eeg_interictal", "eeg_ictal",
-            "eeg_clinical_correlation", "eeg_file_link",
-        ],
-    },
-    "imaging": {
-        "label": "七、影像学检查",
-        "fields": [
-            "mri_brief", "mri_link",
-            "pet_brief", "pet_link",
-        ],
-    },
-    "first_stage": {
-        "label": "八、一期无创性评估结果",
-        "fields": [
-            "first_stage_lateralization",
-            "first_stage_region",
-            "first_stage_location",
-        ],
-    },
-    "seeg": {
-        "label": "九、SEEG 发作间期及发作期放电",
-        "fields": [
-            "seeg_interictal_overall", "seeg_group1",
-            "seeg_group2", "seeg_group3",
-            "seeg_ictal", "seeg_file_link",
-        ],
-    },
-    "second_stage": {
-        "label": "十、二期有创性评估结果",
-        "fields": [
-            "second_stage_core_zone",
-            "second_stage_hypothesis_zone",
-        ],
-    },
-    "resection": {
-        "label": "十一、外科切除计划",
-        "fields": [
-            "resection_plan_convex",
-            "resection_plan_concave",
-        ],
-    },
-    "evaluation": {
-        "label": "十二、评估信息",
-        "fields": [
-            "evaluator", "evaluation_date",
-        ],
-    },
-}
-
 
 def build_patient_group_stats(patients):
     """

@@ -18,6 +18,10 @@ urlpatterns = [
     path("patients/<int:pk>/export/<str:fmt>/",views.patient_export,name="patient_export",),
     path("patients/<int:pk>/edit/", views.patient_edit, name="patient_edit"),
     path("patients/<int:pk>/detail/", views.patient_detail, name="patient_detail"),
+    path('patients/batch_download_info/', views.batch_download_info, name='batch_download_info'),
+    path('patients/batch_delete/', views.batch_delete_patients, name='batch_delete_patients'),
+    path('patients/batch_download_files/', views.batch_download_files, name='batch_download_files'),
+    
     path("settings/users/", views.UserListView.as_view(), name="user_list"),  # 管理设置
     path("users/", views.UserListView.as_view(), name="user_list"),
     path("users/create/", views.user_create, name="user_create"),
@@ -25,4 +29,5 @@ urlpatterns = [
     path("users/<int:pk>/toggle-active/", views.user_toggle_active, name="user_toggle_active"),
     path("users/<int:pk>/delete/", views.user_delete, name="user_delete"),
     path("files/<str:file_type>/<int:file_id>/download/",views.patient_file_download,name="patient_file_download",),
-]
+    path("about/", views.AboutView.as_view(), name="about"),
+    ]
