@@ -55,6 +55,49 @@ class PatientForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple,
     )
 
+    # EEG 发作间期癫痫样放电：多选 + 勾选框
+    eeg_interictal_state = forms.MultipleChoiceField(
+        label="状态",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_STATE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_location = forms.MultipleChoiceField(
+        label="部位",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_LOCATION_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_waveform = forms.MultipleChoiceField(
+        label="波幅、波形",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_MORPH_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_quantity = forms.MultipleChoiceField(
+        label="数量",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_AMOUNT_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_pattern = forms.MultipleChoiceField(
+        label="出现方式",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_eye_relation = forms.MultipleChoiceField(
+        label="眼状态相关",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_EYE_RELATED_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
     class Meta:
         model = Patient
         fields = [
@@ -125,6 +168,20 @@ class PatientForm(forms.ModelForm):
             "ips_result", 
             "frequency",
             "laterality",
+            "eeg_sleep_period_overall",
+            "eeg_sleep_hypersynchrony_slow_wave",
+            "eeg_sleep_vertex_wave",
+            "eeg_sleep_spindle",
+            "eeg_sleep_k_complex",
+            "eeg_sleep_post",
+            "eeg_sleep_frontal_awake_rhythm",
+            "eeg_sleep_other",
+            "eeg_interictal_state",
+            "eeg_interictal_location",
+            "eeg_interictal_morphology",
+            "eeg_interictal_quantity",
+            "eeg_interictal_pattern",
+            "eeg_interictal_eye_relation",
             "eeg_interictal",
             "eeg_ictal",
             "eeg_clinical_correlation",
@@ -168,11 +225,6 @@ class PatientForm(forms.ModelForm):
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
-            'family_history': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
-                        "cols": 5,  # 可选：控制宽度
-                        "class": "form-control",
-                    }),
             'medication_history': forms.Textarea(attrs={
                         "rows": 5,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
@@ -189,6 +241,16 @@ class PatientForm(forms.ModelForm):
                         "class": "form-control",
                     }),
                     'neuro_exam_description': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_ictal': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_clinical_correlation': forms.Textarea(attrs={
                         "rows": 5,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
@@ -250,6 +312,20 @@ class PatientForm(forms.ModelForm):
             "ips_result":"IPS结果",
              "frequency":"闪光频率(Hz)",
             "laterality":"侧别",
+            "eeg_sleep_period_overall": "睡眠周期",
+            "eeg_sleep_hypersynchrony_slow_wave": "思睡期超同步化慢波",
+            "eeg_sleep_vertex_wave": "顶尖波",
+            "eeg_sleep_spindle": "睡眠纺锤波",
+            "eeg_sleep_k_complex": "K-综合波",
+            "eeg_sleep_post": "POST",
+            "eeg_sleep_frontal_awake_rhythm": "额区觉醒节律",
+            "eeg_sleep_other": "睡眠周期 其他",
+            "eeg_interictal_state": "状态",
+            "eeg_interictal_location": "部位",
+            "eeg_interictal_morphology": "波幅、波形",
+            "eeg_interictal_quantity": "数量",
+            "eeg_interictal_pattern": "出现方式",
+            "eeg_interictal_eye_relation": "眼状态相关",
             "eeg_interictal": "EEG 发作间期放电",
             "eeg_ictal": "EEG 发作期放电",
             "eeg_clinical_correlation": "EEG 同步发作临床症状",

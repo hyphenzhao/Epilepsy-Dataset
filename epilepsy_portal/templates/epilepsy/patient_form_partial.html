@@ -155,20 +155,22 @@
             
           
           
-          <div class="row">
-            <div class="col-md-2 mb-3">
-             {{ form.other_medical_history.label_tag }}
+          <div class="row mb-3">
+            <div class="col-md-2 d-flex align-items-center">
+                {{ form.other_medical_history.label_tag }}
             </div>
-            <div class="col-md-8 mb-3">
-             {{ form.other_medical_history }}
+            <div class="col-md-4">
+                {{ form.other_medical_history }}
+                {{ form.other_medical_history.errors }}
             </div>
-             {{ form.other_medical_history.errors }}
-          </div>
 
-          <div class="mb-3">
-            {{ form.family_history.label_tag }}
-            {{ form.family_history }}
-            {{ form.family_history.errors }}
+            <div class="col-md-2 d-flex align-items-center">
+                {{ form.family_history.label_tag }}
+            </div>
+            <div class="col-md-4">
+                {{ form.family_history }}
+                {{ form.family_history.errors }}
+            </div>
           </div>
 
           <div class="mb-3">
@@ -502,13 +504,107 @@
           </div>
         </div>
 
+        <div class="mt-3 mb-2 d-flex align-items-center">
+          <strong class="me-3">● 睡眠周期：</strong>
+          <div style="width: 200px;">
+              {{ form.eeg_sleep_period_overall }}
+          </div>
+        </div>
 
+        <div class="row mb-2">
+            <div class="col-md-4">
+                {{ form.eeg_sleep_hypersynchrony_slow_wave.label_tag }}
+                {{ form.eeg_sleep_hypersynchrony_slow_wave }}
+            </div>
 
+            <div class="col-md-4">
+                {{ form.eeg_sleep_vertex_wave.label_tag }}
+                {{ form.eeg_sleep_vertex_wave }}
+            </div>
+
+            <div class="col-md-4">
+                {{ form.eeg_sleep_k_complex.label_tag }}
+                {{ form.eeg_sleep_k_complex }}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4">
+                {{ form.eeg_sleep_spindle.label_tag }}
+                {{ form.eeg_sleep_spindle }}
+            </div>
+
+            <div class="col-md-4">
+                {{ form.eeg_sleep_post.label_tag }}
+                {{ form.eeg_sleep_post }}
+            </div>
+
+            <div class="col-md-4">
+                {{ form.eeg_sleep_frontal_awake_rhythm.label_tag }}
+                {{ form.eeg_sleep_frontal_awake_rhythm }}
+            </div>
+        </div>
+
+          <!-- <div class="mb-2">
+            {{ form.eeg_sleep_other.label_tag }}
+            {{ form.eeg_sleep_other }}
+          </div> -->
+        <div class="mt-4 mb-2">
+            <strong>● EEG 发作间期癫痫样放电：</strong>
+          </div>
+
+          <!-- 状态 -->
+          <div class="row mb-2">
+            <div class="col-md-12">
+              {{ form.eeg_interictal_state.label_tag }}
+              {{ form.eeg_interictal_state }}
+            </div>
+          </div>
+
+          <!-- 部位 -->
+          <div class="row mb-2">
+            <div class="col-md-12">
+              {{ form.eeg_interictal_location.label_tag }}
+              {{ form.eeg_interictal_location }}
+            </div>
+          </div>
+
+          <!-- 波幅 / 波形 -->
+          <div class="row mb-2">
+            <div class="col-md-12">
+              {{ form.eeg_interictal_morph.label_tag }}
+              {{ form.eeg_interictal_morph }}
+            </div>
+          </div>
+
+          <!-- 数量 -->
+          <div class="row mb-2">
+            <div class="col-md-12">
+              {{ form.eeg_interictal_amount.label_tag }}
+              {{ form.eeg_interictal_amount }}
+            </div>
+          </div>
+
+          <!-- 出现方式 -->
+          <div class="row mb-2">
+            <div class="col-md-12">
+              {{ form.eeg_interictal_pattern.label_tag }}
+              {{ form.eeg_interictal_pattern }}
+            </div>
+          </div>
+
+          <!-- 眼状态相关 -->
+          <div class="row mb-2">
+            <div class="col-md-12">
+              {{ form.eeg_interictal_eye_relation.label_tag }}
+              {{ form.eeg_interictal_eye_relation }}
+            </div>
+          </div>
           <!-- <div class="mb-3">
             {{ form.eeg_interictal.label_tag }}
             {{ form.eeg_interictal }}
             {{ form.eeg_interictal.errors }}
-          </div>
+          </div> -->
           <div class="mb-3">
             {{ form.eeg_ictal.label_tag }}
             {{ form.eeg_ictal }}
@@ -523,7 +619,7 @@
             {{ form.eeg_file_link.label_tag }}
             {{ form.eeg_file_link }}
             {{ form.eeg_file_link.errors }}
-          </div> -->
+          </div>
 
           {# ========= EEG 文件列表区域 ========= #}
           <hr>

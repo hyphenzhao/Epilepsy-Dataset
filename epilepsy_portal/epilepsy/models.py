@@ -80,6 +80,31 @@ class Patient(models.Model):
     # 放电对侧性
     EEG_HV_DISCHARGE_LATERALITY_CHOICES = [("bilateral", "双侧"), ("left", "左侧"), ("right", "右侧")]
 
+    # 睡眠周期
+    SLEEP_PERIOD_CHOICES = [("mostly_normal", "大致正常"), ("uncertain", "不明确"), ("absent", "消失")]
+   
+    # 睡眠波
+    SLEEP_WAVE_CHANGE_CHOICES = [("normal", "正常"), ("left_reduced", "左侧衰减"), ("right_reduced", "右侧衰减")]
+
+    # 状态
+    EEG_INTERICTAL_STATE_CHOICES = [ ("AWAKE", "清醒期"), ("DROWSY", "困倦期"),("SLEEP", "睡眠期"),("POST_AWAKE", "觉醒后"),("ALL", "醒-睡各期"),]
+
+    # 部位
+    EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),]
+
+    # 波幅/波形
+    EEG_INTERICTAL_MORPH_CHOICES = [("SHARP", "尖波"),("SPIKE", "棘波"),("POLY_SPIKE", "多棘波"),("SHARP_SLOW", "棘慢复合波"),]
+
+    # 数量
+    EEG_INTERICTAL_AMOUNT_CHOICES = [("RARE", "稀少"), ("OCCASIONAL", "偶见"),("FREQUENT", "频繁"),("HIGH_DENSITY", "高密度"),("CONTINUOUS", "连续"),]
+
+    # 出现方式
+    EEG_INTERICTAL_PATTERN_CHOICES = [("SCATTERED", "散发"),("PAROXYSMAL", "阵发"),("RHYTHMIC_PAROXYSMAL", "节律性阵发"),("CONTINUOUS", "连续发放"),("BURST", "爆发"),("INTERMITTENT", "间断性发放"),
+    ("PERIODIC", "周期性发放"),("MIGRATORY", "游走性发放"),("NEAR_CONTINUOUS", "接近持续发放"),]
+
+    # 眼状态相关
+    EEG_INTERICTAL_EYE_RELATED_CHOICES = [("NONE", "无"),("FOCAL_SENSITIVE", "有：失对焦敏感（闭眼增多）"),("PHOTOSENSITIVE", "合眼敏感"), ("BLINK_RELATED", "瞬目相关"),]
+
     # 神经系统检查 正常 / 异常
     NEURO_EXAM_CHOICES = [("N", "正常"),("A", "异常"),]
 
@@ -123,7 +148,7 @@ class Patient(models.Model):
         help_text="多选，用逗号分隔编码存储",
     )
 
-    family_history = models.TextField("家族病史", blank=True)
+    family_history = models.CharField("家族病史", max_length=20, blank=True)
 
     first_seizure_age = models.PositiveIntegerField(
         "首次发作年龄（岁）", blank=True, null=True
@@ -201,6 +226,51 @@ class Patient(models.Model):
     ips_result = models.CharField("IPS 结果", max_length=20, choices=RESULT_CHOICES, blank=True, null=True)
     frequency = models.CharField("闪光频率(Hz)", max_length=50, blank=True, null=True)
     laterality = models.CharField("侧别", max_length=20, choices=EEG_HV_DISCHARGE_LATERALITY_CHOICES, blank=True, null=True)
+    eeg_sleep_period_overall = models.CharField("睡眠周期", max_length=20, choices=SLEEP_PERIOD_CHOICES, blank=True, null=True)
+    eeg_sleep_hypersynchrony_slow_wave = models.CharField("思睡期超同步化慢波", max_length=10, choices=AURA_CHOICES, blank=True, null=True)
+    eeg_sleep_vertex_wave = models.CharField("顶尖波", max_length=20, choices=SLEEP_WAVE_CHANGE_CHOICES, blank=True, null=True)
+    eeg_sleep_spindle = models.CharField("睡眠纺锤波", max_length=20, choices=SLEEP_WAVE_CHANGE_CHOICES, blank=True, null=True)
+    eeg_sleep_k_complex = models.CharField("K-综合波", max_length=20, choices=SLEEP_WAVE_CHANGE_CHOICES, blank=True, null=True)
+    eeg_sleep_post = models.CharField("POST", max_length=10, choices=AURA_CHOICES, blank=True, null=True)
+    eeg_sleep_frontal_awake_rhythm = models.CharField("额区觉醒节律", max_length=10, choices=AURA_CHOICES, blank=True, null=True)
+    eeg_sleep_other = models.CharField("睡眠周期 其他", max_length=200, blank=True, null=True)
+    eeg_interictal_state = models.CharField(
+    "状态（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    eeg_interictal_location = models.CharField(
+    "部位（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    eeg_interictal_morphology = models.CharField(
+    "波幅/波形（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    eeg_interictal_amount = models.CharField(
+    "数量（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    eeg_interictal_pattern = models.CharField(
+    "出现方式（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    eeg_interictal_eye_relation = models.CharField(
+    "眼状态相关（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+
     eeg_interictal = models.TextField("EEG 发作间期放电", blank=True)
     eeg_ictal = models.TextField("EEG 发作期放电", blank=True)
     eeg_clinical_correlation = models.TextField(
