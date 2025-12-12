@@ -483,11 +483,11 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.eeg_interictal %}{{ form.eeg_interictal.label }}{% else %}eeg_interictal{% endif %}
+            {% if form.eeg_recording_electrodes %}{{ form.eeg_recording_electrodes.label }}{% else %}eeg_recording_electrodes{% endif %}
           </div>
           <div>
-            {% if form.eeg_interictal %}
-              {{ form.eeg_interictal.value|default:"-"|linebreaksbr }}
+            {% if form.eeg_recording_electrodes %}
+              {{ form.eeg_recording_electrodes.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -497,11 +497,11 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.eeg_ictal %}{{ form.eeg_ictal.label }}{% else %}eeg_ictal{% endif %}
+            {% if form.eeg_recording_duration_days %}{{ form.eeg_recording_duration_days.label }}{% else %}eeg_recording_duration_days{% endif %}
           </div>
           <div>
-            {% if form.eeg_ictal %}
-              {{ form.eeg_ictal.value|default:"-"|linebreaksbr }}
+            {% if form.eeg_recording_duration_days %}
+              {{ form.eeg_recording_duration_days.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -511,11 +511,11 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.eeg_clinical_correlation %}{{ form.eeg_clinical_correlation.label }}{% else %}eeg_clinical_correlation{% endif %}
+            {% if form.eeg_bg_occipital_rhythm %}{{ form.eeg_bg_occipital_rhythm.label }}{% else %}eeg_bg_occipital_rhythm{% endif %}
           </div>
           <div>
-            {% if form.eeg_clinical_correlation %}
-              {{ form.eeg_clinical_correlation.value|default:"-"|linebreaksbr }}
+            {% if form.eeg_bg_occipital_rhythm %}
+              {{ form.eeg_bg_occipital_rhythm.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}
@@ -525,11 +525,137 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
-            {% if form.eeg_file_link %}{{ form.eeg_file_link.label }}{% else %}eeg_file_link{% endif %}
+            {% if form.eeg_eye_response %}{{ form.eeg_eye_response.label }}{% else %}eeg_eye_response{% endif %}
           </div>
           <div>
-            {% if form.eeg_file_link %}
-              {{ form.eeg_file_link.value|default:"-"|linebreaksbr }}
+            {% if form.eeg_eye_response %}
+              {{ form.eeg_eye_response.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_symmetry %}{{ form.eeg_symmetry.label }}{% else %}eeg_symmetry{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_symmetry %}
+              {{ form.eeg_symmetry.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_awake_background %}{{ form.eeg_awake_background.label }}{% else %}eeg_awake_background{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_awake_background %}
+              {{ form.eeg_awake_background.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_hv_slow_wave_build %}{{ form.eeg_hv_slow_wave_build.label }}{% else %}eeg_hv_slow_wave_build{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_hv_slow_wave_build %}
+              {{ form.eeg_hv_slow_wave_build.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_hv_slow_wave_frequency %}{{ form.eeg_hv_slow_wave_frequency.label }}{% else %}eeg_hv_slow_wave_frequency{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_hv_slow_wave_frequency %}
+              {{ form.eeg_hv_slow_wave_frequency.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_hv_slow_wave_symmetry %}{{ form.eeg_hv_slow_wave_symmetry.label }}{% else %}eeg_hv_slow_wave_symmetry{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_hv_slow_wave_symmetry %}
+              {{ form.eeg_hv_slow_wave_symmetry.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_hv_epileptiform_discharge %}{{ form.eeg_hv_epileptiform_discharge.label }}{% else %}eeg_hv_epileptiform_discharge{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_hv_epileptiform_discharge %}
+              {{ form.eeg_hv_epileptiform_discharge.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_hv_discharge_laterality %}{{ form.eeg_hv_discharge_laterality.label }}{% else %}eeg_hv_discharge_laterality{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_hv_discharge_laterality %}
+              {{ form.eeg_hv_discharge_laterality.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.frequency %}{{ form.frequency.label }}{% else %}frequency{% endif %}
+          </div>
+          <div>
+            {% if form.frequency %}
+              {{ form.frequency.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.laterality %}{{ form.laterality.label }}{% else %}laterality{% endif %}
+          </div>
+          <div>
+            {% if form.laterality %}
+              {{ form.laterality.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}

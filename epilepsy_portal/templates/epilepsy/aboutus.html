@@ -1,0 +1,36 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block title %}关于软件 - 癫痫数据集{% endblock %}
+
+{% block epilepsy_content %}
+{% load static %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header border-0">
+          <h3 class="mb-0">关于软件</h3>
+        </div>
+        <div class="card-body">
+          <!-- Rendered README.md -->
+          <div class="markdown-body">
+            {{ readme_html|safe }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{# Optional: nicer markdown styling, safe even if base.html does not define this block #}
+{% block extra_css %}
+  <link rel="stylesheet" href="/static/assets/css/github-markdown.min.css" type="text/css">
+<style>
+  .markdown-body {
+    box-sizing: border-box;
+    min-width: 200px;
+    max-width: 100%;
+  }
+</style>
+{% endblock %}
