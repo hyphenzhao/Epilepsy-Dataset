@@ -70,14 +70,14 @@ class PatientForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple,
     )
 
-    eeg_interictal_waveform = forms.MultipleChoiceField(
+    eeg_interictal_morph = forms.MultipleChoiceField(
         label="波幅、波形",
         required=False,
         choices=Patient.EEG_INTERICTAL_MORPH_CHOICES,
         widget=forms.CheckboxSelectMultiple,
     )
 
-    eeg_interictal_quantity = forms.MultipleChoiceField(
+    eeg_interictal_amount = forms.MultipleChoiceField(
         label="数量",
         required=False,
         choices=Patient.EEG_INTERICTAL_AMOUNT_CHOICES,
@@ -178,8 +178,8 @@ class PatientForm(forms.ModelForm):
             "eeg_sleep_other",
             "eeg_interictal_state",
             "eeg_interictal_location",
-            "eeg_interictal_morphology",
-            "eeg_interictal_quantity",
+            "eeg_interictal_morph",
+            "eeg_interictal_amount",
             "eeg_interictal_pattern",
             "eeg_interictal_eye_relation",
             "eeg_interictal",
@@ -322,8 +322,8 @@ class PatientForm(forms.ModelForm):
             "eeg_sleep_other": "睡眠周期 其他",
             "eeg_interictal_state": "状态",
             "eeg_interictal_location": "部位",
-            "eeg_interictal_morphology": "波幅、波形",
-            "eeg_interictal_quantity": "数量",
+            "eeg_interictal_morph": "波幅、波形",
+            "eeg_interictal_amount": "数量",
             "eeg_interictal_pattern": "出现方式",
             "eeg_interictal_eye_relation": "眼状态相关",
             "eeg_interictal": "EEG 发作间期放电",

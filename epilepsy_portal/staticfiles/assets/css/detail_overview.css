@@ -9,3 +9,27 @@
     display: inline-block;
     margin-right: 20px;
 }
+#id_eeg_interictal_state > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_eeg_interictal_location > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_eeg_interictal_morph > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_eeg_interictal_amount > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_eeg_interictal_pattern > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_eeg_interictal_eye_relation > div {
+    display: inline-block;
+    margin-right: 20px;
+}

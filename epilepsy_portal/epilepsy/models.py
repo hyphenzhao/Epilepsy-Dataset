@@ -246,7 +246,7 @@ class Patient(models.Model):
     blank=True,
     help_text="多选，用逗号分隔编码存储",
 )
-    eeg_interictal_morphology = models.CharField(
+    eeg_interictal_morph = models.CharField(
     "波幅/波形（多选）",
     max_length=255,
     blank=True,
