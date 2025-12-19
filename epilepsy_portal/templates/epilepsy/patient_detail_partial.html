@@ -4,6 +4,90 @@
 <div class="card">
   <div class="card-body">
     <h4 class="mb-3">{{ patient.name }}</h4>
+    <hr class="my-3">
+    <h5 class="mb-3">文件预览（仅显示前三张图片）</h5>
+    <div class="row">
+      <div class="col-12 col-lg-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-2">MRI</div>
+          <div class="row">
+            {% for f in preview_mri %}
+              <div class="col-4 mb-2">
+                <div class="card">
+                  <img class="card-img-top img-fluid" style="max-height:140px; object-fit:cover;" loading="lazy"
+                       src="{% url 'epilepsy:patient_file_preview' 'mri' f.id %}"
+                       data-preview-src="{% url 'epilepsy:patient_file_preview' 'mri' f.id %}"
+                       alt="{{ f.file_name }}" title="点击放大">
+                  <div class="card-body p-2">
+                    <div class="small text-truncate" title="{{ f.file_name }}">{{ f.file_name }}</div>
+                  </div>
+                </div>
+              </div>
+            {% empty %}<div class="col-12 text-muted small">暂无可预览图片</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-2">PET</div>
+          <div class="row">
+            {% for f in preview_pet %}
+              <div class="col-4 mb-2">
+                <div class="card">
+                  <img class="card-img-top img-fluid" style="max-height:140px; object-fit:cover;" loading="lazy"
+                       src="{% url 'epilepsy:patient_file_preview' 'pet' f.id %}"
+                       data-preview-src="{% url 'epilepsy:patient_file_preview' 'pet' f.id %}"
+                       alt="{{ f.file_name }}" title="点击放大">
+                  <div class="card-body p-2">
+                    <div class="small text-truncate" title="{{ f.file_name }}">{{ f.file_name }}</div>
+                  </div>
+                </div>
+              </div>
+            {% empty %}<div class="col-12 text-muted small">暂无可预览图片</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-2">EEG</div>
+          <div class="row">
+            {% for f in preview_eeg %}
+              <div class="col-4 mb-2">
+                <div class="card">
+                  <img class="card-img-top img-fluid" style="max-height:140px; object-fit:cover;" loading="lazy"
+                       src="{% url 'epilepsy:patient_file_preview' 'eeg' f.id %}"
+                       data-preview-src="{% url 'epilepsy:patient_file_preview' 'eeg' f.id %}"
+                       alt="{{ f.file_name }}" title="点击放大">
+                  <div class="card-body p-2">
+                    <div class="small text-truncate" title="{{ f.file_name }}">{{ f.file_name }}</div>
+                  </div>
+                </div>
+              </div>
+            {% empty %}<div class="col-12 text-muted small">暂无可预览图片</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-2">sEEG</div>
+          <div class="row">
+            {% for f in preview_seeg %}
+              <div class="col-4 mb-2">
+                <div class="card">
+                  <img class="card-img-top img-fluid" style="max-height:140px; object-fit:cover;" loading="lazy"
+                       src="{% url 'epilepsy:patient_file_preview' 'seeg' f.id %}"
+                       data-preview-src="{% url 'epilepsy:patient_file_preview' 'seeg' f.id %}"
+                       alt="{{ f.file_name }}" title="点击放大">
+                  <div class="card-body p-2">
+                    <div class="small text-truncate" title="{{ f.file_name }}">{{ f.file_name }}</div>
+                  </div>
+                </div>
+              </div>
+            {% empty %}<div class="col-12 text-muted small">暂无可预览图片</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
 
     <h5 class="mb-3">一、基本信息（默认展开）</h5>
     <div class="row">
@@ -656,6 +740,246 @@
           <div>
             {% if form.laterality %}
               {{ form.laterality.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_hypersynchrony_slow_wave %}{{ form.eeg_sleep_hypersynchrony_slow_wave.label }}{% else %}eeg_sleep_hypersynchrony_slow_wave{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_hypersynchrony_slow_wave %}
+              {{ form.eeg_sleep_hypersynchrony_slow_wave.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_vertex_wave %}{{ form.eeg_sleep_vertex_wave.label }}{% else %}eeg_sleep_vertex_wave{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_vertex_wave %}
+              {{ form.eeg_sleep_vertex_wave.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_k_complex %}{{ form.eeg_sleep_k_complex.label }}{% else %}eeg_sleep_k_complex{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_k_complex %}
+              {{ form.eeg_sleep_k_complex.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_spindle %}{{ form.eeg_sleep_spindle.label }}{% else %}eeg_sleep_spindle{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_spindle %}
+              {{ form.eeg_sleep_spindle.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_post %}{{ form.eeg_sleep_post.label }}{% else %}eeg_sleep_post{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_post %}
+              {{ form.eeg_sleep_post.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_frontal_awake_rhythm %}{{ form.eeg_sleep_frontal_awake_rhythm.label }}{% else %}eeg_sleep_frontal_awake_rhythm{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_frontal_awake_rhythm %}
+              {{ form.eeg_sleep_frontal_awake_rhythm.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">状态</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_state %}{{ form.eeg_interictal_state.label }}{% else %}eeg_interictal_state{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_state %}
+              {{ form.eeg_interictal_state.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">部位</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_location %}{{ form.eeg_interictal_location.label }}{% else %}eeg_interictal_location{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_location %}
+              {{ form.eeg_interictal_location.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">波幅 / 波形</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_morph %}{{ form.eeg_interictal_morph.label }}{% else %}eeg_interictal_morph{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_morph %}
+              {{ form.eeg_interictal_morph.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">数量</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_amount %}{{ form.eeg_interictal_amount.label }}{% else %}eeg_interictal_amount{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_amount %}
+              {{ form.eeg_interictal_amount.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">出现方式</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_pattern %}{{ form.eeg_interictal_pattern.label }}{% else %}eeg_interictal_pattern{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_pattern %}
+              {{ form.eeg_interictal_pattern.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <h5 class="mb-3">眼状态相关</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_eye_relation %}{{ form.eeg_interictal_eye_relation.label }}{% else %}eeg_interictal_eye_relation{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_eye_relation %}
+              {{ form.eeg_interictal_eye_relation.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_ictal %}{{ form.eeg_ictal.label }}{% else %}eeg_ictal{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_ictal %}
+              {{ form.eeg_ictal.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_clinical_correlation %}{{ form.eeg_clinical_correlation.label }}{% else %}eeg_clinical_correlation{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_clinical_correlation %}
+              {{ form.eeg_clinical_correlation.value|default:"-"|linebreaksbr }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_file_link %}{{ form.eeg_file_link.label }}{% else %}eeg_file_link{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_file_link %}
+              {{ form.eeg_file_link.value|default:"-"|linebreaksbr }}
             {% else %}
               -
             {% endif %}

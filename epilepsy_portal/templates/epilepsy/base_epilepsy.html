@@ -2,8 +2,20 @@
 
 {% block title %}癫痫数据集门户{% endblock %}
 
+{# Optional page-specific CSS hook (child templates can override/append) #}
+{% block stylesheets %}
+  {{ block.super }}
+  {% block extra_css %}{% endblock %}
+{% endblock stylesheets %}
+
 {# Argon already defines layout and includes sidenav/navigation.
    We just provide a hook for page-specific content. #}
 {% block content %}
   {% block epilepsy_content %}{% endblock %}
-{% endblock %}
+{% endblock content %}
+
+{# Optional page-specific JS hook (child templates can override/append) #}
+{% block javascripts %}
+  {{ block.super }}
+  {% block extra_js %}{% endblock %}
+{% endblock javascripts %}

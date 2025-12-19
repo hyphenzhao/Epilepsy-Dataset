@@ -5,6 +5,9 @@ import csv
 import shutil
 import hashlib
 import psutil
+import zipfile
+import tempfile
+from pathlib import Path
 
 from django.conf import settings
 from django.http import HttpResponseForbidden
@@ -252,45 +255,117 @@ def handle_patient_file_uploads(request, patient):
                         pass
                 file_obj.delete()
 
-        # 新上传文件
-        files = request.FILES.getlist(input_name)
-        if not files:
+        # 新上传文件（支持普通文件 + zip）
+        uploads = request.FILES.getlist(input_name)
+        if not uploads:
             continue
 
         parent_path = f"{file_type}/{patient.id}"
         abs_dir = os.path.join(base_dir, parent_path)
         os.makedirs(abs_dir, exist_ok=True)
 
-        for uploaded in files:
-            orig_name = uploaded.name
+        def _save_one_file_to_store(src_path: str, display_name: str):
+            """
+            将磁盘上的文件 src_path 写入 large_files，并写 DB。
+            display_name 用于写入 file_name（展示给用户的名称）。
+            """
             md5 = hashlib.md5()
             sha256 = hashlib.sha256()
 
-            temp_path = os.path.join(abs_dir, f"tmp_{uploaded.name}")
-            with open(temp_path, "wb") as f:
-                for chunk in uploaded.chunks():
+            # 读入并计算 hash
+            with open(src_path, "rb") as rf:
+                for chunk in iter(lambda: rf.read(1024 * 1024), b""):
                     md5.update(chunk)
                     sha256.update(chunk)
-                    f.write(chunk)
 
             hash_code = md5.hexdigest()
             sha256_code = sha256.hexdigest()
 
-            _, ext = os.path.splitext(orig_name)
-            ext = ext.lower()
+            _, ext = os.path.splitext(display_name)
+            ext = (ext or os.path.splitext(src_path)[1]).lower()
             final_name = f"{hash_code}{ext}"
             final_path = os.path.join(abs_dir, final_name)
 
-            os.replace(temp_path, final_path)
+            # 直接移动/覆盖（同 hash 会覆盖为相同内容）
+            os.replace(src_path, final_path)
 
             model_cls.objects.create(
                 patient=patient,
                 parent_path=parent_path,
-                file_name=orig_name,
+                file_name=display_name,
                 hash_code=hash_code,
                 sha256_code=sha256_code,
             )
 
+        def _safe_extract_zip(zip_path: str, extract_dir: str):
+            """
+            防 Zip Slip：确保解压后的文件路径都在 extract_dir 内。
+            """
+            extract_root = Path(extract_dir).resolve()
+            with zipfile.ZipFile(zip_path, "r") as zf:
+                for member in zf.infolist():
+                    # 跳过目录
+                    if member.is_dir():
+                        continue
+                    target = (extract_root / member.filename).resolve()
+                    if not str(target).startswith(str(extract_root) + os.sep):
+                        raise ValueError(f"Unsafe zip entry path: {member.filename}")
+                zf.extractall(extract_root)
+
+        for uploaded in uploads:
+            orig_name = uploaded.name or ""
+            _, ext0 = os.path.splitext(orig_name)
+            ext0 = (ext0 or "").lower()
+
+            # 先把上传内容写到临时文件（同目录，避免跨盘移动问题）
+            tmp_uploaded_path = os.path.join(abs_dir, f"tmp_upload_{orig_name}")
+            with open(tmp_uploaded_path, "wb") as f:
+                for chunk in uploaded.chunks():
+                    f.write(chunk)
+
+            is_zip = (ext0 == ".zip") or zipfile.is_zipfile(tmp_uploaded_path)
+
+            if not is_zip:
+                # 普通文件：直接入库
+                _save_one_file_to_store(tmp_uploaded_path, orig_name)
+                continue
+
+            # zip：解压 -> 递归收集文件 -> 入库 -> 清理 zip & 解压目录
+            extract_dir = tempfile.mkdtemp(prefix="tmp_extract_", dir=abs_dir)
+            try:
+                _safe_extract_zip(tmp_uploaded_path, extract_dir)
+
+                # 删除原始 zip 临时文件
+                try:
+                    os.remove(tmp_uploaded_path)
+                except OSError:
+                    pass
+
+                # 递归遍历解压目录
+                for root, _, filenames in os.walk(extract_dir):
+                    for fn in filenames:
+                        # 可选：跳过 macOS 垃圾文件
+                        if fn in (".DS_Store",) or fn.startswith("._"):
+                            continue
+
+                        full_path = os.path.join(root, fn)
+
+                        # 用 zip 内相对路径作为展示名（可追溯来源）
+                        rel_path = os.path.relpath(full_path, extract_dir)
+                        display_name = f"{Path(orig_name).stem}/{rel_path}".replace("\\", "/")
+
+                        # 为避免移动后破坏遍历，先把文件移动到 abs_dir 下的临时文件名
+                        staging_path = os.path.join(abs_dir, f"tmp_zip_{hashlib.md5(display_name.encode('utf-8')).hexdigest()}")
+                        os.replace(full_path, staging_path)
+
+                        _save_one_file_to_store(staging_path, display_name)
+
+            finally:
+                # 清理解压目录
+                try:
+                    shutil.rmtree(extract_dir, ignore_errors=True)
+                except OSError:
+                    pass
 
 def build_patient_file_path(model_cls, file_id):
     """

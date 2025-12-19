@@ -1,6 +1,10 @@
 {% extends "epilepsy/base_epilepsy.html" %}
-
+{% load static %}
 {% block title %}浏览患者 - 癫痫数据集{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'assets/css/image_preview_lightbox.css' %}">
+{% endblock %}
 
 {% block epilepsy_content %}
 <div class="container mt-4">
@@ -1058,6 +1062,19 @@ document.addEventListener('DOMContentLoaded', function () {
     <input type="hidden" name="modalities" id="batch-download-files-modalities">
 </form>
 
+<!-- Image Preview Overlay (Lightbox) -->
+<div id="imgPreviewOverlay" class="img-preview-overlay" aria-hidden="true">
+  <div class="img-preview-dialog" role="dialog" aria-modal="true" aria-label="Image preview">
+    <button id="imgPreviewOverlayClose"
+            class="img-preview-close"
+            type="button"
+            aria-label="Close">×</button>
+    <img id="imgPreviewOverlayImg" src="" alt="">
+  </div>
+</div>
 
 {% endblock %}
 
+{% block extra_js %}
+  <script src="{% static 'assets/js/image_preview_lightbox.js' %}"></script>
+{% endblock %}

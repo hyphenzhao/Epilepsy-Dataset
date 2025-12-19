@@ -21,7 +21,8 @@ urlpatterns = [
     path('patients/batch_download_info/', views.batch_download_info, name='batch_download_info'),
     path('patients/batch_delete/', views.batch_delete_patients, name='batch_delete_patients'),
     path('patients/batch_download_files/', views.batch_download_files, name='batch_download_files'),
-    
+    path("patients/files/preview/<str:file_type>/<int:file_id>/", views.patient_file_preview, name="patient_file_preview"),
+
     path("settings/users/", views.UserListView.as_view(), name="user_list"),  # 管理设置
     path("users/", views.UserListView.as_view(), name="user_list"),
     path("users/create/", views.user_create, name="user_create"),

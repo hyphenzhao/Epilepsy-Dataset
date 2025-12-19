@@ -1,7 +1,8 @@
 # epilepsy/views.py
 
 import os, csv, datetime, io, zipfile
-# from 
+import mimetypes
+from django.utils.encoding import smart_str
 from django.conf import settings
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
@@ -579,12 +580,33 @@ def patient_edit(request, pk):
 def patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
     form = PatientForm(instance=patient)
-    context = {"patient": patient, "form": form}
+
+    allowed_ext = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+
+    def first_three_images(qs):
+        out = []
+        for f in qs.order_by("-created_at"):
+            ext = os.path.splitext(getattr(f, "file_name", "") or "")[1].lower()
+            if ext in allowed_ext:
+                out.append(f)
+            if len(out) >= 3:
+                break
+        return out
+
+    context = {
+        "patient": patient,
+        "form": form,
+        "preview_mri": first_three_images(patient.mri_files.all()),
+        "preview_pet": first_three_images(patient.pet_files.all()),
+        "preview_eeg": first_three_images(patient.eeg_files.all()),
+        "preview_seeg": first_three_images(patient.seeg_files.all()),
+    }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "epilepsy/patient_detail_partial.html", context)
 
     return render(request, "epilepsy/patient_detail.html", context)
+
 
 
 @login_required
@@ -738,3 +760,34 @@ def batch_download_files(request):
     response['Content-Disposition'] = 'attachment; filename="患者文件_批量下载.zip"'
     return response
 
+@login_required
+def patient_file_preview(request, file_type, file_id):
+    """
+    用于 <img src="..."> 预览：Content-Disposition inline，不强制下载。
+    仅允许图片类型，避免浏览器直接打开非图片内容带来的风险。
+    """
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限查看")
+
+    model_map = {"mri": MRIFile, "pet": PETFile, "eeg": EEGFile, "seeg": SEEGFile}
+    model_cls = model_map.get(file_type)
+    if model_cls is None:
+        raise Http404("未知文件类型")
+
+    file_obj, file_path = build_patient_file_path(model_cls, file_id)
+    if not os.path.exists(file_path):
+        raise Http404("文件不存在")
+
+    # 仅允许常见图片扩展名（按 file_name）
+    allowed_ext = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+    ext = os.path.splitext(getattr(file_obj, "file_name", "") or "")[1].lower()
+    if ext not in allowed_ext:
+        raise Http404("不支持预览的文件类型")
+
+    content_type, _ = mimetypes.guess_type(file_obj.file_name)
+    content_type = content_type or "application/octet-stream"
+
+    resp = FileResponse(open(file_path, "rb"), content_type=content_type)
+    resp["Content-Disposition"] = f'inline; filename="{smart_str(file_obj.file_name)}"'
+    return resp
