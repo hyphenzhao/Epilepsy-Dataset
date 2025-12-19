@@ -69,6 +69,11 @@ class PatientForm(forms.ModelForm):
         choices=Patient.EEG_INTERICTAL_LOCATION_CHOICES,
         widget=forms.CheckboxSelectMultiple,
     )
+    eeg_interictal_focal_lobe = forms.ChoiceField(
+    label="局灶部位（叶）",
+    required=False,
+    choices=Patient.FOCAL_LOBE_CHOICES,
+)
 
     eeg_interictal_morph = forms.MultipleChoiceField(
         label="波幅、波形",
@@ -97,7 +102,18 @@ class PatientForm(forms.ModelForm):
         choices=Patient.EEG_INTERICTAL_EYE_RELATED_CHOICES,
         widget=forms.CheckboxSelectMultiple,
     )
-
+    eeg_ictal_state = forms.MultipleChoiceField(
+        label="状态",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_STATE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eeg_ictal_location = forms.MultipleChoiceField(
+        label="部位",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_LOCATION_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
     class Meta:
         model = Patient
         fields = [
@@ -178,11 +194,15 @@ class PatientForm(forms.ModelForm):
             "eeg_sleep_other",
             "eeg_interictal_state",
             "eeg_interictal_location",
+            "eeg_interictal_focal_lobe",
             "eeg_interictal_morph",
             "eeg_interictal_amount",
             "eeg_interictal_pattern",
             "eeg_interictal_eye_relation",
             "eeg_interictal",
+            "eeg_ictal_state",
+            "eeg_ictal_location",
+            "eeg_ictal_amount",
             "eeg_ictal",
             "eeg_clinical_correlation",
             "eeg_file_link",
@@ -322,10 +342,14 @@ class PatientForm(forms.ModelForm):
             "eeg_sleep_other": "睡眠周期 其他",
             "eeg_interictal_state": "状态",
             "eeg_interictal_location": "部位",
+            "eeg_interictal_focal_lobe": "局灶部位（叶）", 
             "eeg_interictal_morph": "波幅、波形",
             "eeg_interictal_amount": "数量",
             "eeg_interictal_pattern": "出现方式",
             "eeg_interictal_eye_relation": "眼状态相关",
+            "eeg_ictal_state":"发作期状态（多选）",
+            "eeg_ictal_location":"发作期部位（多选）",
+            "eeg_ictal_amount":"发作期数量",
             "eeg_interictal": "EEG 发作间期放电",
             "eeg_ictal": "EEG 发作期放电",
             "eeg_clinical_correlation": "EEG 同步发作临床症状",
@@ -380,7 +404,61 @@ class PatientForm(forms.ModelForm):
     def clean_other_medical_history(self):
         data = self.cleaned_data.get("other_medical_history", [])
         return ",".join(data)
+    
+    def clean_eeg_interictal_state(self):
+         data = self.cleaned_data.get("eeg_interictal_state", [])
+         return ",".join(data)
 
+    def clean_eeg_interictal_location(self):
+        data = self.cleaned_data.get("eeg_interictal_location", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_morph(self):
+        data = self.cleaned_data.get("eeg_interictal_morph", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_amount(self):
+        data = self.cleaned_data.get("eeg_interictal_amount", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_pattern(self):
+        data = self.cleaned_data.get("eeg_interictal_pattern", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_eye_relation(self):
+        data = self.cleaned_data.get("eeg_interictal_eye_relation", [])
+        return ",".join(data)
+    
+    def clean_eeg_ictal_state(self):
+        data = self.cleaned_data.get("eeg_ictal_state", [])
+        return ",".join(data)
+
+    def clean_eeg_ictal_location(self):
+        data = self.cleaned_data.get("eeg_ictal_location", [])
+        return ",".join(data)
+
+    def clean_eeg_ictal_amount(self):
+        data = self.cleaned_data.get("eeg_ictal_amount", [])
+        return ",".join(data)
+
+    def clean(self):
+        cleaned = super().clean()
+
+        locations = cleaned.get("eeg_interictal_location") or []
+        focal_lobe = cleaned.get("eeg_interictal_focal_lobe")
+
+        # 勾选了“局灶” → 必须选叶
+        if "FOCAL" in locations and not focal_lobe:
+            self.add_error(
+                "eeg_interictal_focal_lobe",
+                "选择“局灶”时必须指定额叶 / 顶叶 / 枕叶 / 颞叶"
+            )
+
+        # 没选“局灶” → 清空叶字段，避免脏数据
+        if "FOCAL" not in locations:
+            cleaned["eeg_interictal_focal_lobe"] = ""
+
+        return cleaned
 
 class UserWithRoleForm(forms.ModelForm):
     role = forms.ChoiceField(

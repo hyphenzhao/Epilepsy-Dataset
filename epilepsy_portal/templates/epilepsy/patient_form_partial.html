@@ -579,11 +579,26 @@
             <div class="col-md-2 mb-3">
               {{ form.eeg_interictal_location.label_tag }}
             </div>
-            <div>
-              {{ form.eeg_interictal_location }}
+
+            <div class="col-md-10">
+              {% for cb in form.eeg_interictal_location %}
+                <label class="mr-3">
+                  {{ cb.tag }} {{ cb.choice_label }}
+                </label>
+
+                {# 只在“局灶(FOCAL)”后面插入下拉框，不显示label #}
+                {% if cb.data.value == "FOCAL" %}
+                  <span id="wrap_eeg_interictal_focal_lobe" style="display:none; margin-left:6px;">
+                    {{ form.eeg_interictal_focal_lobe }}
+                    {{ form.eeg_interictal_focal_lobe.errors }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+
               {{ form.eeg_interictal_location.errors }}
             </div>
           </div>
+
           <!-- 波幅 / 波形 -->
           <div class="row">
             <div class="col-md-2 mb-3">
@@ -624,16 +639,45 @@
               {{ form.eeg_interictal_eye_relation.errors }}
             </div>
           </div>
+          <div class="mt-4 mb-2">
+            <strong>● EEG 发作期放电：</strong>
+          </div>
           <!-- <div class="mb-3">
             {{ form.eeg_interictal.label_tag }}
             {{ form.eeg_interictal }}
             {{ form.eeg_interictal.errors }}
           </div> -->
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             {{ form.eeg_ictal.label_tag }}
             {{ form.eeg_ictal }}
             {{ form.eeg_ictal.errors }}
+          </div> -->
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.eeg_ictal_state.label_tag }}
+            </div>
+            <div>
+              {{ form.eeg_ictal_state }}
+              {{ form.eeg_ictal_state.errors }}
+            </div>
           </div>
+
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.eeg_ictal_location.label_tag }}
+            </div>
+            <div>
+              {{ form.eeg_ictal_location }}
+              {{ form.eeg_ictal_location.errors }}
+            </div>
+          </div>
+
+          <div class=" mb-3">
+              {{ form.eeg_ictal_amount.label_tag }}
+              {{ form.eeg_ictal_amount }}
+              {{ form.eeg_ictal_amount.errors }}
+          </div>
+
           <div class="mb-3">
             {{ form.eeg_clinical_correlation.label_tag }}
             {{ form.eeg_clinical_correlation }}
@@ -1283,5 +1327,27 @@
     xhr.send(formData);
   });
 })();
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const wrap = document.getElementById("wrap_eeg_interictal_focal_lobe");
+  if (!wrap) return;
+
+  // 注意：这是 checkbox 列表，不是 select
+  const boxes = Array.from(document.querySelectorAll('input[name="eeg_interictal_location"]'));
+  if (!boxes.length) {
+    console.log("no checkboxes found for eeg_interictal_location");
+    return;
+  }
+
+  function toggleFocal() {
+    const hasFocal = boxes.some(cb => cb.checked && cb.value === "FOCAL");
+    wrap.style.display = hasFocal ? "" : "none"; // 用 "" 恢复默认展示更稳
+  }
+
+  boxes.forEach(cb => cb.addEventListener("change", toggleFocal));
+  toggleFocal(); // 页面加载时同步一次
+});
 </script>
 

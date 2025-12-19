@@ -91,6 +91,7 @@ class Patient(models.Model):
 
     # 部位
     EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),]
+    FOCAL_LOBE_CHOICES = [ ("FRONTAL", "额叶"),("PARIETAL", "顶叶"),("OCCIPITAL", "枕叶"),("TEMPORAL", "颞叶"),]
 
     # 波幅/波形
     EEG_INTERICTAL_MORPH_CHOICES = [("SHARP", "尖波"),("SPIKE", "棘波"),("POLY_SPIKE", "多棘波"),("SHARP_SLOW", "棘慢复合波"),]
@@ -210,7 +211,7 @@ class Patient(models.Model):
     # 【视频头皮 EEG 检查】
     eeg_recording_electrodes = models.CharField( "EEG 记录电极", max_length=20, choices=EEG_RECORDING_ELECTRODES_CHOICES, blank=True)
     eeg_recording_duration_days = models.PositiveIntegerField("记录时间 (天)", blank=True, null=True)
-    eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True,)
+    eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True)
     eeg_eye_response = models.CharField(
     "睁/闭眼反应", max_length=100, choices=AURA_CHOICES, blank=True)
     eeg_symmetry = models.CharField(
@@ -246,6 +247,13 @@ class Patient(models.Model):
     blank=True,
     help_text="多选，用逗号分隔编码存储",
 )
+    eeg_interictal_focal_lobe = models.CharField(
+    "局灶部位（叶）",
+    max_length=20,
+    choices=FOCAL_LOBE_CHOICES,
+    blank=True,
+    null=True,
+)
     eeg_interictal_morph = models.CharField(
     "波幅/波形（多选）",
     max_length=255,
@@ -270,7 +278,9 @@ class Patient(models.Model):
     blank=True,
     help_text="多选，用逗号分隔编码存储",
 )
-
+    eeg_ictal_state = models.CharField("发作期状态（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
+    eeg_ictal_location = models.CharField("发作期部位（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
+    eeg_ictal_amount = models.CharField("发作期数量", max_length=100, blank=True,null=True)
     eeg_interictal = models.TextField("EEG 发作间期放电", blank=True)
     eeg_ictal = models.TextField("EEG 发作期放电", blank=True)
     eeg_clinical_correlation = models.TextField(

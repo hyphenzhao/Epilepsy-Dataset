@@ -33,3 +33,12 @@
     display: inline-block;
     margin-right: 20px;
 }
+
+#id_eeg_ictal_state > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_eeg_ictal_location > div {
+    display: inline-block;
+    margin-right: 20px;
+}
