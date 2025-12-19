@@ -586,11 +586,19 @@
                   {{ cb.tag }} {{ cb.choice_label }}
                 </label>
 
-                {# 只在“局灶(FOCAL)”后面插入下拉框，不显示label #}
                 {% if cb.data.value == "FOCAL" %}
                   <span id="wrap_eeg_interictal_focal_lobe" style="display:none; margin-left:6px;">
                     {{ form.eeg_interictal_focal_lobe }}
                     {{ form.eeg_interictal_focal_lobe.errors }}
+                  </span>
+                {% endif %}
+              
+
+                {% if cb.data.value == "LAT" %}
+                  <span id="wrap_eeg_interictal_laterality"
+                        style="display:none; margin-left:6px;">
+                    {{ form.eeg_interictal_laterality }}
+                    {{ form.eeg_interictal_laterality.errors }}
                   </span>
                 {% endif %}
               {% endfor %}
@@ -1331,23 +1339,21 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const wrap = document.getElementById("wrap_eeg_interictal_focal_lobe");
-  if (!wrap) return;
-
-  // 注意：这是 checkbox 列表，不是 select
   const boxes = Array.from(document.querySelectorAll('input[name="eeg_interictal_location"]'));
-  if (!boxes.length) {
-    console.log("no checkboxes found for eeg_interictal_location");
-    return;
-  }
+  if (!boxes.length) return;
 
-  function toggleFocal() {
+  const wrapFocal = document.getElementById("wrap_eeg_interictal_focal_lobe");
+  const wrapLat = document.getElementById("wrap_eeg_interictal_laterality");
+
+  function toggle() {
     const hasFocal = boxes.some(cb => cb.checked && cb.value === "FOCAL");
-    wrap.style.display = hasFocal ? "" : "none"; // 用 "" 恢复默认展示更稳
+    const hasLat = boxes.some(cb => cb.checked && cb.value === "LAT");
+
+    if (wrapFocal) wrapFocal.style.display = hasFocal ? "" : "none";
+    if (wrapLat) wrapLat.style.display = hasLat ? "" : "none";
   }
 
-  boxes.forEach(cb => cb.addEventListener("change", toggleFocal));
-  toggleFocal(); // 页面加载时同步一次
+  boxes.forEach(cb => cb.addEventListener("change", toggle));
+  toggle();
 });
 </script>
-

@@ -74,7 +74,12 @@ class PatientForm(forms.ModelForm):
     required=False,
     choices=Patient.FOCAL_LOBE_CHOICES,
 )
-
+    eeg_interictal_laterality = forms.ChoiceField(
+    label="偏侧方向",
+    required=False,
+    choices=Patient.EEG_INTERICTAL_LATERALITY_CHOICES,
+)
+    
     eeg_interictal_morph = forms.MultipleChoiceField(
         label="波幅、波形",
         required=False,
@@ -195,6 +200,7 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal_state",
             "eeg_interictal_location",
             "eeg_interictal_focal_lobe",
+            "eeg_interictal_laterality",
             "eeg_interictal_morph",
             "eeg_interictal_amount",
             "eeg_interictal_pattern",
@@ -343,6 +349,7 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal_state": "状态",
             "eeg_interictal_location": "部位",
             "eeg_interictal_focal_lobe": "局灶部位（叶）", 
+            "eeg_interictal_laterality":"偏侧方向",
             "eeg_interictal_morph": "波幅、波形",
             "eeg_interictal_amount": "数量",
             "eeg_interictal_pattern": "出现方式",

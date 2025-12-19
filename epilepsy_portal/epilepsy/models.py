@@ -92,7 +92,7 @@ class Patient(models.Model):
     # 部位
     EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),]
     FOCAL_LOBE_CHOICES = [ ("FRONTAL", "额叶"),("PARIETAL", "顶叶"),("OCCIPITAL", "枕叶"),("TEMPORAL", "颞叶"),]
-
+    EEG_INTERICTAL_LATERALITY_CHOICES = [("L", "左侧"),("R", "右侧"),("M", "中线"),]
     # 波幅/波形
     EEG_INTERICTAL_MORPH_CHOICES = [("SHARP", "尖波"),("SPIKE", "棘波"),("POLY_SPIKE", "多棘波"),("SHARP_SLOW", "棘慢复合波"),]
 
@@ -251,6 +251,13 @@ class Patient(models.Model):
     "局灶部位（叶）",
     max_length=20,
     choices=FOCAL_LOBE_CHOICES,
+    blank=True,
+    null=True,
+)
+    eeg_interictal_laterality = models.CharField(
+    "偏侧方向",
+    max_length=1,
+    choices=EEG_INTERICTAL_LATERALITY_CHOICES,
     blank=True,
     null=True,
 )
