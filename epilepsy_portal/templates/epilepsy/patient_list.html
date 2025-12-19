@@ -352,7 +352,7 @@
     </thead>
 <tbody>
   {% for p in patients %}
-  <tr class="patient-row" onclick="openViewPanel({{ p.id }})">
+  <tr class="patient-row" data-patient-id="{{ p.id }}">
     <td class="selection-cell">
         <input type="checkbox"
                class="patient-select"
