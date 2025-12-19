@@ -414,37 +414,39 @@
             </div>
           </div>
 
-          <div class="row mt-2">
-            <div class="col-md-4 mb-3">
-              {{ form.eeg_hv_slow_wave_build.label_tag }}
-              {{ form.eeg_hv_slow_wave_build }}
-              {{ form.eeg_hv_slow_wave_build.errors }}
-            </div>
+          <div id="wrap_hv_related_change" style="display:none;">
+            <div class="row mt-2">
+              <div class="col-md-4 mb-3">
+                {{ form.eeg_hv_slow_wave_build.label_tag }}
+                {{ form.eeg_hv_slow_wave_build }}
+                {{ form.eeg_hv_slow_wave_build.errors }}
+              </div>
 
-            <div class="col-md-4 mb-3">
-              {{ form.eeg_hv_slow_wave_frequency.label_tag }}
-              {{ form.eeg_hv_slow_wave_frequency }}
-              {{ form.eeg_hv_slow_wave_frequency.errors }}
-            </div>
+              <div class="col-md-4 mb-3">
+                {{ form.eeg_hv_slow_wave_frequency.label_tag }}
+                {{ form.eeg_hv_slow_wave_frequency }}
+                {{ form.eeg_hv_slow_wave_frequency.errors }}
+              </div>
 
-            <div class="col-md-4 mb-3">
-              {{ form.eeg_hv_slow_wave_symmetry.label_tag }}
-              {{ form.eeg_hv_slow_wave_symmetry }}
-              {{ form.eeg_hv_slow_wave_symmetry.errors }}
-            </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            {{ form.eeg_hv_epileptiform_discharge.label_tag }}
-            {{ form.eeg_hv_epileptiform_discharge }}
-            {{ form.eeg_hv_epileptiform_discharge.errors }}
+              <div class="col-md-4 mb-3">
+                {{ form.eeg_hv_slow_wave_symmetry.label_tag }}
+                {{ form.eeg_hv_slow_wave_symmetry }}
+                {{ form.eeg_hv_slow_wave_symmetry.errors }}
+              </div>
           </div>
 
-          <div class="col-md-6 mb-3">
-            {{ form.eeg_hv_discharge_laterality.label_tag }}
-            {{ form.eeg_hv_discharge_laterality }}
-            {{ form.eeg_hv_discharge_laterality.errors }}
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              {{ form.eeg_hv_epileptiform_discharge.label_tag }}
+              {{ form.eeg_hv_epileptiform_discharge }}
+              {{ form.eeg_hv_epileptiform_discharge.errors }}
+            </div>
+
+            <div class="col-md-6 mb-3">
+              {{ form.eeg_hv_discharge_laterality.label_tag }}
+              {{ form.eeg_hv_discharge_laterality }}
+              {{ form.eeg_hv_discharge_laterality.errors }}
+            </div>
           </div>
         </div>
 
@@ -1355,5 +1357,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
   boxes.forEach(cb => cb.addEventListener("change", toggle));
   toggle();
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const hvSelect = document.getElementById("id_eeg_hv_result");
+  const wrap = document.getElementById("wrap_hv_related_change");
+  if (!hvSelect || !wrap) return;
+
+  function isRelatedChange() {
+    const opt = hvSelect.options[hvSelect.selectedIndex];
+    const val = (hvSelect.value || "").trim();
+    const text = (opt ? opt.textContent : "").trim();
+    return val === "RELATED_CHANGE" || text === "相关改变";
+  }
+
+  function toggleHV() {
+    wrap.style.display = isRelatedChange() ? "" : "none";
+  }
+
+  hvSelect.addEventListener("change", toggleHV);
+  toggleHV(); 
 });
 </script>
