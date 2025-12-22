@@ -281,6 +281,30 @@ class PatientForm(forms.ModelForm):
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
+                    'mri_brief': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'pet_brief': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_bg_occipital_rhythm': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'style': 'width:120px; display:inline-block;',
+                    }),
+                        'seeg_interictal_overall': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                        'seeg_ictal': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
             }
         labels = {
             "name": "患者姓名",
@@ -325,7 +349,7 @@ class PatientForm(forms.ModelForm):
 
             "eeg_recording_electrodes": "EEG 记录电极",
             "eeg_recording_duration_days": "记录时间（天）",
-            "eeg_bg_occipital_rhythm":"枕区优势节律（闭目安静状态）",
+            "eeg_bg_occipital_rhythm":"枕区优势节律（闭目安静状态）(Hz)",
             "eeg_eye_response": "睁/闭眼反应", 
             "eeg_symmetry": "对称性",
             "eeg_awake_background": "清醒期背景",

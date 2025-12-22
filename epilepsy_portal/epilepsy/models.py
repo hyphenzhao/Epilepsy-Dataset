@@ -211,7 +211,7 @@ class Patient(models.Model):
     # 【视频头皮 EEG 检查】
     eeg_recording_electrodes = models.CharField( "EEG 记录电极", max_length=20, choices=EEG_RECORDING_ELECTRODES_CHOICES, blank=True)
     eeg_recording_duration_days = models.PositiveIntegerField("记录时间 (天)", blank=True, null=True)
-    eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True)
+    eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）111",max_length=100, blank=True,null=True)
     eeg_eye_response = models.CharField(
     "睁/闭眼反应", max_length=100, choices=AURA_CHOICES, blank=True)
     eeg_symmetry = models.CharField(

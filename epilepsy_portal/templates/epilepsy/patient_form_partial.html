@@ -678,8 +678,30 @@
             <div class="col-md-2 mb-3">
               {{ form.eeg_ictal_location.label_tag }}
             </div>
-            <div>
-              {{ form.eeg_ictal_location }}
+
+            <div class="col-md-10">
+              {% for cb in form.eeg_ictal_location %}
+                <label class="mr-3">
+                  {{ cb.tag }} {{ cb.choice_label }}
+                </label>
+
+                {% if cb.data.value == "FOCAL" %}
+                  <span id="wrap_eeg_ictal_focal_lobe"
+                        style="display:none; margin-left:6px;">
+                    {{ form.eeg_interictal_focal_lobe }}
+                    {{ form.eeg_interictal_focal_lobe.errors }}
+                  </span>
+                {% endif %}
+
+                {% if cb.data.value == "LAT" %}
+                  <span id="wrap_eeg_ictal_laterality"
+                        style="display:none; margin-left:6px;">
+                    {{ form.eeg_interictal_laterality }}
+                    {{ form.eeg_interictal_laterality.errors }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+
               {{ form.eeg_ictal_location.errors }}
             </div>
           </div>
@@ -975,7 +997,7 @@
             {{ form.seeg_interictal_overall.errors }}
           </div>
 
-          <div class="row">
+          <!-- <div class="row">
             <div class="col-md-4 mb-3">
               {{ form.seeg_group1.label_tag }}
               {{ form.seeg_group1 }}
@@ -991,7 +1013,7 @@
               {{ form.seeg_group3 }}
               {{ form.seeg_group3.errors }}
             </div>
-          </div>
+          </div> -->
 
           <div class="mb-3">
             {{ form.seeg_ictal.label_tag }}
@@ -1387,5 +1409,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
   bindShowWhenRelated("id_eeg_hv_result", "wrap_hv_related_change");
   bindShowWhenRelated("id_ips_result", "wrap_ips_related_change");
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const boxes = Array.from(
+    document.querySelectorAll('input[name="eeg_ictal_location"]')
+  );
+  if (!boxes.length) return;
+
+  const wrapFocal = document.getElementById("wrap_eeg_ictal_focal_lobe");
+  const wrapLat = document.getElementById("wrap_eeg_ictal_laterality");
+
+  function toggle() {
+    const hasFocal = boxes.some(
+      cb => cb.checked && cb.value === "FOCAL"
+    );
+    const hasLat = boxes.some(
+      cb => cb.checked && cb.value === "LAT"
+    );
+
+    if (wrapFocal) wrapFocal.style.display = hasFocal ? "" : "none";
+    if (wrapLat) wrapLat.style.display = hasLat ? "" : "none";
+  }
+
+  boxes.forEach(cb => cb.addEventListener("change", toggle));
+  toggle(); // 页面加载时同步一次
 });
 </script>
