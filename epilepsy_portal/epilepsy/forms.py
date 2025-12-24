@@ -360,7 +360,7 @@ class PatientForm(forms.ModelForm):
             "eeg_hv_epileptiform_discharge": "HV 诱发癫痫样放电",
             "eeg_hv_discharge_laterality": "HV 放电对侧性",
             "ips_result":"IPS结果",
-             "frequency":"闪光频率(Hz)",
+            "frequency":"闪光频率(Hz)",
             "laterality":"侧别",
             "eeg_sleep_period_overall": "睡眠周期",
             "eeg_sleep_hypersynchrony_slow_wave": "思睡期超同步化慢波",
@@ -468,9 +468,7 @@ class PatientForm(forms.ModelForm):
         data = self.cleaned_data.get("eeg_ictal_location", [])
         return ",".join(data)
 
-    def clean_eeg_ictal_amount(self):
-        data = self.cleaned_data.get("eeg_ictal_amount", [])
-        return ",".join(data)
+
 
     def clean(self):
         cleaned = super().clean()

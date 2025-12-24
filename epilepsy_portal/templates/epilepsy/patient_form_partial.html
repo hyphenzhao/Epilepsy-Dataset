@@ -454,7 +454,7 @@
             <strong class="d-block mt-3 mb-2">● IPS 闪光刺激诱发：</strong>
             <div>
               {{ form.ips_result }}
-              {{ form.ips.errors }}
+              {{ form.ips_result.errors }}
             </div>
         </div>
         <div id="wrap_ips_related_change" style="display:none;">
@@ -717,11 +717,11 @@
             {{ form.eeg_clinical_correlation }}
             {{ form.eeg_clinical_correlation.errors }}
           </div>
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             {{ form.eeg_file_link.label_tag }}
             {{ form.eeg_file_link }}
             {{ form.eeg_file_link.errors }}
-          </div>
+          </div> -->
 
           {# ========= EEG 文件列表区域 ========= #}
           <hr>
@@ -801,7 +801,7 @@
             {{ form.mri_brief }}
             {{ form.mri_brief.errors }}
           </div>
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             {{ form.mri_link.label_tag }}
             {{ form.mri_link }}
             {{ form.mri_link.errors }}
@@ -811,7 +811,7 @@
                 下载 MRI 图像（外部链接）
               </a>
             {% endif %}
-          </div>
+          </div> -->
 
           {# ========= MRI 文件列表 ========= #}
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -872,7 +872,7 @@
             {{ form.pet_brief }}
             {{ form.pet_brief.errors }}
           </div>
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             {{ form.pet_link.label_tag }}
             {{ form.pet_link }}
             {{ form.pet_link.errors }}
@@ -882,7 +882,7 @@
                 下载 PET 图像（外部链接）
               </a>
             {% endif %}
-          </div>
+          </div> -->
 
           {# ========= PET 文件列表 ========= #}
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1021,11 +1021,11 @@
             {{ form.seeg_ictal.errors }}
           </div>
           
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             {{ form.seeg_file_link.label_tag }}
             {{ form.seeg_file_link }}
             {{ form.seeg_file_link.errors }}
-          </div>
+          </div> -->
 
           {# ========= SEEG 文件列表 ========= #}
           <hr>

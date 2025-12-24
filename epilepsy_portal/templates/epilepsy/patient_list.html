@@ -564,6 +564,36 @@
   </div>
 </div>
 
+<script>
+  function initHvIpsRelatedChange(root=document) {
+    function bind(selectId, wrapId) {
+      const sel = root.querySelector('#' + selectId);
+      const wrap = root.querySelector('#' + wrapId);
+      if (!sel || !wrap) return;
+
+      function isRelated() {
+        const opt = sel.options[sel.selectedIndex];
+        const val = (sel.value || '').trim();
+        const text = (opt ? opt.textContent : '').trim();
+        return val === 'RELATED_CHANGE' || text === '相关改变';
+      }
+
+      function toggle() {
+        wrap.style.display = isRelated() ? '' : 'none';
+      }
+
+      sel.addEventListener('change', toggle);
+      toggle();
+    }
+
+    // ✅ HV：你的字段名是 eeg_hv_result，所以 id 默认是 id_eeg_hv_result
+    bind('id_eeg_hv_result', 'wrap_hv_related_change');
+
+    // ✅ IPS：你 partial 里写的是 form.ips_result（字段名大概率就叫 ips_result）
+    // 如果你的真实字段是 eeg_ips_result，那就改成 id_eeg_ips_result
+    bind('id_ips_result', 'wrap_ips_related_change');
+  }
+</script>
 
 <script>
   function showDrawer() {
@@ -714,6 +744,8 @@
       .then(html => {
         body.innerHTML = html;       // 载入 patient_form_partial.html
         attachEditFormHandler(url);  // 绑定保存 + 大文件上传
+        initHvIpsRelatedChange(body);
+        initLocationToggles(body);
       })
       .catch(err => {
         console.error(err);
@@ -823,6 +855,8 @@
             body.innerHTML = xhr.responseText;
             // 重新绑定（包括“添加文件”按钮）
             attachEditFormHandler(url);
+            initHvIpsRelatedChange(body);
+            initLocationToggles(body);
           }
         } else {
           window.alert('上传失败，HTTP 状态码: ' + xhr.status);
@@ -833,6 +867,54 @@
       xhr.send(formData);
     }, { once: true });
   }
+
+  function initLocationToggles(root = document) {
+  function bind(prefix) {
+    const boxes = root.querySelectorAll(`input[name="eeg_${prefix}_location"]`);
+    const wrapFocal = root.querySelector(`#wrap_eeg_${prefix}_focal_lobe`);
+    const selFocal  = root.querySelector(`#id_eeg_${prefix}_focal_lobe`);
+
+    const wrapLat = root.querySelector(`#wrap_eeg_${prefix}_laterality`);
+    const selLat  = root.querySelector(`#id_eeg_${prefix}_laterality`);
+
+    if (!boxes.length) return;
+
+    const checked = (val) =>
+      Array.from(boxes).some(cb => cb.checked && (cb.value || '').toUpperCase() === val);
+
+    const showFirstNonEmpty = (sel) => {
+      if (!sel) return;
+      // 如果当前是空（'' 或 '---------'），就选第一个非空选项
+      if (!sel.value) {
+        const opt = Array.from(sel.options).find(o => o.value);
+        if (opt) sel.value = opt.value;
+      }
+    };
+
+    function toggle() {
+      const isFocal = checked('FOCAL');
+      const isLat   = checked('LAT');
+
+      if (wrapFocal) wrapFocal.style.display = isFocal ? '' : 'none';
+      if (wrapLat)   wrapLat.style.display   = isLat   ? '' : 'none';
+
+      // 你想要“一出现就默认额叶/默认侧别”，就打开下面两行：
+      if (isFocal) showFirstNonEmpty(selFocal);
+      if (isLat)   showFirstNonEmpty(selLat);
+
+      // 如果你想“隐藏就清空避免误保存”，打开下面两行：
+      // if (!isFocal && selFocal) selFocal.value = '';
+      // if (!isLat && selLat) selLat.value = '';
+    }
+
+    boxes.forEach(cb => cb.addEventListener('change', toggle));
+    toggle(); // 初始化立刻跑一次（解决你说的“初始不显示/初始空”）
+  }
+
+  bind('interictal'); // 发作间期那组
+  bind('ictal');      // 发作期那组
+}
+
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
