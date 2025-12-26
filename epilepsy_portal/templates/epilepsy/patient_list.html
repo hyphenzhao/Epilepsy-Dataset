@@ -746,6 +746,7 @@
         attachEditFormHandler(url);  // 绑定保存 + 大文件上传
         initHvIpsRelatedChange(body);
         initLocationToggles(body);
+        initNeuroExamToggle(body);
       })
       .catch(err => {
         console.error(err);
@@ -857,6 +858,7 @@
             attachEditFormHandler(url);
             initHvIpsRelatedChange(body);
             initLocationToggles(body);
+            initNeuroExamToggle(body);
           }
         } else {
           window.alert('上传失败，HTTP 状态码: ' + xhr.status);
@@ -913,6 +915,29 @@
 
   bind('interictal'); // 发作间期那组
   bind('ictal');      // 发作期那组
+  }
+function initNeuroExamToggle(root = document) {
+  const sel  = root.querySelector('#id_neuro_exam');
+  const wrap = root.querySelector('#wrap_neuro_exam_desc');
+  if (!sel || !wrap) return;
+
+  const isAbnormal = () => {
+    const v = (sel.value || '').trim();
+    const t = (sel.options[sel.selectedIndex]?.textContent || '').trim();
+    return v === 'ABNORMAL' || t === '异常';
+  };
+
+  const toggle = () => {
+    const show = isAbnormal();
+    wrap.style.display = show ? '' : 'none';
+    if (!show) {
+      const desc = root.querySelector('#id_neuro_exam_description');
+      if (desc) desc.value = '';
+    }
+  };
+
+  sel.addEventListener('change', toggle);
+  toggle(); // 初始化立即跑一次（关键）
 }
 
 </script>

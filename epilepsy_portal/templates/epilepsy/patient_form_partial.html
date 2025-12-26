@@ -293,7 +293,8 @@
               {{ form.neuro_exam }}
               {{ form.neuro_exam.errors }}
             </div>
-            <div class="col-md-9 mb-3">
+
+            <div class="col-md-9 mb-3" id="wrap_neuro_exam_desc" style="display:none;">
               {{ form.neuro_exam_description.label_tag }}
               {{ form.neuro_exam_description }}
               {{ form.neuro_exam_description.errors }}
@@ -1436,5 +1437,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
   boxes.forEach(cb => cb.addEventListener("change", toggle));
   toggle(); // 页面加载时同步一次
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const sel  = document.getElementById('id_neuro_exam');
+  const wrap = document.getElementById('wrap_neuro_exam_desc');
+  if (!sel || !wrap) return;
+
+  function isAbnormal() {
+    const v = (sel.value || '').trim();
+    const t = (sel.options[sel.selectedIndex]?.textContent || '').trim();
+    return v === 'ABNORMAL' || t === '异常';
+  }
+
+  function toggle() {
+    wrap.style.display = isAbnormal() ? '' : 'none';
+
+    // 可选：隐藏时清空，避免误保存
+    if (!isAbnormal()) {
+      const textarea = document.getElementById('id_neuro_exam_description');
+      if (textarea) textarea.value = '';
+    }
+  }
+
+  sel.addEventListener('change', toggle);
+  toggle(); // 初始化跑一次（编辑页如果已有值也能正确显示）
 });
 </script>

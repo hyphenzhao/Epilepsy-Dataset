@@ -1,6 +1,6 @@
 <!-- AUTO-GENERATED from patient_form_partial.html
    请不要手动修改本文件。修改表单后请重新运行 generate_patient_detail_partial.py -->
-
+{% load choice_display %}
 <div class="card">
   <div class="card-body">
     <h4 class="mb-3">{{ patient.name }}</h4>
@@ -111,8 +111,8 @@
             {% if form.gender %}{{ form.gender.label }}{% else %}gender{% endif %}
           </div>
           <div>
-            {% if form.gender %}
-              {{ form.gender.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance %}
+            {{ form.instance.get_gender_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -125,8 +125,8 @@
             {% if form.handedness %}{{ form.handedness.label }}{% else %}handedness{% endif %}
           </div>
           <div>
-            {% if form.handedness %}
-              {{ form.handedness.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.handedness %}
+            {{ form.instance.get_handedness_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -209,8 +209,8 @@
             {% if form.education_level %}{{ form.education_level.label }}{% else %}education_level{% endif %}
           </div>
           <div>
-            {% if form.education_level %}
-              {{ form.education_level.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.education_level %}
+            {{ form.instance.get_education_level_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -299,7 +299,7 @@
           </div>
           <div>
             {% if form.past_medical_history %}
-              {{ form.past_medical_history.value|default:"-"|linebreaksbr }}
+            {{ form.past_medical_history.value|display_multi:form.past_medical_history.field.choices }}
             {% else %}
               -
             {% endif %}
@@ -313,7 +313,7 @@
           </div>
           <div>
             {% if form.other_medical_history %}
-              {{ form.other_medical_history.value|default:"-"|linebreaksbr }}
+            {{ form.other_medical_history.value|display_multi:form.other_medical_history.field.choices }}
             {% else %}
               -
             {% endif %}
@@ -359,8 +359,8 @@
             {% if form.seizure_state %}{{ form.seizure_state.label }}{% else %}seizure_state{% endif %}
           </div>
           <div>
-            {% if form.seizure_state %}
-              {{ form.seizure_state.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.seizure_state %}
+            {{ form.instance.get_seizure_state_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -373,8 +373,8 @@
             {% if form.aura %}{{ form.aura.label }}{% else %}aura{% endif %}
           </div>
           <div>
-            {% if form.aura %}
-              {{ form.aura.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.aura %}
+            {{ form.instance.get_aura_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -448,8 +448,8 @@
             {% if form.neuro_exam %}{{ form.neuro_exam.label }}{% else %}neuro_exam{% endif %}
           </div>
           <div>
-            {% if form.neuro_exam %}
-              {{ form.neuro_exam.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.neuro_exam %}
+            {{ form.instance.get_neuro_exam_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -570,8 +570,8 @@
             {% if form.eeg_recording_electrodes %}{{ form.eeg_recording_electrodes.label }}{% else %}eeg_recording_electrodes{% endif %}
           </div>
           <div>
-            {% if form.eeg_recording_electrodes %}
-              {{ form.eeg_recording_electrodes.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_recording_electrodes %}
+            {{ form.instance.get_eeg_recording_electrodes_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -612,8 +612,8 @@
             {% if form.eeg_eye_response %}{{ form.eeg_eye_response.label }}{% else %}eeg_eye_response{% endif %}
           </div>
           <div>
-            {% if form.eeg_eye_response %}
-              {{ form.eeg_eye_response.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_eye_response %}
+            {{ form.instance.get_eeg_eye_response_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -626,8 +626,8 @@
             {% if form.eeg_symmetry %}{{ form.eeg_symmetry.label }}{% else %}eeg_symmetry{% endif %}
           </div>
           <div>
-            {% if form.eeg_symmetry %}
-              {{ form.eeg_symmetry.value|default:"-"|linebreaksbr }}
+           {% if form and form.instance and form.instance.eeg_symmetry %}
+           {{ form.instance.get_eeg_symmetry_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -640,8 +640,8 @@
             {% if form.eeg_awake_background %}{{ form.eeg_awake_background.label }}{% else %}eeg_awake_background{% endif %}
           </div>
           <div>
-            {% if form.eeg_awake_background %}
-              {{ form.eeg_awake_background.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_awake_background %}
+            {{ form.instance.get_eeg_awake_background_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -654,8 +654,8 @@
             {% if form.eeg_hv_slow_wave_build %}{{ form.eeg_hv_slow_wave_build.label }}{% else %}eeg_hv_slow_wave_build{% endif %}
           </div>
           <div>
-            {% if form.eeg_hv_slow_wave_build %}
-              {{ form.eeg_hv_slow_wave_build.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_hv_slow_wave_build %}
+            {{ form.instance.get_eeg_hv_slow_wave_build_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -682,8 +682,9 @@
             {% if form.eeg_hv_slow_wave_symmetry %}{{ form.eeg_hv_slow_wave_symmetry.label }}{% else %}eeg_hv_slow_wave_symmetry{% endif %}
           </div>
           <div>
-            {% if form.eeg_hv_slow_wave_symmetry %}
-              {{ form.eeg_hv_slow_wave_symmetry.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_hv_slow_wave_symmetry %}
+            {{ form.instance.get_eeg_hv_slow_wave_symmetry_display|default:"-" }}
+
             {% else %}
               -
             {% endif %}
@@ -696,8 +697,8 @@
             {% if form.eeg_hv_epileptiform_discharge %}{{ form.eeg_hv_epileptiform_discharge.label }}{% else %}eeg_hv_epileptiform_discharge{% endif %}
           </div>
           <div>
-            {% if form.eeg_hv_epileptiform_discharge %}
-              {{ form.eeg_hv_epileptiform_discharge.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_hv_epileptiform_discharge %}
+            {{ form.instance.get_eeg_hv_epileptiform_discharge_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -710,8 +711,9 @@
             {% if form.eeg_hv_discharge_laterality %}{{ form.eeg_hv_discharge_laterality.label }}{% else %}eeg_hv_discharge_laterality{% endif %}
           </div>
           <div>
-            {% if form.eeg_hv_discharge_laterality %}
-              {{ form.eeg_hv_discharge_laterality.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_hv_discharge_laterality %}
+            {{ form.instance.get_eeg_hv_discharge_laterality_display|default:"-" }}
+
             {% else %}
               -
             {% endif %}
@@ -738,8 +740,8 @@
             {% if form.laterality %}{{ form.laterality.label }}{% else %}laterality{% endif %}
           </div>
           <div>
-            {% if form.laterality %}
-              {{ form.laterality.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.laterality %}
+            {{ form.instance.get_laterality_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -752,8 +754,8 @@
             {% if form.eeg_sleep_hypersynchrony_slow_wave %}{{ form.eeg_sleep_hypersynchrony_slow_wave.label }}{% else %}eeg_sleep_hypersynchrony_slow_wave{% endif %}
           </div>
           <div>
-            {% if form.eeg_sleep_hypersynchrony_slow_wave %}
-              {{ form.eeg_sleep_hypersynchrony_slow_wave.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_sleep_hypersynchrony_slow_wave %}
+  {{ form.instance.get_eeg_sleep_hypersynchrony_slow_wave_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -766,8 +768,8 @@
             {% if form.eeg_sleep_vertex_wave %}{{ form.eeg_sleep_vertex_wave.label }}{% else %}eeg_sleep_vertex_wave{% endif %}
           </div>
           <div>
-            {% if form.eeg_sleep_vertex_wave %}
-              {{ form.eeg_sleep_vertex_wave.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_sleep_vertex_wave %}
+  {{ form.instance.get_eeg_sleep_vertex_wave_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -780,8 +782,8 @@
             {% if form.eeg_sleep_k_complex %}{{ form.eeg_sleep_k_complex.label }}{% else %}eeg_sleep_k_complex{% endif %}
           </div>
           <div>
-            {% if form.eeg_sleep_k_complex %}
-              {{ form.eeg_sleep_k_complex.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_sleep_k_complex %}
+  {{ form.instance.get_eeg_sleep_k_complex_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -794,8 +796,8 @@
             {% if form.eeg_sleep_spindle %}{{ form.eeg_sleep_spindle.label }}{% else %}eeg_sleep_spindle{% endif %}
           </div>
           <div>
-            {% if form.eeg_sleep_spindle %}
-              {{ form.eeg_sleep_spindle.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_sleep_spindle %}
+  {{ form.instance.get_eeg_sleep_spindle_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -808,8 +810,8 @@
             {% if form.eeg_sleep_post %}{{ form.eeg_sleep_post.label }}{% else %}eeg_sleep_post{% endif %}
           </div>
           <div>
-            {% if form.eeg_sleep_post %}
-              {{ form.eeg_sleep_post.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_sleep_post %}
+  {{ form.instance.get_eeg_sleep_post_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -822,8 +824,8 @@
             {% if form.eeg_sleep_frontal_awake_rhythm %}{{ form.eeg_sleep_frontal_awake_rhythm.label }}{% else %}eeg_sleep_frontal_awake_rhythm{% endif %}
           </div>
           <div>
-            {% if form.eeg_sleep_frontal_awake_rhythm %}
-              {{ form.eeg_sleep_frontal_awake_rhythm.value|default:"-"|linebreaksbr }}
+            {% if form and form.instance and form.instance.eeg_sleep_frontal_awake_rhythm %}
+  {{ form.instance.get_eeg_sleep_frontal_awake_rhythm_display|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -842,7 +844,8 @@
           </div>
           <div>
             {% if form.eeg_interictal_state %}
-              {{ form.eeg_interictal_state.value|default:"-"|linebreaksbr }}
+  {{ form.eeg_interictal_state.value|display_multi:form.eeg_interictal_state.field.choices|default:"-" }}
+
             {% else %}
               -
             {% endif %}
@@ -861,7 +864,7 @@
           </div>
           <div>
             {% if form.eeg_interictal_location %}
-              {{ form.eeg_interictal_location.value|default:"-"|linebreaksbr }}
+  {{ form.eeg_interictal_location.value|display_multi:form.eeg_interictal_location.field.choices|default:"-" }}
             {% else %}
               -
             {% endif %}
@@ -880,7 +883,8 @@
           </div>
           <div>
             {% if form.eeg_interictal_morph %}
-              {{ form.eeg_interictal_morph.value|default:"-"|linebreaksbr }}
+  {{ form.eeg_interictal_morph.value|display_multi:form.eeg_interictal_morph.field.choices|default:"-" }}
+
             {% else %}
               -
             {% endif %}
@@ -899,7 +903,8 @@
           </div>
           <div>
             {% if form.eeg_interictal_amount %}
-              {{ form.eeg_interictal_amount.value|default:"-"|linebreaksbr }}
+  {{ form.eeg_interictal_amount.value|display_multi:form.eeg_interictal_amount.field.choices|default:"-" }}
+
             {% else %}
               -
             {% endif %}
@@ -918,7 +923,8 @@
           </div>
           <div>
             {% if form.eeg_interictal_pattern %}
-              {{ form.eeg_interictal_pattern.value|default:"-"|linebreaksbr }}
+  {{ form.eeg_interictal_pattern.value|display_multi:form.eeg_interictal_pattern.field.choices|default:"-" }}
+
             {% else %}
               -
             {% endif %}
@@ -937,7 +943,8 @@
           </div>
           <div>
             {% if form.eeg_interictal_eye_relation %}
-              {{ form.eeg_interictal_eye_relation.value|default:"-"|linebreaksbr }}
+  {{ form.eeg_interictal_eye_relation.value|display_multi:form.eeg_interictal_eye_relation.field.choices|default:"-" }}
+
             {% else %}
               -
             {% endif %}
