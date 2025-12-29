@@ -151,18 +151,27 @@
               {{ form.past_medical_history }}
             </div>
               {{ form.past_medical_history.errors }}
+              <div class="row mb-3" id="wrap_pmh_other_text" style="display:none;">
+            <div class="col-md-2"></div>
+            <div class="col-md-6">
+              {{ form.past_medical_history_other_text }}
+              {{ form.past_medical_history_other_text.errors }}
+            </div>
           </div>
+            
+          </div>
+
             
           
           
           <div class="row mb-3">
-            <div class="col-md-2 d-flex align-items-center">
+            <!-- <div class="col-md-2 d-flex align-items-center">
                 {{ form.other_medical_history.label_tag }}
             </div>
             <div class="col-md-4">
                 {{ form.other_medical_history }}
                 {{ form.other_medical_history.errors }}
-            </div>
+            </div> -->
 
             <div class="col-md-2 d-flex align-items-center">
                 {{ form.family_history.label_tag }}
@@ -196,16 +205,31 @@
       <div id="collapseSemiology" class="collapse"
            aria-labelledby="headingSemiology" data-parent="#patientAccordion">
         <div class="card-body">
-          <div class="col-md-3 mb-3">
-          {{ form.seizure_state.label_tag }}
-          {{ form.seizure_state }}
-          {{ form.seizure_state.errors }}
-         </div>
-         <div class="col-md-2 mb-3">
-              {{ form.aura.label_tag }}
-              {{ form.aura }}
-              {{ form.aura.errors }}
-            </div>
+<div class="row align-items-center mb-3">
+  <div class="col-md-2">
+    {{ form.seizure_state.label_tag }}
+  </div>
+  <div class="col-md-4">
+    {{ form.seizure_state }}
+    {{ form.seizure_state.errors }}
+  </div>
+</div>
+
+<div class="row align-items-center mb-3">
+  <div class="col-md-2">
+    {{ form.aura.label_tag }}
+  </div>
+  <div class="col-md-8 d-flex gap-3">
+    <div style="width:140px">
+      {{ form.aura }}
+      {{ form.aura.errors }}
+    </div>
+    <div id="wrap_aura_text" style="display:none; flex:1;">
+      {{ form.aura_text }}
+      {{ form.aura_text.errors }}
+    </div>
+  </div>
+</div>
           <!-- <div class="row">
             <div class="col-md-2 mb-3">
               {{ form.aura.label_tag }}
@@ -232,6 +256,11 @@
             {{ form.evolution_symptom.label_tag }}
             {{ form.evolution_symptom }}
             {{ form.evolution_symptom.errors }}
+          </div>
+                    <div class="mb-3">
+            {{ form.postictal_state.label_tag }}
+            {{ form.postictal_state }}
+            {{ form.postictal_state.errors }}
           </div>
 
           <div class="row">
@@ -318,36 +347,39 @@
       <div id="collapseCognitive" class="collapse"
            aria-labelledby="headingCognitive" data-parent="#patientAccordion">
         <div class="card-body">
-          <div class="row">
-            <div class="col-md-2 mb-3">
-              {{ form.moca_score.label_tag }}
-              {{ form.moca_score }}
-              {{ form.moca_score.errors }}
-            </div>
-            <div class="col-md-2 mb-3">
-              {{ form.hama_score.label_tag }}
-              {{ form.hama_score }}
-              {{ form.hama_score.errors }}
-            </div>
-            <div class="col-md-2 mb-3">
-              {{ form.hamd_score.label_tag }}
-              {{ form.hamd_score }}
-              {{ form.hamd_score.errors }}
-            </div>
-            <div class="col-md-2 mb-3">
-              {{ form.bai_score.label_tag }}
-              {{ form.bai_score }}
-              {{ form.bai_score.errors }}
-            </div>
-            <div class="col-md-2 mb-3">
-              {{ form.bdi_score.label_tag }}
-              {{ form.bdi_score }}
-              {{ form.bdi_score.errors }}
-            </div>
-            <div class="col-md-2 mb-3">
-              {{ form.epilepsy_scale_score.label_tag }}
-              {{ form.epilepsy_scale_score }}
-              {{ form.epilepsy_scale_score.errors }}
+            {{ form.assessment_done }}
+          <div id="wrap_assessment_scores" style="display:none;">
+            <div class="row">
+              <div class="col-md-2 mb-3">
+                {{ form.moca_score.label_tag }}
+                {{ form.moca_score }}
+                {{ form.moca_score.errors }}
+              </div>
+              <div class="col-md-2 mb-3">
+                {{ form.hama_score.label_tag }}
+                {{ form.hama_score }}
+                {{ form.hama_score.errors }}
+              </div>
+              <div class="col-md-2 mb-3">
+                {{ form.hamd_score.label_tag }}
+                {{ form.hamd_score }}
+                {{ form.hamd_score.errors }}
+              </div>
+              <div class="col-md-2 mb-3">
+                {{ form.bai_score.label_tag }}
+                {{ form.bai_score }}
+                {{ form.bai_score.errors }}
+              </div>
+              <div class="col-md-2 mb-3">
+                {{ form.bdi_score.label_tag }}
+                {{ form.bdi_score }}
+                {{ form.bdi_score.errors }}
+              </div>
+              <div class="col-md-2 mb-3">
+                {{ form.epilepsy_scale_score.label_tag }}
+                {{ form.epilepsy_scale_score }}
+                {{ form.epilepsy_scale_score.errors }}
+              </div>
             </div>
           </div>
         </div>
@@ -522,11 +554,6 @@
         </div>
 
         <div class="row mb-2">
-            <div class="col-md-4">
-                {{ form.eeg_sleep_hypersynchrony_slow_wave.label_tag }}
-                {{ form.eeg_sleep_hypersynchrony_slow_wave }}
-                {{ form.eeg_sleep_hypersynchrony_slow_wave.error }}
-            </div>
 
             <div class="col-md-4">
                 {{ form.eeg_sleep_vertex_wave.label_tag }}
@@ -539,32 +566,14 @@
                 {{ form.eeg_sleep_k_complex }}
                 {{ form.eeg_sleep_k_complex.error }}
             </div>
-        </div>
 
-        <div class="row mb-2">
             <div class="col-md-4">
                 {{ form.eeg_sleep_spindle.label_tag }}
                 {{ form.eeg_sleep_spindle }}
                 {{ form.eeg_sleep_spindle.error }}
             </div>
-
-            <div class="col-md-4">
-                {{ form.eeg_sleep_post.label_tag }}
-                {{ form.eeg_sleep_post }}
-                {{ form.eeg_sleep_post.error }}
-            </div>
-
-            <div class="col-md-4">
-                {{ form.eeg_sleep_frontal_awake_rhythm.label_tag }}
-                {{ form.eeg_sleep_frontal_awake_rhythm }}
-                {{ form.eeg_sleep_frontal_awake_rhythm.error }}
-            </div>
         </div>
 
-          <!-- <div class="mb-2">
-            {{ form.eeg_sleep_other.label_tag }}
-            {{ form.eeg_sleep_other }}
-          </div> -->
         <div class="mt-4 mb-2">
             <strong>● EEG 发作间期癫痫样放电：</strong>
           </div>
@@ -705,6 +714,18 @@
 
               {{ form.eeg_ictal_location.errors }}
             </div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.eeg_ictal.label_tag }}
+            {{ form.eeg_ictal }}
+            {{ form.eeg_ictal.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.eeg_relevance.label_tag }}
+            {{ form.eeg_relevance }}
+            {{ form.eeg_relevance.errors }}
           </div>
 
           <div class=" mb-3">
@@ -1463,5 +1484,63 @@ document.addEventListener('DOMContentLoaded', function () {
 
   sel.addEventListener('change', toggle);
   toggle(); // 初始化跑一次（编辑页如果已有值也能正确显示）
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const boxes = Array.from(
+    document.querySelectorAll('input[name="past_medical_history"]')
+  );
+  const wrap = document.getElementById("wrap_pmh_other_text");
+  const input = document.getElementById("id_past_medical_history_other_text");
+
+  if (!boxes.length || !wrap) return;
+
+  function toggleOtherText() {
+    const hasOther = boxes.some(cb => cb.checked && cb.value === "OTHER");
+    wrap.style.display = hasOther ? "" : "none";
+    if (!hasOther && input) input.value = "";
+  }
+
+  boxes.forEach(cb => cb.addEventListener("change", toggleOtherText));
+  toggleOtherText(); // 页面初始化时检查一次
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const auraSel = document.getElementById("id_aura");
+  const wrap = document.getElementById("wrap_aura_text");
+  const input = document.getElementById("id_aura_text");
+  if (!auraSel || !wrap) return;
+
+  function isAuraYes() {
+    const val = (auraSel.value || "").trim();
+    const opt = auraSel.options[auraSel.selectedIndex];
+    const text = (opt ? opt.textContent : "").trim();
+    return val === "YES" || text === "有";
+  }
+
+  function toggleAuraText() {
+    const show = isAuraYes();
+    wrap.style.display = show ? "" : "none";
+    if (!show && input) input.value = "";
+  }
+
+  auraSel.addEventListener("change", toggleAuraText);
+  toggleAuraText(); // 初始化
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const sel = document.getElementById("id_assessment_done");
+  const wrap = document.getElementById("wrap_assessment_scores");
+  if (!sel || !wrap) return;
+
+  function toggle() {
+    wrap.style.display = sel.value === "YES" ? "" : "none";
+  }
+
+  sel.addEventListener("change", toggle);
+  toggle();
 });
 </script>

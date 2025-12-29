@@ -141,6 +141,7 @@ class PatientForm(forms.ModelForm):
             # "education_level",
             # "occupation",
             "past_medical_history",
+            "past_medical_history_other_text",
             "other_medical_history",
             "family_history",
             "first_seizure_age",
@@ -150,10 +151,12 @@ class PatientForm(forms.ModelForm):
             # 发作症状学
             "seizure_state",
             "aura",
+            "aura_text",
             # "typical_seizure_time",
             # "typical_seizure_semiology",
             "initial_seizure_symptom",
             "evolution_symptom",
+            "postictal_state",
             "seizure_duration_seconds",
             # "seizure_duration_minutes",
             "seizure_freq_per_day",
@@ -166,6 +169,7 @@ class PatientForm(forms.ModelForm):
             "neuro_exam_description",
 
             # 认知和精神量表
+            "assessment_done",
             "moca_score",
             "hama_score",
             "hamd_score",
@@ -210,6 +214,7 @@ class PatientForm(forms.ModelForm):
             "eeg_ictal_location",
             "eeg_ictal_amount",
             "eeg_ictal",
+            "eeg_relevance",
             "eeg_clinical_correlation",
             "eeg_file_link",
 
@@ -266,12 +271,22 @@ class PatientForm(forms.ModelForm):
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
+                    'postictal_state': forms.Textarea(attrs={
+                    "rows": 5,   # ⬅ 控制高度
+                    "cols": 5,  # 可选：控制宽度
+                    "class": "form-control",
+                    }),
                     'neuro_exam_description': forms.Textarea(attrs={
                         "rows": 5,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'eeg_ictal': forms.Textarea(attrs={
+                        "rows": 5,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_relevance': forms.Textarea(attrs={
                         "rows": 5,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
@@ -322,7 +337,7 @@ class PatientForm(forms.ModelForm):
             "family_history": "家族病史",
             "first_seizure_age": "首次发作年龄（岁）",
             "first_seizure_description": "首次发作症状",
-            "medication_history": "药物治疗过程",
+            "medication_history": "药物治疗",
 
             "aura": "先兆",
             "seizure_state":"自然发作状态",
@@ -330,6 +345,7 @@ class PatientForm(forms.ModelForm):
             # "typical_seizure_semiology": "惯常发作表现形式",
             "initial_seizure_symptom":"首发症状",
             "evolution_symptom":"演变症状",
+            "postictal_state":"发作后状态",
             "seizure_duration_seconds": "发作持续时间",
             # "seizure_duration_minutes": "发作持续时间（分钟）",
             "seizure_freq_per_day": "发作频率",
@@ -380,9 +396,10 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal_eye_relation": "眼状态相关",
             "eeg_ictal_state":"发作期状态（多选）",
             "eeg_ictal_location":"发作期部位（多选）",
-            "eeg_ictal_amount":"发作期数量",
+            "eeg_ictal_amount":"数量",
             "eeg_interictal": "EEG 发作间期放电",
-            "eeg_ictal": "EEG 发作期放电",
+            "eeg_ictal": "EEG 发作期",
+            "eeg_relevance": "EEG 相关性",
             "eeg_clinical_correlation": "EEG 同步发作临床症状",
             "eeg_file_link": "EEG 数据下载链接",
 

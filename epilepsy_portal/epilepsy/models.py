@@ -97,7 +97,7 @@ class Patient(models.Model):
     EEG_INTERICTAL_MORPH_CHOICES = [("SHARP", "尖波"),("SPIKE", "棘波"),("POLY_SPIKE", "多棘波"),("SHARP_SLOW", "棘慢复合波"),]
 
     # 数量
-    EEG_INTERICTAL_AMOUNT_CHOICES = [("RARE", "稀少"), ("OCCASIONAL", "偶见"),("FREQUENT", "频繁"),("HIGH_DENSITY", "高密度"),("CONTINUOUS", "连续"),]
+    EEG_INTERICTAL_AMOUNT_CHOICES = [("RARE", "稀少"), ("OCCASIONAL", "偶见（<10/小时）"),("INTERMITTENT", "间歇"),("FREQUENT", "频繁（>10/分钟）"),("HIGH_DENSITY", "高密度（>30/小时）"),("CONTINUOUS", "连续"),]
 
     # 出现方式
     EEG_INTERICTAL_PATTERN_CHOICES = [("SCATTERED", "散发"),("PAROXYSMAL", "阵发"),("RHYTHMIC_PAROXYSMAL", "节律性阵发"),("CONTINUOUS", "连续发放"),("BURST", "爆发"),("INTERMITTENT", "间断性发放"),
@@ -134,37 +134,20 @@ class Patient(models.Model):
     #occupation = models.CharField("职业", max_length=100, blank=True)
 
     # 既往不良病史（用逗号分隔的编码存储）
-    past_medical_history = models.CharField(
-        "既往不良病史（多选）",
-        max_length=255,
-        blank=True,
-        help_text="多选，用逗号分隔编码存储",
-    )
+    past_medical_history = models.CharField( "既往不良病史（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储",)
+    past_medical_history_other_text = models.CharField("既往不良病史-其他说明",max_length=255, blank=True, null=True,)
 
     # 其他病史（用逗号分隔的编码存储）
-    other_medical_history = models.CharField(
-        "其他病史（多选）",
-        max_length=255,
-        blank=True,
-        help_text="多选，用逗号分隔编码存储",
-    )
-
+    other_medical_history = models.CharField( "其他病史（多选）", max_length=255,blank=True, help_text="多选，用逗号分隔编码存储",)
     family_history = models.CharField("家族病史", max_length=20, blank=True)
-
-    first_seizure_age = models.PositiveIntegerField(
-        "首次发作年龄（岁）", blank=True, null=True
-    )
-    first_seizure_description = models.TextField(
-        "首次发作症状", blank=True
-    )
-
-    medication_history = models.TextField("药物治疗过程", blank=True)
+    first_seizure_age = models.PositiveIntegerField("首次发作年龄（岁）", blank=True, null=True)
+    first_seizure_description = models.TextField("首次发作症状", blank=True)
+    medication_history = models.TextField("药物治疗", blank=True)
 
     # 【发作症状学】
-    seizure_state = models.CharField(
-    "自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,)
-    aura = models.CharField(
-        "先兆", max_length=1, choices=AURA_CHOICES, blank=True)
+    seizure_state = models.CharField("自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,)
+    aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True)
+    aura_text = models.CharField(max_length=255, blank=True, null=True)
     # typical_seizure_time = models.CharField(
     #     "惯常发作时间", max_length=100, blank=True
     # )
@@ -173,13 +156,13 @@ class Patient(models.Model):
     # )
     initial_seizure_symptom = models.TextField( "首发症状",max_length=150, blank=True, )
     evolution_symptom = models.TextField("演变症状",max_length=150, blank=True,)
+    postictal_state = models.TextField("发作后状态",max_length=150,blank=True,)
     seizure_duration_seconds = models.CharField("发作持续时间", blank=True, null=True )
     # seizure_duration_minutes = models.PositiveIntegerField(
     #     "发作持续时间（分钟）", blank=True, null=True
     # )
 
-    seizure_freq_per_day = models.CharField(
-        "发作频率", blank=True, null=True)
+    seizure_freq_per_day = models.CharField( "发作频率", blank=True, null=True)
     # seizure_freq_per_week = models.PositiveIntegerField(
     #     "发作频率（次/周）", blank=True, null=True
     # )
@@ -191,15 +174,11 @@ class Patient(models.Model):
     # )
 
     # 【神经系统检查】
-    neuro_exam = models.CharField(
-        "神经系统检查",
-        max_length=1,
-        choices=NEURO_EXAM_CHOICES,
-        blank=True,)
-    neuro_exam_description = models.TextField(
-        "神经系统检查异常描述", blank=True)
+    neuro_exam = models.CharField("神经系统检查", max_length=1, choices=NEURO_EXAM_CHOICES, blank=True,)
+    neuro_exam_description = models.TextField( "神经系统检查异常描述", blank=True)
 
     # 【认知和精神量表】
+    assessment_done = models.CharField("量表是否完成", max_length=10,choices=[ ("NO", "未做"), ("YES", "已做"),], blank=True,)
     moca_score = models.PositiveIntegerField("MoCA 评分", blank=True, null=True)
     hama_score = models.PositiveIntegerField("HAMA 评分", blank=True, null=True)
     hamd_score = models.PositiveIntegerField("HAMD 评分", blank=True, null=True)
@@ -287,12 +266,11 @@ class Patient(models.Model):
 )
     eeg_ictal_state = models.CharField("发作期状态（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
     eeg_ictal_location = models.CharField("发作期部位（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
-    eeg_ictal_amount = models.CharField("发作期数量", max_length=100, blank=True,null=True)
+    eeg_ictal_amount = models.CharField("数量", max_length=100, blank=True,null=True)
     eeg_interictal = models.TextField("EEG 发作间期放电", blank=True)
-    eeg_ictal = models.TextField("EEG 发作期放电", blank=True)
-    eeg_clinical_correlation = models.TextField(
-        "EEG 同步发作临床症状", blank=True
-    )
+    eeg_ictal = models.TextField("EEG 发作期", blank=True)
+    eeg_relevance = models.TextField("EEG 相关性", blank=True)
+    eeg_clinical_correlation = models.TextField("EEG 同步发作临床症状", blank=True)
     # EEG 文件链接（可选）
     eeg_file_link = models.URLField(
         "EEG 原始数据下载链接",
