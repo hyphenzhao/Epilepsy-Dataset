@@ -24,6 +24,18 @@ from .models import (
     PatientInfoFile, UserRole,
 )
 
+# 这些字段是“逗号分隔存储”的多选 code，需要手动翻译成中文
+MULTI_CHOICE_MAP = {
+    "past_medical_history": dict(Patient.PAST_MEDICAL_HISTORY_CHOICES),
+    "other_medical_history": dict(Patient.OTHER_MEDICAL_HISTORY_CHOICES),
+    "eeg_interictal_state": dict(Patient.EEG_INTERICTAL_STATE_CHOICES),
+    "eeg_interictal_location": dict(Patient.EEG_INTERICTAL_LOCATION_CHOICES),
+    "eeg_interictal_morph": dict(Patient.EEG_INTERICTAL_MORPH_CHOICES),
+    "eeg_interictal_amount": dict(Patient.EEG_INTERICTAL_AMOUNT_CHOICES),
+    "eeg_interictal_pattern": dict(Patient.EEG_INTERICTAL_PATTERN_CHOICES),
+    "eeg_interictal_eye_relation": dict(Patient.EEG_INTERICTAL_EYE_RELATED_CHOICES),
+}
+
 # =======================
 #  Dashboard 配置 & 计算
 # =======================
@@ -116,16 +128,28 @@ def require_admin(request):
 
 def get_display_value(obj, field_name):
     """
-    优先用 get_xxx_display() 显示 choices，其次用原始值。
+    1) 单选 choices：优先 get_xxx_display()
+    2) 逗号分隔的“多选 code”：用 MULTI_CHOICE_MAP 翻译
+    3) 其它字段：原样返回
     """
     value = getattr(obj, field_name, "")
-    if value is None:
+    if value in (None, "", [], {}):
         return ""
+
+    # 1) Django 原生 choices（单选）
     method_name = f"get_{field_name}_display"
     if hasattr(obj, method_name):
         return getattr(obj, method_name)()
-    return value
 
+    # 2) 逗号分隔多选（例如 "FEBRILE_SEIZURE,TRAUMA"）
+    if field_name in MULTI_CHOICE_MAP:
+        mapping = MULTI_CHOICE_MAP[field_name]
+        codes = [v.strip() for v in str(value).split(",") if v.strip()]
+        labels = [mapping.get(code, code) for code in codes]
+        return "，".join(labels)
+
+    # 3) 兜底
+    return value
 
 PATIENT_SECTION_FIELDS = [
     {
