@@ -152,6 +152,11 @@ class PatientForm(forms.ModelForm):
             "seizure_state",
             "aura",
             "aura_text",
+            "minor_initial_symptom",
+            "major_aura",
+            "major_aura_text",
+            "major_duration",
+            "major_frequency",
             # "typical_seizure_time",
             # "typical_seizure_semiology",
             "initial_seizure_symptom",
@@ -261,18 +266,23 @@ class PatientForm(forms.ModelForm):
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
+                    'minor_initial_symptom': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),                    
                     'initial_seizure_symptom': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 2,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'evolution_symptom': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 2,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'postictal_state': forms.Textarea(attrs={
-                    "rows": 5,   # ⬅ 控制高度
+                    "rows": 2,   # ⬅ 控制高度
                     "cols": 5,  # 可选：控制宽度
                     "class": "form-control",
                     }),
@@ -341,8 +351,12 @@ class PatientForm(forms.ModelForm):
 
             "aura": "先兆",
             "seizure_state":"自然发作状态",
+            "minor_initial_symptom":"发作症状",
             # "typical_seizure_time": "惯常发作时间",
             # "typical_seizure_semiology": "惯常发作表现形式",
+            "major_aura":"先兆",
+            "major_duration":"发作持续时间",
+            "major_frequency":"发作频率",
             "initial_seizure_symptom":"首发症状",
             "evolution_symptom":"演变症状",
             "postictal_state":"发作后状态",

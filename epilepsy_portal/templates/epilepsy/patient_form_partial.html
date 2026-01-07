@@ -215,6 +215,10 @@
   </div>
 </div>
 
+<div class="mt-4 mb-2">
+            <strong>小发作：</strong>
+          </div>
+
 <div class="row align-items-center mb-3">
   <div class="col-md-2">
     {{ form.aura.label_tag }}
@@ -230,6 +234,26 @@
     </div>
   </div>
 </div>
+          <div class="mb-3">
+            {{ form.minor_initial_symptom.label_tag }}
+            {{ form.minor_initial_symptom }}
+            {{ form.minor_initial_symptom.errors }}
+          </div>
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              {{ form.seizure_duration_seconds.label_tag }}
+              {{ form.seizure_duration_seconds }}
+              {{ form.seizure_duration_seconds.errors }}
+            </div>
+
+            <div class="col-md-3 mb-3">
+              {{ form.seizure_freq_per_day.label_tag }}
+              {{ form.seizure_freq_per_day }}
+              {{ form.seizure_freq_per_day.errors }}
+            </div>
+
+          </div>
+
           <!-- <div class="row">
             <div class="col-md-2 mb-3">
               {{ form.aura.label_tag }}
@@ -247,6 +271,26 @@
               {{ form.typical_seizure_semiology.errors }}
             </div>
           </div> -->
+
+          <div class="mt-4 mb-2">
+            <strong>大发作：</strong>
+          </div>
+
+          <div class="row align-items-center mb-3">
+            <div class="col-md-2">
+              {{ form.major_aura.label_tag }}
+            </div>
+            <div class="col-md-8 d-flex gap-3">
+              <div style="width:140px">
+                {{ form.major_aura }}
+                {{ form.major_aura.errors }}
+              </div>
+              <div id="wrap_major_aura_text" style="display:none; flex:1;">
+                {{ form.major_aura_text }}
+                {{ form.major_aura_text.errors }}
+              </div>
+            </div>
+          </div>
           <div class="mb-3">
             {{ form.initial_seizure_symptom.label_tag }}
             {{ form.initial_seizure_symptom }}
@@ -257,47 +301,28 @@
             {{ form.evolution_symptom }}
             {{ form.evolution_symptom.errors }}
           </div>
-                    <div class="mb-3">
+          <div class="mb-3">
             {{ form.postictal_state.label_tag }}
             {{ form.postictal_state }}
             {{ form.postictal_state.errors }}
           </div>
 
-          <div class="row">
+                    <div class="row">
             <div class="col-md-3 mb-3">
-              {{ form.seizure_duration_seconds.label_tag }}
-              {{ form.seizure_duration_seconds }}
-              {{ form.seizure_duration_seconds.errors }}
+              {{ form.major_duration.label_tag }}
+              {{ form.major_duration }}
+              {{ form.major_duration.errors }}
             </div>
-            <!-- <div class="col-md-3 mb-3">
-              {{ form.seizure_duration_minutes.label_tag }}
-              {{ form.seizure_duration_minutes }}
-              {{ form.seizure_duration_minutes.errors }}
-            </div> -->
+
             <div class="col-md-3 mb-3">
-              {{ form.seizure_freq_per_day.label_tag }}
-              {{ form.seizure_freq_per_day }}
-              {{ form.seizure_freq_per_day.errors }}
+              {{ form.major_frequency.label_tag }}
+              {{ form.major_frequency }}
+              {{ form.major_frequency.errors }}
             </div>
-            <!-- <div class="col-md-3 mb-3">
-              {{ form.seizure_freq_per_week.label_tag }}
-              {{ form.seizure_freq_per_week }}
-              {{ form.seizure_freq_per_week.errors }}
-            </div> -->
+
           </div>
 
-          <!-- <div class="row">
-            <div class="col-md-6 mb-3">
-              {{ form.seizure_freq_per_month.label_tag }}
-              {{ form.seizure_freq_per_month }}
-              {{ form.seizure_freq_per_month.errors }}
-            </div>
-            <div class="col-md-6 mb-3">
-              {{ form.seizure_freq_per_year.label_tag }}
-              {{ form.seizure_freq_per_year }}
-              {{ form.seizure_freq_per_year.errors }}
-            </div>
-          </div> -->
+
         </div>
       </div>
     </div>
@@ -1542,5 +1567,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
   sel.addEventListener("change", toggle);
   toggle();
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const auraSel = document.getElementById("id_major_aura");
+  const wrap = document.getElementById("wrap_major_aura_text");
+  const input = document.getElementById("id_major_aura_text");
+  if (!auraSel || !wrap) return;
+
+  function isAuraYes() {
+    const val = (auraSel.value || "").trim();
+    const opt = auraSel.options[auraSel.selectedIndex];
+    const text = (opt ? opt.textContent : "").trim();
+    return val === "Y" || val === "YES" || text === "有";
+  }
+
+  function toggleAuraText() {
+    const show = isAuraYes();
+    wrap.style.display = show ? "" : "none";
+    if (!show && input) input.value = "";
+  }
+
+  auraSel.addEventListener("change", toggleAuraText);
+  toggleAuraText();
 });
 </script>

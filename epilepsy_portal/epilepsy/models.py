@@ -46,9 +46,10 @@ class Patient(models.Model):
         ("POSTGRAD", "研究生及以上"),]
 
     # 既往不良病史（多选）
-    PAST_MEDICAL_HISTORY_CHOICES = [("HYPOXIA", "出生乏氧"),
+    PAST_MEDICAL_HISTORY_CHOICES = [("HYPOXIA", "围产期乏氧"),
         ("FEBRILE_SEIZURE", "热惊厥"), ("ENCEPHALITIS", "脑炎"),
-        ("TRAUMA", "外伤"),("NONE", "无"),("OTHER", "其他"),]
+        ("TRAUMA", "外伤"), ("BRAIN_TUMOR", "脑肿瘤"),
+    ("DEVELOPMENTAL_ABNORMALITY", "发育异常"),("NONE", "无"),]
 
     # 其他病史（多选）
     OTHER_MEDICAL_HISTORY_CHOICES = [ ("DM", "糖尿病"),("HTN", "高血压"),]
@@ -148,6 +149,11 @@ class Patient(models.Model):
     seizure_state = models.CharField("自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,)
     aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True)
     aura_text = models.CharField(max_length=255, blank=True, null=True)
+    minor_initial_symptom = models.TextField("发作症状",blank=True,null=True)
+    major_aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True)
+    major_aura_text = models.CharField(max_length=255, blank=True, null=True)
+    major_duration = models.CharField("发作持续时间",max_length=100,blank=True,null=True)
+    major_frequency = models.CharField("发作频率",max_length=100,blank=True,null=True)
     # typical_seizure_time = models.CharField(
     #     "惯常发作时间", max_length=100, blank=True
     # )
