@@ -91,7 +91,7 @@ class Patient(models.Model):
     EEG_INTERICTAL_STATE_CHOICES = [ ("AWAKE", "清醒期"), ("DROWSY", "困倦期"),("SLEEP", "睡眠期"),("POST_AWAKE", "觉醒后"),("ALL", "醒-睡各期"),]
 
     # 部位
-    EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),]
+    EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),("MIGRATORY", "游走"),("GENERALIZED", "全面"),]
     FOCAL_LOBE_CHOICES = [ ("FRONTAL", "额叶"),("PARIETAL", "顶叶"),("OCCIPITAL", "枕叶"),("TEMPORAL", "颞叶"),]
     EEG_INTERICTAL_LATERALITY_CHOICES = [("L", "左侧"),("R", "右侧"),("M", "中线"),]
     # 波幅/波形
@@ -107,8 +107,14 @@ class Patient(models.Model):
     # 眼状态相关
     EEG_INTERICTAL_EYE_RELATED_CHOICES = [("NONE", "无"),("FOCAL_SENSITIVE", "有：失对焦敏感（闭眼增多）"),("PHOTOSENSITIVE", "合眼敏感"), ("BLINK_RELATED", "瞬目相关"),]
 
+    #发作起源模式
+    EEG_ONSET_PATTERN_CHOICES = [("LOW_VOLT_FAST", "低波幅快节律起始"),("ATTENUATION_DESYNC", "电位压低/去同步化起始"),("RHYTHMIC_SPIKE_SLOW", "节律性尖波/尖慢波起始"),("GENERAL_SYNC", "广泛同步起始"),("RHYTHMIC_SLOW", "节律性慢波起始"),("NO_CLEAR", "无明显放电起始"),]
+   
     # 神经系统检查 正常 / 异常
     NEURO_EXAM_CHOICES = [("N", "正常"),("A", "异常"),]
+
+    # 发作起始模式
+    SEEG_ICTAL_ONSET_PATTERN_CHOICES = [("LOW_VOLT_FAST", "低波幅快节律起始"),("LOW_FREQ_SHARP", "低频高幅尖波起始"),("RHYTHMIC_SPIKE_SLOW_COMPLEX", "节律性棘波/棘慢波/尖波/尖慢波起始"),("RHYTHMIC_SLOW", "节律性慢活动起始"),("ATTENUATION_LOW_VOLT", "电位压低起始"),("MULTIFOCAL_SYNC_RAPID_SWITCH", "多灶同步或快速切换起始"),("BURST_SUPPRESSION_ONSET", "爆发-抑制起始"),]
 
     # 基本信息
     name = models.CharField("患者姓名", max_length=20)
@@ -150,7 +156,7 @@ class Patient(models.Model):
     aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True)
     aura_text = models.CharField(max_length=255, blank=True, null=True)
     minor_initial_symptom = models.TextField("发作症状",blank=True,null=True)
-    major_aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True)
+    major_aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True, null=True)
     major_aura_text = models.CharField(max_length=255, blank=True, null=True)
     major_duration = models.CharField("发作持续时间",max_length=100,blank=True,null=True)
     major_frequency = models.CharField("发作频率",max_length=100,blank=True,null=True)
@@ -186,6 +192,7 @@ class Patient(models.Model):
     # 【认知和精神量表】
     assessment_done = models.CharField("量表是否完成", max_length=10,choices=[ ("NO", "未做"), ("YES", "已做"),], blank=True,)
     moca_score = models.PositiveIntegerField("MoCA 评分", blank=True, null=True)
+    mmse_score = models.PositiveIntegerField("MMSE 评分", blank=True, null=True)
     hama_score = models.PositiveIntegerField("HAMA 评分", blank=True, null=True)
     hamd_score = models.PositiveIntegerField("HAMD 评分", blank=True, null=True)
     bai_score = models.PositiveIntegerField("BAI 评分", blank=True, null=True)
@@ -272,10 +279,12 @@ class Patient(models.Model):
 )
     eeg_ictal_state = models.CharField("发作期状态（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
     eeg_ictal_location = models.CharField("发作期部位（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
+    eeg_onset_pattern = models.CharField("发作起源模式", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
     eeg_ictal_amount = models.CharField("数量", max_length=100, blank=True,null=True)
-    eeg_interictal = models.TextField("EEG 发作间期放电", blank=True)
+    eeg_interictal = models.TextField("EEG 发作期放电描述", blank=True)
     eeg_ictal = models.TextField("EEG 发作期", blank=True)
     eeg_relevance = models.TextField("EEG 相关性", blank=True)
+    eeg_ictal_precede_clinical_sec = models.PositiveIntegerField("EEG发作早于症状出现（秒）",null=True,blank=True,help_text="单位：秒")
     eeg_clinical_correlation = models.TextField("EEG 同步发作临床症状", blank=True)
     # EEG 文件链接（可选）
     eeg_file_link = models.URLField(
@@ -306,13 +315,46 @@ class Patient(models.Model):
     )
 
     # 【SEEG 发作间期放电及发作期放电】
-    seeg_interictal_overall = models.TextField(
-        "SEEG 发作间期放电总体描述", blank=True
-    )
+    seeg_record_channel_count = models.PositiveIntegerField("记录导联数（个）", null=True, blank=True)
+    seeg_electrode_count = models.PositiveIntegerField("电极植入（根）", null=True, blank=True)
+    seeg_electrode_coverage = models.CharField("电极覆盖位置", max_length=255, blank=True, default="")
+    seeg_record_duration_days = models.PositiveIntegerField("记录时长（天）", null=True, blank=True)
+    seeg_ictal_morph = models.CharField(
+    "波幅/波形（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    seeg_ictal_amount = models.CharField(
+    "数量（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    seeg_ictal_pattern = models.CharField(
+    "出现方式（多选）",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    seeg_primary_discharge_zone = models.CharField("主要放电区（位置和触点）", max_length=255, blank=True, default="")
+    seeg_secondary_discharge_zone = models.CharField("次要放电区", max_length=255, blank=True, default="")
+    seeg_other_discharge_zone = models.CharField("其他区域", max_length=255, blank=True, default="")
+    seeg_ictal_onset_zone = models.CharField("发作起始区（位置和触点）", max_length=255, blank=True, default="")
+    seeg_ictal_spread_zone_sequence = models.CharField("扩散区和顺序（位置和时间）", max_length=255, blank=True, default="")
+    seeg_ictal_onset_pattern = models.CharField(
+    "发作起始模式",
+    max_length=255,
+    blank=True,
+    help_text="多选，用逗号分隔编码存储",
+)
+    seeg_interictal_overall = models.TextField("SEEG 发作期对应临床表现", blank=True)
     seeg_group1 = models.TextField("SEEG 发作间期 Group 1", blank=True)
     seeg_group2 = models.TextField("SEEG 发作间期 Group 2", blank=True)
     seeg_group3 = models.TextField("SEEG 发作间期 Group 3", blank=True)
-    seeg_ictal = models.TextField("SEEG 发作期放电", blank=True)
+    seeg_ictal_precede_clinical_sec = models.PositiveIntegerField("SEEG发作早于症状出现（秒）",null=True,blank=True,help_text="单位：秒")
+    seeg_ictal_amountt = models.CharField("数量", max_length=100, blank=True,null=True)
+    seeg_ictal = models.TextField("电刺激结果", blank=True)
     # SEEG 文件链接（可选）
     seeg_file_link = models.URLField(
         "SEEG 原始数据下载链接",

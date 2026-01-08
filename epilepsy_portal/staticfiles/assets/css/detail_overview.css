@@ -34,11 +34,32 @@
     margin-right: 20px;
 }
 
+#id_eeg_onset_pattern > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+
 #id_eeg_ictal_state > div {
     display: inline-block;
     margin-right: 20px;
 }
 #id_eeg_ictal_location > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_seeg_ictal_morph > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_seeg_ictal_amount > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_seeg_ictal_pattern > div {
+    display: inline-block;
+    margin-right: 20px;
+}
+#id_seeg_ictal_onset_pattern > div {
     display: inline-block;
     margin-right: 20px;
 }

@@ -119,6 +119,39 @@ class PatientForm(forms.ModelForm):
         choices=Patient.EEG_INTERICTAL_LOCATION_CHOICES,
         widget=forms.CheckboxSelectMultiple,
     )
+    eeg_onset_pattern = forms.MultipleChoiceField(
+        label="发作起源模式",
+        required=False,
+        choices=Patient.EEG_ONSET_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    seeg_ictal_morph = forms.MultipleChoiceField(
+        label="波幅、波形",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_MORPH_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    seeg_ictal_amount = forms.MultipleChoiceField(
+        label="数量",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_AMOUNT_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    seeg_ictal_pattern = forms.MultipleChoiceField(
+        label="出现方式",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    seeg_ictal_onset_pattern = forms.MultipleChoiceField(
+        label="发作起始模式",
+        required=False,
+        choices=Patient.SEEG_ICTAL_ONSET_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    
     class Meta:
         model = Patient
         fields = [
@@ -176,6 +209,7 @@ class PatientForm(forms.ModelForm):
             # 认知和精神量表
             "assessment_done",
             "moca_score",
+            "mmse_score",
             "hama_score",
             "hamd_score",
             "bai_score",
@@ -217,9 +251,11 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal",
             "eeg_ictal_state",
             "eeg_ictal_location",
+            "eeg_onset_pattern",
             "eeg_ictal_amount",
             "eeg_ictal",
             "eeg_relevance",
+            "eeg_ictal_precede_clinical_sec",
             "eeg_clinical_correlation",
             "eeg_file_link",
 
@@ -236,10 +272,25 @@ class PatientForm(forms.ModelForm):
             "first_stage_location",
 
             # SEEG
+            "seeg_record_channel_count",
+            "seeg_electrode_count",
+            "seeg_electrode_coverage",
+            "seeg_record_duration_days",
+            "seeg_ictal_morph",
+            "seeg_ictal_amount",
+            "seeg_ictal_pattern",
+            "seeg_primary_discharge_zone",
+            "seeg_secondary_discharge_zone",
+            "seeg_other_discharge_zone",
+            "seeg_ictal_onset_zone",
+            "seeg_ictal_spread_zone_sequence",
+            "seeg_ictal_onset_pattern",
             "seeg_interictal_overall",
             "seeg_group1",
             "seeg_group2",
             "seeg_group3",
+            "seeg_ictal_amountt",
+            "seeg_ictal_precede_clinical_sec",
             "seeg_ictal",
             "seeg_file_link",
 
@@ -257,12 +308,12 @@ class PatientForm(forms.ModelForm):
         ]
         widgets = {
             'first_seizure_description': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 4,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
             'medication_history': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 4,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
@@ -287,32 +338,37 @@ class PatientForm(forms.ModelForm):
                     "class": "form-control",
                     }),
                     'neuro_exam_description': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 4,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'eeg_ictal': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_interictal': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'eeg_relevance': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 3,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'eeg_clinical_correlation': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 3,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'mri_brief': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 4,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
                     'pet_brief': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 4,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
@@ -321,7 +377,7 @@ class PatientForm(forms.ModelForm):
                     'style': 'width:120px; display:inline-block;',
                     }),
                         'seeg_interictal_overall': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                        "rows": 3,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
@@ -371,6 +427,7 @@ class PatientForm(forms.ModelForm):
             "neuro_exam_description": "神经系统检查异常描述",
 
             "moca_score": "MoCA 评分",
+            "mmse_score": "MMSE 评分",
             "hama_score": "HAMA 评分",
             "hamd_score": "HAMD 评分",
             "bai_score": "BAI 评分",
@@ -411,9 +468,11 @@ class PatientForm(forms.ModelForm):
             "eeg_ictal_state":"发作期状态（多选）",
             "eeg_ictal_location":"发作期部位（多选）",
             "eeg_ictal_amount":"数量",
-            "eeg_interictal": "EEG 发作间期放电",
+            "eeg_onset_pattern":"发作起源模式",
+            "eeg_interictal": "EEG 发作期放电描述",
             "eeg_ictal": "EEG 发作期",
             "eeg_relevance": "EEG 相关性",
+            "eeg_ictal_precede_clinical_sec":"EEG发作早于症状出现",
             "eeg_clinical_correlation": "EEG 同步发作临床症状",
             "eeg_file_link": "EEG 数据下载链接",
 
@@ -426,11 +485,26 @@ class PatientForm(forms.ModelForm):
             "first_stage_region": "一期无创评估定区域",
             "first_stage_location": "一期无创评估定具体部位",
 
-            "seeg_interictal_overall": "SEEG 发作间期放电总体描述",
+            "seeg_record_channel_count":"记录导联数（个）",
+            "seeg_electrode_count":"电极植入（根）",
+            "seeg_electrode_coverage":"电极覆盖位置",
+            "seeg_record_duration_days":"记录时长（天）",
+            "seeg_ictal_morph":"波形",
+            "seeg_ictal_amount":"数量",
+            "seeg_ictal_pattern":"出现方式",
+            "seeg_primary_discharge_zone":"主要放电区（位置和触点）",
+            "seeg_secondary_discharge_zone":"次要放电区",
+            "seeg_other_discharge_zone":"其他区域",
+            "seeg_ictal_onset_zone":"发作起始区（位置和触点）",
+            "seeg_ictal_spread_zone_sequence":"扩散区和顺序（位置和时间）",
+            "seeg_ictal_onset_pattern":"发作起始模式",
+            "seeg_interictal_overall": "SEEG 发作期对应临床表现",
             "seeg_group1": "SEEG 发作间期 Group 1",
             "seeg_group2": "SEEG 发作间期 Group 2",
             "seeg_group3": "SEEG 发作间期 Group 3",
-            "seeg_ictal": "SEEG 发作期放电",
+            "seeg_ictal_amountt":"数量",
+            "seeg_ictal_precede_clinical_sec":"SEEG发作早于症状出现",
+            "seeg_ictal": "SEEG 电刺激结果",
             "seeg_file_link": "SEEG 数据下载链接",
 
             "second_stage_core_zone": "二期有创评估核心区域",
@@ -491,12 +565,29 @@ class PatientForm(forms.ModelForm):
         data = self.cleaned_data.get("eeg_interictal_eye_relation", [])
         return ",".join(data)
     
+    def clean_eeg_onset_pattern(self):
+        data = self.cleaned_data.get("eeg_onset_pattern", [])
+        return ",".join(data)
+    
     def clean_eeg_ictal_state(self):
         data = self.cleaned_data.get("eeg_ictal_state", [])
         return ",".join(data)
 
     def clean_eeg_ictal_location(self):
         data = self.cleaned_data.get("eeg_ictal_location", [])
+        return ",".join(data)
+    
+    def clean_seeg_ictal_morph(self):
+        data = self.cleaned_data.get("seeg_ictal_morph", [])
+        return ",".join(data)
+    def clean_seeg_ictal_amount(self):
+        data = self.cleaned_data.get("seeg_ictal_amount", [])
+        return ",".join(data)
+    def clean_seeg_ictal_pattern(self):
+        data = self.cleaned_data.get("seeg_ictal_pattern", [])
+        return ",".join(data)
+    def clean_seeg_ictal_onset_pattern(self):
+        data = self.cleaned_data.get("seeg_ictal_onset_pattern", [])
         return ",".join(data)
 
 

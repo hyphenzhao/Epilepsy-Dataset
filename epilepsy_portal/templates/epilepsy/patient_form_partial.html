@@ -381,6 +381,11 @@
                 {{ form.moca_score.errors }}
               </div>
               <div class="col-md-2 mb-3">
+                {{ form.mmse_score.label_tag }}
+                {{ form.mmse_score }}
+                {{ form.mmse_score.errors }}
+              </div>
+              <div class="col-md-2 mb-3">
                 {{ form.hama_score.label_tag }}
                 {{ form.hama_score }}
                 {{ form.hama_score.errors }}
@@ -390,6 +395,9 @@
                 {{ form.hamd_score }}
                 {{ form.hamd_score.errors }}
               </div>
+            </div>
+
+            <div class="row">
               <div class="col-md-2 mb-3">
                 {{ form.bai_score.label_tag }}
                 {{ form.bai_score }}
@@ -741,16 +749,32 @@
             </div>
           </div>
 
-          <div class="mb-3">
-            {{ form.eeg_ictal.label_tag }}
-            {{ form.eeg_ictal }}
-            {{ form.eeg_ictal.errors }}
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.eeg_onset_pattern.label_tag }}
+            </div>
+            <div class="col-md-10 mb-3">
+              {{ form.eeg_onset_pattern }}
+              {{ form.eeg_onset_pattern.errors }}
+            </div>
           </div>
 
           <div class="mb-3">
-            {{ form.eeg_relevance.label_tag }}
-            {{ form.eeg_relevance }}
-            {{ form.eeg_relevance.errors }}
+            {{ form.eeg_interictal.label_tag }}
+            {{ form.eeg_interictal }}
+            {{ form.eeg_interictal.errors }}
+          </div>
+
+          <div class="mb-3">
+            <label class="mr-2">
+              EEG发作早于症状出现
+            </label>
+
+            {{ form.eeg_ictal_precede_clinical_sec }}
+
+            <span class="ml-1">秒</span>
+
+            {{ form.eeg_ictal_precede_clinical_sec.errors }}
           </div>
 
           <div class=" mb-3">
@@ -1038,29 +1062,146 @@
       <div id="collapseSEEG" class="collapse"
            aria-labelledby="headingSEEG" data-parent="#patientAccordion">
         <div class="card-body">
+
+            <div class="mt-3 mb-2">
+             <strong>● SEEG 设计方案：</strong>
+            </div>
+
+              <div class="mb-3">
+                {{ form.seeg_record_channel_count.label_tag }}
+                {{ form.seeg_record_channel_count }}
+                {{ form.seeg_record_channel_count.errors }}
+
+                {{ form.seeg_electrode_count.label_tag }}
+                {{ form.seeg_electrode_count }}
+                {{ form.seeg_electrode_count.errors }}
+              </div>
+
+              <div class="mb-3">
+                {{ form.seeg_electrode_coverage.label_tag }}
+                {{ form.seeg_electrode_coverage }}
+                {{ form.seeg_electrode_coverage.errors }}
+
+                {{ form.seeg_record_duration_days.label_tag }}
+                {{ form.seeg_record_duration_days }}
+                {{ form.seeg_record_duration_days.errors }}
+              </div>
+
+            <div class="mt-3 mb-2">
+             <strong>● SEEG 发作间期放电</strong>
+            </div>
+
+          <!-- 波幅 / 波形 -->
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.seeg_ictal_morph.label_tag }}
+            </div>
+            <div>
+              {{ form.seeg_ictal_morph }}
+              {{ form.seeg_ictal_morph.errors }}
+            </div>
+          </div>
+          <!-- 数量 -->
+         <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.seeg_ictal_amount.label_tag }}
+            </div>
+            <div>
+              {{ form.seeg_ictal_amount }}
+              {{ form.seeg_ictal_amount.errors }}
+            </div>
+          </div>
+          <!-- 出现方式 -->
+          <div class="row">
+            <div class="col-md-2 mb-3">
+              {{ form.seeg_ictal_pattern.label_tag }}
+            </div>
+            <div>
+              {{ form.seeg_ictal_pattern }}
+              {{ form.seeg_ictal_pattern.errors }}
+            </div>
+          </div>
+
+          <div class="mb-3 d-flex flex-wrap gap-3">
+
+            <div>
+              {{ form.seeg_primary_discharge_zone.label_tag }}
+              {{ form.seeg_primary_discharge_zone }}
+              {{ form.seeg_primary_discharge_zone.errors }}
+            </div>
+
+            <div>
+              {{ form.seeg_secondary_discharge_zone.label_tag }}
+              {{ form.seeg_secondary_discharge_zone }}
+              {{ form.seeg_secondary_discharge_zone.errors }}
+            </div>
+
+          </div>
+
+          <div class="mb-3">
+            {{ form.seeg_other_discharge_zone.label_tag }}
+            {{ form.seeg_other_discharge_zone }}
+            {{ form.seeg_other_discharge_zone.errors }}
+          </div>
+
+          <div class="mt-3 mb-2">
+          <strong>● SEEG 发作期放电</strong>
+          </div>
+
+          <div class="mb-3 d-flex flex-wrap gap-3">
+            <div>
+              {{ form.seeg_ictal_onset_zone.label_tag }}
+              {{ form.seeg_ictal_onset_zone }}
+              {{ form.seeg_ictal_onset_zone.errors }}
+            </div>
+
+            <div>
+              {{ form.seeg_ictal_spread_zone_sequence.label_tag }}
+              {{ form.seeg_ictal_spread_zone_sequence }}
+              {{ form.seeg_ictal_spread_zone_sequence.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-2">
+              {{ form.seeg_ictal_onset_pattern.label_tag }}
+            </div>
+
+            <div class="col-md-10 d-flex flex-wrap">
+
+              {% for cb in form.seeg_ictal_onset_pattern %}
+                <label style="white-space: nowrap; margin-right: 20px;">
+                  {{ cb.tag }} {{ cb.choice_label }}
+                </label>
+              {% endfor %}
+
+              {{ form.seeg_ictal_onset_pattern.errors }}
+            </div>
+          </div>
+
           <div class="mb-3">
             {{ form.seeg_interictal_overall.label_tag }}
             {{ form.seeg_interictal_overall }}
             {{ form.seeg_interictal_overall.errors }}
           </div>
 
-          <!-- <div class="row">
-            <div class="col-md-4 mb-3">
-              {{ form.seeg_group1.label_tag }}
-              {{ form.seeg_group1 }}
-              {{ form.seeg_group1.errors }}
-            </div>
-            <div class="col-md-4 mb-3">
-              {{ form.seeg_group2.label_tag }}
-              {{ form.seeg_group2 }}
-              {{ form.seeg_group2.errors }}
-            </div>
-            <div class="col-md-4 mb-3">
-              {{ form.seeg_group3.label_tag }}
-              {{ form.seeg_group3 }}
-              {{ form.seeg_group3.errors }}
-            </div>
-          </div> -->
+          <div class="mb-3">
+            <label class="mr-2">
+              EEG发作早于症状出现
+            </label>
+
+            {{ form.seeg_ictal_precede_clinical_sec }}
+
+            <span class="ml-1">秒</span>
+
+            {{ form.seeg_ictal_precede_clinical_sec.errors }}
+          </div>
+
+          <div class=" mb-3">
+              {{ form.eeg_ictal_amount.label_tag }}
+              {{ form.eeg_ictal_amount }}
+              {{ form.eeg_ictal_amount.errors }}
+          </div>
 
           <div class="mb-3">
             {{ form.seeg_ictal.label_tag }}
