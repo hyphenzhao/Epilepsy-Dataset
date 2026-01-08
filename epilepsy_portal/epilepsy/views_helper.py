@@ -126,11 +126,41 @@ def require_admin(request):
     return None
 
 
+def _get_field_choice_map(obj, field_name: str):
+    """Return a {code: label} mapping for a model field's choices, if any.
+
+    Uses Django's flatchoices when available (handles grouped choices).
+    Returns None when the field does not exist or has no choices.
+    """
+    try:
+        field = obj._meta.get_field(field_name)
+    except Exception:
+        return None
+
+    choices = getattr(field, "flatchoices", None) or getattr(field, "choices", None)
+    if not choices:
+        return None
+
+    try:
+        return dict(choices)
+    except TypeError:
+        # Defensive: flatten grouped choices like [(group, [(k,v), ...]), ...]
+        flat = []
+        for item in choices:
+            if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
+                flat.extend(item[1])
+            else:
+                flat.append(item)
+        return dict(flat)
+
+
 def get_display_value(obj, field_name):
     """
-    1) 单选 choices：优先 get_xxx_display()
-    2) 逗号分隔的“多选 code”：用 MULTI_CHOICE_MAP 翻译
-    3) 其它字段：原样返回
+    1) Django 原生 choices（单选）：优先 get_xxx_display()
+    2) choices + 多选值（逗号分隔字符串 / list / tuple / set）：自动用 choices 翻译
+       - 兼容旧逻辑：如在 MULTI_CHOICE_MAP 中，优先使用手工映射
+    3) ManyToMany（或类似 manager）：展示为 '，' 连接的对象字符串
+    4) 其它字段：原样返回
     """
     value = getattr(obj, field_name, "")
     if value in (None, "", [], {}):
@@ -139,16 +169,44 @@ def get_display_value(obj, field_name):
     # 1) Django 原生 choices（单选）
     method_name = f"get_{field_name}_display"
     if hasattr(obj, method_name):
-        return getattr(obj, method_name)()
+        try:
+            disp = getattr(obj, method_name)()
+            # 个别多选字段可能返回 list/tuple/set
+            if isinstance(disp, (list, tuple, set)):
+                return "，".join(str(x) for x in disp)
+            return disp
+        except Exception:
+            # 个别自定义 Field 可能实现不标准，继续走下面兜底
+            pass
 
-    # 2) 逗号分隔多选（例如 "FEBRILE_SEIZURE,TRAUMA"）
-    if field_name in MULTI_CHOICE_MAP:
-        mapping = MULTI_CHOICE_MAP[field_name]
-        codes = [v.strip() for v in str(value).split(",") if v.strip()]
-        labels = [mapping.get(code, code) for code in codes]
-        return "，".join(labels)
+    # 3) ManyToMany / 关联管理器：直接 join 关联对象的字符串
+    if hasattr(value, "all") and callable(getattr(value, "all")):
+        try:
+            return "，".join(str(x) for x in value.all())
+        except Exception:
+            pass
 
-    # 3) 兜底
+    # 2) choices 多选（checkbox / 多选下拉等）
+    mapping = MULTI_CHOICE_MAP.get(field_name) or _get_field_choice_map(obj, field_name)
+    if mapping:
+        # 逗号分隔字符串，例如 "A,B,C"
+        if isinstance(value, str):
+            codes = [v.strip() for v in value.split(",") if v.strip()]
+            if len(codes) > 1:
+                labels = [mapping.get(code, code) for code in codes]
+                return "，".join(labels)
+            if len(codes) == 1:
+                return mapping.get(codes[0], codes[0])
+
+        # list/tuple/set，例如 ["A", "B"]
+        if isinstance(value, (list, tuple, set)):
+            labels = [mapping.get(str(code), str(code)) for code in value]
+            return "，".join(labels)
+
+        # 单值兜底
+        return mapping.get(value, value)
+
+    # 4) 兜底
     return value
 
 PATIENT_SECTION_FIELDS = [

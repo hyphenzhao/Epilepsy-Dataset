@@ -98,7 +98,23 @@
           </div>
           <div>
             {% if form.name %}
-              {{ form.name.value|default:"-"|linebreaksbr }}
+              {% with bf=form.name val=form.name.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -112,7 +128,23 @@
           </div>
           <div>
             {% if form.gender %}
-              {{ form.gender.value|default:"-"|linebreaksbr }}
+              {% with bf=form.gender val=form.gender.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -126,7 +158,23 @@
           </div>
           <div>
             {% if form.handedness %}
-              {{ form.handedness.value|default:"-"|linebreaksbr }}
+              {% with bf=form.handedness val=form.handedness.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -140,7 +188,23 @@
           </div>
           <div>
             {% if form.birthday %}
-              {{ form.birthday.value|default:"-"|linebreaksbr }}
+              {% with bf=form.birthday val=form.birthday.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -154,7 +218,23 @@
           </div>
           <div>
             {% if form.department %}
-              {{ form.department.value|default:"-"|linebreaksbr }}
+              {% with bf=form.department val=form.department.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -168,7 +248,23 @@
           </div>
           <div>
             {% if form.bed_number %}
-              {{ form.bed_number.value|default:"-"|linebreaksbr }}
+              {% with bf=form.bed_number val=form.bed_number.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -182,7 +278,23 @@
           </div>
           <div>
             {% if form.medical_record_number %}
-              {{ form.medical_record_number.value|default:"-"|linebreaksbr }}
+              {% with bf=form.medical_record_number val=form.medical_record_number.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -196,7 +308,23 @@
           </div>
           <div>
             {% if form.admission_date %}
-              {{ form.admission_date.value|default:"-"|linebreaksbr }}
+              {% with bf=form.admission_date val=form.admission_date.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -210,7 +338,23 @@
           </div>
           <div>
             {% if form.education_level %}
-              {{ form.education_level.value|default:"-"|linebreaksbr }}
+              {% with bf=form.education_level val=form.education_level.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -224,7 +368,23 @@
           </div>
           <div>
             {% if form.occupation %}
-              {{ form.occupation.value|default:"-"|linebreaksbr }}
+              {% with bf=form.occupation val=form.occupation.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -238,7 +398,23 @@
           </div>
           <div>
             {% if form.imaging_number %}
-              {{ form.imaging_number.value|default:"-"|linebreaksbr }}
+              {% with bf=form.imaging_number val=form.imaging_number.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -252,7 +428,23 @@
           </div>
           <div>
             {% if form.admission_diagnosis %}
-              {{ form.admission_diagnosis.value|default:"-"|linebreaksbr }}
+              {% with bf=form.admission_diagnosis val=form.admission_diagnosis.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -271,7 +463,23 @@
           </div>
           <div>
             {% if form.first_seizure_age %}
-              {{ form.first_seizure_age.value|default:"-"|linebreaksbr }}
+              {% with bf=form.first_seizure_age val=form.first_seizure_age.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -285,7 +493,23 @@
           </div>
           <div>
             {% if form.first_seizure_description %}
-              {{ form.first_seizure_description.value|default:"-"|linebreaksbr }}
+              {% with bf=form.first_seizure_description val=form.first_seizure_description.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -299,7 +523,53 @@
           </div>
           <div>
             {% if form.past_medical_history %}
-              {{ form.past_medical_history.value|default:"-"|linebreaksbr }}
+              {% with bf=form.past_medical_history val=form.past_medical_history.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.past_medical_history_other_text %}{{ form.past_medical_history_other_text.label }}{% else %}past_medical_history_other_text{% endif %}
+          </div>
+          <div>
+            {% if form.past_medical_history_other_text %}
+              {% with bf=form.past_medical_history_other_text val=form.past_medical_history_other_text.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -313,7 +583,23 @@
           </div>
           <div>
             {% if form.family_history %}
-              {{ form.family_history.value|default:"-"|linebreaksbr }}
+              {% with bf=form.family_history val=form.family_history.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -327,7 +613,23 @@
           </div>
           <div>
             {% if form.medication_history %}
-              {{ form.medication_history.value|default:"-"|linebreaksbr }}
+              {% with bf=form.medication_history val=form.medication_history.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -346,7 +648,23 @@
           </div>
           <div>
             {% if form.seizure_state %}
-              {{ form.seizure_state.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seizure_state val=form.seizure_state.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -360,7 +678,53 @@
           </div>
           <div>
             {% if form.aura %}
-              {{ form.aura.value|default:"-"|linebreaksbr }}
+              {% with bf=form.aura val=form.aura.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.aura_text %}{{ form.aura_text.label }}{% else %}aura_text{% endif %}
+          </div>
+          <div>
+            {% if form.aura_text %}
+              {% with bf=form.aura_text val=form.aura_text.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -374,7 +738,23 @@
           </div>
           <div>
             {% if form.minor_initial_symptom %}
-              {{ form.minor_initial_symptom.value|default:"-"|linebreaksbr }}
+              {% with bf=form.minor_initial_symptom val=form.minor_initial_symptom.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -388,7 +768,23 @@
           </div>
           <div>
             {% if form.seizure_duration_seconds %}
-              {{ form.seizure_duration_seconds.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seizure_duration_seconds val=form.seizure_duration_seconds.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -402,7 +798,23 @@
           </div>
           <div>
             {% if form.seizure_freq_per_day %}
-              {{ form.seizure_freq_per_day.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seizure_freq_per_day val=form.seizure_freq_per_day.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -416,7 +828,53 @@
           </div>
           <div>
             {% if form.major_aura %}
-              {{ form.major_aura.value|default:"-"|linebreaksbr }}
+              {% with bf=form.major_aura val=form.major_aura.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.major_aura_text %}{{ form.major_aura_text.label }}{% else %}major_aura_text{% endif %}
+          </div>
+          <div>
+            {% if form.major_aura_text %}
+              {% with bf=form.major_aura_text val=form.major_aura_text.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -430,7 +888,23 @@
           </div>
           <div>
             {% if form.initial_seizure_symptom %}
-              {{ form.initial_seizure_symptom.value|default:"-"|linebreaksbr }}
+              {% with bf=form.initial_seizure_symptom val=form.initial_seizure_symptom.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -444,7 +918,23 @@
           </div>
           <div>
             {% if form.evolution_symptom %}
-              {{ form.evolution_symptom.value|default:"-"|linebreaksbr }}
+              {% with bf=form.evolution_symptom val=form.evolution_symptom.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -458,7 +948,23 @@
           </div>
           <div>
             {% if form.postictal_state %}
-              {{ form.postictal_state.value|default:"-"|linebreaksbr }}
+              {% with bf=form.postictal_state val=form.postictal_state.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -472,7 +978,23 @@
           </div>
           <div>
             {% if form.major_duration %}
-              {{ form.major_duration.value|default:"-"|linebreaksbr }}
+              {% with bf=form.major_duration val=form.major_duration.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -486,7 +1008,23 @@
           </div>
           <div>
             {% if form.major_frequency %}
-              {{ form.major_frequency.value|default:"-"|linebreaksbr }}
+              {% with bf=form.major_frequency val=form.major_frequency.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -505,7 +1043,23 @@
           </div>
           <div>
             {% if form.neuro_exam %}
-              {{ form.neuro_exam.value|default:"-"|linebreaksbr }}
+              {% with bf=form.neuro_exam val=form.neuro_exam.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -519,7 +1073,23 @@
           </div>
           <div>
             {% if form.neuro_exam_description %}
-              {{ form.neuro_exam_description.value|default:"-"|linebreaksbr }}
+              {% with bf=form.neuro_exam_description val=form.neuro_exam_description.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -534,11 +1104,57 @@
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
+            {% if form.assessment_done %}{{ form.assessment_done.label }}{% else %}assessment_done{% endif %}
+          </div>
+          <div>
+            {% if form.assessment_done %}
+              {% with bf=form.assessment_done val=form.assessment_done.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
             {% if form.moca_score %}{{ form.moca_score.label }}{% else %}moca_score{% endif %}
           </div>
           <div>
             {% if form.moca_score %}
-              {{ form.moca_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.moca_score val=form.moca_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -552,7 +1168,23 @@
           </div>
           <div>
             {% if form.mmse_score %}
-              {{ form.mmse_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.mmse_score val=form.mmse_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -566,7 +1198,23 @@
           </div>
           <div>
             {% if form.hama_score %}
-              {{ form.hama_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.hama_score val=form.hama_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -580,7 +1228,23 @@
           </div>
           <div>
             {% if form.hamd_score %}
-              {{ form.hamd_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.hamd_score val=form.hamd_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -594,7 +1258,23 @@
           </div>
           <div>
             {% if form.bai_score %}
-              {{ form.bai_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.bai_score val=form.bai_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -608,7 +1288,23 @@
           </div>
           <div>
             {% if form.bdi_score %}
-              {{ form.bdi_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.bdi_score val=form.bdi_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -622,7 +1318,23 @@
           </div>
           <div>
             {% if form.epilepsy_scale_score %}
-              {{ form.epilepsy_scale_score.value|default:"-"|linebreaksbr }}
+              {% with bf=form.epilepsy_scale_score val=form.epilepsy_scale_score.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -641,7 +1353,23 @@
           </div>
           <div>
             {% if form.eeg_recording_electrodes %}
-              {{ form.eeg_recording_electrodes.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_recording_electrodes val=form.eeg_recording_electrodes.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -655,7 +1383,23 @@
           </div>
           <div>
             {% if form.eeg_recording_duration_days %}
-              {{ form.eeg_recording_duration_days.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_recording_duration_days val=form.eeg_recording_duration_days.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -669,7 +1413,23 @@
           </div>
           <div>
             {% if form.eeg_bg_occipital_rhythm %}
-              {{ form.eeg_bg_occipital_rhythm.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_bg_occipital_rhythm val=form.eeg_bg_occipital_rhythm.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -683,7 +1443,23 @@
           </div>
           <div>
             {% if form.eeg_eye_response %}
-              {{ form.eeg_eye_response.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_eye_response val=form.eeg_eye_response.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -697,7 +1473,23 @@
           </div>
           <div>
             {% if form.eeg_symmetry %}
-              {{ form.eeg_symmetry.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_symmetry val=form.eeg_symmetry.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -711,7 +1503,53 @@
           </div>
           <div>
             {% if form.eeg_awake_background %}
-              {{ form.eeg_awake_background.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_awake_background val=form.eeg_awake_background.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_hv_result %}{{ form.eeg_hv_result.label }}{% else %}eeg_hv_result{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_hv_result %}
+              {% with bf=form.eeg_hv_result val=form.eeg_hv_result.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -725,7 +1563,23 @@
           </div>
           <div>
             {% if form.eeg_hv_slow_wave_build %}
-              {{ form.eeg_hv_slow_wave_build.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_hv_slow_wave_build val=form.eeg_hv_slow_wave_build.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -739,7 +1593,23 @@
           </div>
           <div>
             {% if form.eeg_hv_slow_wave_frequency %}
-              {{ form.eeg_hv_slow_wave_frequency.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_hv_slow_wave_frequency val=form.eeg_hv_slow_wave_frequency.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -753,7 +1623,23 @@
           </div>
           <div>
             {% if form.eeg_hv_slow_wave_symmetry %}
-              {{ form.eeg_hv_slow_wave_symmetry.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_hv_slow_wave_symmetry val=form.eeg_hv_slow_wave_symmetry.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -767,7 +1653,23 @@
           </div>
           <div>
             {% if form.eeg_hv_epileptiform_discharge %}
-              {{ form.eeg_hv_epileptiform_discharge.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_hv_epileptiform_discharge val=form.eeg_hv_epileptiform_discharge.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -781,7 +1683,53 @@
           </div>
           <div>
             {% if form.eeg_hv_discharge_laterality %}
-              {{ form.eeg_hv_discharge_laterality.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_hv_discharge_laterality val=form.eeg_hv_discharge_laterality.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.ips_result %}{{ form.ips_result.label }}{% else %}ips_result{% endif %}
+          </div>
+          <div>
+            {% if form.ips_result %}
+              {% with bf=form.ips_result val=form.ips_result.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -795,7 +1743,23 @@
           </div>
           <div>
             {% if form.frequency %}
-              {{ form.frequency.value|default:"-"|linebreaksbr }}
+              {% with bf=form.frequency val=form.frequency.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -809,7 +1773,53 @@
           </div>
           <div>
             {% if form.laterality %}
-              {{ form.laterality.value|default:"-"|linebreaksbr }}
+              {% with bf=form.laterality val=form.laterality.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_sleep_period_overall %}{{ form.eeg_sleep_period_overall.label }}{% else %}eeg_sleep_period_overall{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_sleep_period_overall %}
+              {% with bf=form.eeg_sleep_period_overall val=form.eeg_sleep_period_overall.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -823,7 +1833,23 @@
           </div>
           <div>
             {% if form.eeg_sleep_vertex_wave %}
-              {{ form.eeg_sleep_vertex_wave.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_sleep_vertex_wave val=form.eeg_sleep_vertex_wave.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -837,7 +1863,23 @@
           </div>
           <div>
             {% if form.eeg_sleep_k_complex %}
-              {{ form.eeg_sleep_k_complex.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_sleep_k_complex val=form.eeg_sleep_k_complex.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -851,18 +1893,29 @@
           </div>
           <div>
             {% if form.eeg_sleep_spindle %}
-              {{ form.eeg_sleep_spindle.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_sleep_spindle val=form.eeg_sleep_spindle.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
           </div>
         </div>
       </div>
-    </div>
-
-    <hr class="my-4">
-    <h5 class="mb-3">状态</h5>
-    <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
@@ -870,18 +1923,29 @@
           </div>
           <div>
             {% if form.eeg_interictal_state %}
-              {{ form.eeg_interictal_state.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal_state val=form.eeg_interictal_state.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
           </div>
         </div>
       </div>
-    </div>
-
-    <hr class="my-4">
-    <h5 class="mb-3">部位</h5>
-    <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
@@ -889,18 +1953,89 @@
           </div>
           <div>
             {% if form.eeg_interictal_location %}
-              {{ form.eeg_interictal_location.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal_location val=form.eeg_interictal_location.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
           </div>
         </div>
       </div>
-    </div>
-
-    <hr class="my-4">
-    <h5 class="mb-3">波幅 / 波形</h5>
-    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_focal_lobe %}{{ form.eeg_interictal_focal_lobe.label }}{% else %}eeg_interictal_focal_lobe{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_focal_lobe %}
+              {% with bf=form.eeg_interictal_focal_lobe val=form.eeg_interictal_focal_lobe.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_interictal_laterality %}{{ form.eeg_interictal_laterality.label }}{% else %}eeg_interictal_laterality{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_interictal_laterality %}
+              {% with bf=form.eeg_interictal_laterality val=form.eeg_interictal_laterality.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
@@ -908,32 +2043,29 @@
           </div>
           <div>
             {% if form.eeg_interictal_morph %}
-              {{ form.eeg_interictal_morph.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal_morph val=form.eeg_interictal_morph.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
           </div>
         </div>
       </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal_morph %}{{ form.seeg_ictal_morph.label }}{% else %}seeg_ictal_morph{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal_morph %}
-              {{ form.seeg_ictal_morph.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="my-4">
-    <h5 class="mb-3">数量</h5>
-    <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
@@ -941,32 +2073,29 @@
           </div>
           <div>
             {% if form.eeg_interictal_amount %}
-              {{ form.eeg_interictal_amount.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal_amount val=form.eeg_interictal_amount.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
           </div>
         </div>
       </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal_amount %}{{ form.seeg_ictal_amount.label }}{% else %}seeg_ictal_amount{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal_amount %}
-              {{ form.seeg_ictal_amount.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="my-4">
-    <h5 class="mb-3">出现方式</h5>
-    <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
@@ -974,158 +2103,29 @@
           </div>
           <div>
             {% if form.eeg_interictal_pattern %}
-              {{ form.eeg_interictal_pattern.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal_pattern val=form.eeg_interictal_pattern.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
           </div>
         </div>
       </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal_pattern %}{{ form.seeg_ictal_pattern.label }}{% else %}seeg_ictal_pattern{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal_pattern %}
-              {{ form.seeg_ictal_pattern.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_primary_discharge_zone %}{{ form.seeg_primary_discharge_zone.label }}{% else %}seeg_primary_discharge_zone{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_primary_discharge_zone %}
-              {{ form.seeg_primary_discharge_zone.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_secondary_discharge_zone %}{{ form.seeg_secondary_discharge_zone.label }}{% else %}seeg_secondary_discharge_zone{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_secondary_discharge_zone %}
-              {{ form.seeg_secondary_discharge_zone.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_other_discharge_zone %}{{ form.seeg_other_discharge_zone.label }}{% else %}seeg_other_discharge_zone{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_other_discharge_zone %}
-              {{ form.seeg_other_discharge_zone.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal_onset_zone %}{{ form.seeg_ictal_onset_zone.label }}{% else %}seeg_ictal_onset_zone{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal_onset_zone %}
-              {{ form.seeg_ictal_onset_zone.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal_spread_zone_sequence %}{{ form.seeg_ictal_spread_zone_sequence.label }}{% else %}seeg_ictal_spread_zone_sequence{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal_spread_zone_sequence %}
-              {{ form.seeg_ictal_spread_zone_sequence.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal_onset_pattern %}{{ form.seeg_ictal_onset_pattern.label }}{% else %}seeg_ictal_onset_pattern{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal_onset_pattern %}
-              {{ form.seeg_ictal_onset_pattern.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_interictal_overall %}{{ form.seeg_interictal_overall.label }}{% else %}seeg_interictal_overall{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_interictal_overall %}
-              {{ form.seeg_interictal_overall.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.eeg_ictal_amount %}{{ form.eeg_ictal_amount.label }}{% else %}eeg_ictal_amount{% endif %}
-          </div>
-          <div>
-            {% if form.eeg_ictal_amount %}
-              {{ form.eeg_ictal_amount.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-3">
-        <div class="border rounded p-2 h-100">
-          <div class="text-muted small mb-1">
-            {% if form.seeg_ictal %}{{ form.seeg_ictal.label }}{% else %}seeg_ictal{% endif %}
-          </div>
-          <div>
-            {% if form.seeg_ictal %}
-              {{ form.seeg_ictal.value|default:"-"|linebreaksbr }}
-            {% else %}
-              -
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="my-4">
-    <h5 class="mb-3">眼状态相关</h5>
-    <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
           <div class="text-muted small mb-1">
@@ -1133,7 +2133,23 @@
           </div>
           <div>
             {% if form.eeg_interictal_eye_relation %}
-              {{ form.eeg_interictal_eye_relation.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal_eye_relation val=form.eeg_interictal_eye_relation.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1147,7 +2163,23 @@
           </div>
           <div>
             {% if form.eeg_ictal_state %}
-              {{ form.eeg_ictal_state.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_ictal_state val=form.eeg_ictal_state.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1161,7 +2193,23 @@
           </div>
           <div>
             {% if form.eeg_ictal_location %}
-              {{ form.eeg_ictal_location.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_ictal_location val=form.eeg_ictal_location.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1175,7 +2223,23 @@
           </div>
           <div>
             {% if form.eeg_onset_pattern %}
-              {{ form.eeg_onset_pattern.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_onset_pattern val=form.eeg_onset_pattern.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1189,7 +2253,53 @@
           </div>
           <div>
             {% if form.eeg_interictal %}
-              {{ form.eeg_interictal.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_interictal val=form.eeg_interictal.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_ictal_precede_clinical_sec %}{{ form.eeg_ictal_precede_clinical_sec.label }}{% else %}eeg_ictal_precede_clinical_sec{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_ictal_precede_clinical_sec %}
+              {% with bf=form.eeg_ictal_precede_clinical_sec val=form.eeg_ictal_precede_clinical_sec.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1203,7 +2313,23 @@
           </div>
           <div>
             {% if form.eeg_ictal_amount %}
-              {{ form.eeg_ictal_amount.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_ictal_amount val=form.eeg_ictal_amount.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1217,7 +2343,23 @@
           </div>
           <div>
             {% if form.eeg_clinical_correlation %}
-              {{ form.eeg_clinical_correlation.value|default:"-"|linebreaksbr }}
+              {% with bf=form.eeg_clinical_correlation val=form.eeg_clinical_correlation.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1236,7 +2378,23 @@
           </div>
           <div>
             {% if form.mri_brief %}
-              {{ form.mri_brief.value|default:"-"|linebreaksbr }}
+              {% with bf=form.mri_brief val=form.mri_brief.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1250,7 +2408,23 @@
           </div>
           <div>
             {% if form.pet_brief %}
-              {{ form.pet_brief.value|default:"-"|linebreaksbr }}
+              {% with bf=form.pet_brief val=form.pet_brief.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1269,7 +2443,23 @@
           </div>
           <div>
             {% if form.first_stage_lateralization %}
-              {{ form.first_stage_lateralization.value|default:"-"|linebreaksbr }}
+              {% with bf=form.first_stage_lateralization val=form.first_stage_lateralization.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1283,7 +2473,23 @@
           </div>
           <div>
             {% if form.first_stage_region %}
-              {{ form.first_stage_region.value|default:"-"|linebreaksbr }}
+              {% with bf=form.first_stage_region val=form.first_stage_region.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1297,7 +2503,23 @@
           </div>
           <div>
             {% if form.first_stage_location %}
-              {{ form.first_stage_location.value|default:"-"|linebreaksbr }}
+              {% with bf=form.first_stage_location val=form.first_stage_location.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1316,7 +2538,23 @@
           </div>
           <div>
             {% if form.seeg_record_channel_count %}
-              {{ form.seeg_record_channel_count.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seeg_record_channel_count val=form.seeg_record_channel_count.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1330,7 +2568,23 @@
           </div>
           <div>
             {% if form.seeg_electrode_count %}
-              {{ form.seeg_electrode_count.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seeg_electrode_count val=form.seeg_electrode_count.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1344,7 +2598,23 @@
           </div>
           <div>
             {% if form.seeg_electrode_coverage %}
-              {{ form.seeg_electrode_coverage.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seeg_electrode_coverage val=form.seeg_electrode_coverage.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1358,7 +2628,413 @@
           </div>
           <div>
             {% if form.seeg_record_duration_days %}
-              {{ form.seeg_record_duration_days.value|default:"-"|linebreaksbr }}
+              {% with bf=form.seeg_record_duration_days val=form.seeg_record_duration_days.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_morph %}{{ form.seeg_ictal_morph.label }}{% else %}seeg_ictal_morph{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_morph %}
+              {% with bf=form.seeg_ictal_morph val=form.seeg_ictal_morph.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_amount %}{{ form.seeg_ictal_amount.label }}{% else %}seeg_ictal_amount{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_amount %}
+              {% with bf=form.seeg_ictal_amount val=form.seeg_ictal_amount.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_pattern %}{{ form.seeg_ictal_pattern.label }}{% else %}seeg_ictal_pattern{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_pattern %}
+              {% with bf=form.seeg_ictal_pattern val=form.seeg_ictal_pattern.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_primary_discharge_zone %}{{ form.seeg_primary_discharge_zone.label }}{% else %}seeg_primary_discharge_zone{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_primary_discharge_zone %}
+              {% with bf=form.seeg_primary_discharge_zone val=form.seeg_primary_discharge_zone.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_secondary_discharge_zone %}{{ form.seeg_secondary_discharge_zone.label }}{% else %}seeg_secondary_discharge_zone{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_secondary_discharge_zone %}
+              {% with bf=form.seeg_secondary_discharge_zone val=form.seeg_secondary_discharge_zone.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_other_discharge_zone %}{{ form.seeg_other_discharge_zone.label }}{% else %}seeg_other_discharge_zone{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_other_discharge_zone %}
+              {% with bf=form.seeg_other_discharge_zone val=form.seeg_other_discharge_zone.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_onset_zone %}{{ form.seeg_ictal_onset_zone.label }}{% else %}seeg_ictal_onset_zone{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_onset_zone %}
+              {% with bf=form.seeg_ictal_onset_zone val=form.seeg_ictal_onset_zone.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_spread_zone_sequence %}{{ form.seeg_ictal_spread_zone_sequence.label }}{% else %}seeg_ictal_spread_zone_sequence{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_spread_zone_sequence %}
+              {% with bf=form.seeg_ictal_spread_zone_sequence val=form.seeg_ictal_spread_zone_sequence.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_onset_pattern %}{{ form.seeg_ictal_onset_pattern.label }}{% else %}seeg_ictal_onset_pattern{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_onset_pattern %}
+              {% with bf=form.seeg_ictal_onset_pattern val=form.seeg_ictal_onset_pattern.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_interictal_overall %}{{ form.seeg_interictal_overall.label }}{% else %}seeg_interictal_overall{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_interictal_overall %}
+              {% with bf=form.seeg_interictal_overall val=form.seeg_interictal_overall.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal_precede_clinical_sec %}{{ form.seeg_ictal_precede_clinical_sec.label }}{% else %}seeg_ictal_precede_clinical_sec{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal_precede_clinical_sec %}
+              {% with bf=form.seeg_ictal_precede_clinical_sec val=form.seeg_ictal_precede_clinical_sec.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.eeg_ictal_amount %}{{ form.eeg_ictal_amount.label }}{% else %}eeg_ictal_amount{% endif %}
+          </div>
+          <div>
+            {% if form.eeg_ictal_amount %}
+              {% with bf=form.eeg_ictal_amount val=form.eeg_ictal_amount.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="border rounded p-2 h-100">
+          <div class="text-muted small mb-1">
+            {% if form.seeg_ictal %}{{ form.seeg_ictal.label }}{% else %}seeg_ictal{% endif %}
+          </div>
+          <div>
+            {% if form.seeg_ictal %}
+              {% with bf=form.seeg_ictal val=form.seeg_ictal.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1377,7 +3053,23 @@
           </div>
           <div>
             {% if form.second_stage_core_zone %}
-              {{ form.second_stage_core_zone.value|default:"-"|linebreaksbr }}
+              {% with bf=form.second_stage_core_zone val=form.second_stage_core_zone.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1391,7 +3083,23 @@
           </div>
           <div>
             {% if form.second_stage_hypothesis_zone %}
-              {{ form.second_stage_hypothesis_zone.value|default:"-"|linebreaksbr }}
+              {% with bf=form.second_stage_hypothesis_zone val=form.second_stage_hypothesis_zone.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1410,7 +3118,23 @@
           </div>
           <div>
             {% if form.resection_plan_convex %}
-              {{ form.resection_plan_convex.value|default:"-"|linebreaksbr }}
+              {% with bf=form.resection_plan_convex val=form.resection_plan_convex.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1424,7 +3148,23 @@
           </div>
           <div>
             {% if form.resection_plan_concave %}
-              {{ form.resection_plan_concave.value|default:"-"|linebreaksbr }}
+              {% with bf=form.resection_plan_concave val=form.resection_plan_concave.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1443,7 +3183,23 @@
           </div>
           <div>
             {% if form.evaluator %}
-              {{ form.evaluator.value|default:"-"|linebreaksbr }}
+              {% with bf=form.evaluator val=form.evaluator.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
@@ -1457,7 +3213,23 @@
           </div>
           <div>
             {% if form.evaluation_date %}
-              {{ form.evaluation_date.value|default:"-"|linebreaksbr }}
+              {% with bf=form.evaluation_date val=form.evaluation_date.value %}
+                {% if bf.field.choices %}
+                  {% if val %}
+                    {% if bf.field.widget.allow_multiple_selected %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                      {% endfor %}
+                    {% else %}
+                      {% for v,l in bf.field.choices %}
+                        {% if v == val %}{{ l }}{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}-{% endif %}
+                {% else %}
+                  {{ val|default:"-"|linebreaksbr }}
+                {% endif %}
+              {% endwith %}
             {% else %}
               -
             {% endif %}
