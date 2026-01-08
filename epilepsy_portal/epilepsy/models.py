@@ -328,7 +328,7 @@ class Patient(models.Model):
     seeg_ictal_amount = models.CharField(
     "数量（多选）",
     max_length=255,
-    blank=True,
+    blank=True,null=True,
     help_text="多选，用逗号分隔编码存储",
 )
     seeg_ictal_pattern = models.CharField(
