@@ -34,6 +34,14 @@ MULTI_CHOICE_MAP = {
     "eeg_interictal_amount": dict(Patient.EEG_INTERICTAL_AMOUNT_CHOICES),
     "eeg_interictal_pattern": dict(Patient.EEG_INTERICTAL_PATTERN_CHOICES),
     "eeg_interictal_eye_relation": dict(Patient.EEG_INTERICTAL_EYE_RELATED_CHOICES),
+    "eeg_ictal_state": dict(Patient.EEG_INTERICTAL_STATE_CHOICES),
+    "eeg_ictal_location": dict(Patient.EEG_INTERICTAL_LOCATION_CHOICES),
+    "eeg_onset_pattern": dict(Patient.EEG_ONSET_PATTERN_CHOICES),
+    "seeg_ictal_morph": dict(Patient.EEG_INTERICTAL_MORPH_CHOICES),
+    "seeg_ictal_amount": dict(Patient.EEG_INTERICTAL_AMOUNT_CHOICES),
+    "seeg_ictal_pattern": dict(Patient.EEG_INTERICTAL_PATTERN_CHOICES),
+    "seeg_ictal_onset_pattern": dict(Patient.SEEG_ICTAL_ONSET_PATTERN_CHOICES),
+
 }
 
 # =======================
