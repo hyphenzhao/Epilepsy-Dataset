@@ -372,7 +372,12 @@
       <div id="collapseCognitive" class="collapse"
            aria-labelledby="headingCognitive" data-parent="#patientAccordion">
         <div class="card-body">
-            {{ form.assessment_done }}
+            <div class="row mb-3 align-items-center">
+              <div class="col-md-3">
+                {{ form.assessment_done }}
+                {{ form.assessment_done.errors }}
+              </div>
+            </div>
           <div id="wrap_assessment_scores" style="display:none;">
             <div class="row">
               <div class="col-md-2 mb-3">
@@ -1122,45 +1127,33 @@
             </div>
           </div>
 
-          <div class="mb-3 d-flex flex-wrap gap-3">
-
-            <div>
-              {{ form.seeg_primary_discharge_zone.label_tag }}
-              {{ form.seeg_primary_discharge_zone }}
-              {{ form.seeg_primary_discharge_zone.errors }}
-            </div>
-
-            <div>
-              {{ form.seeg_secondary_discharge_zone.label_tag }}
-              {{ form.seeg_secondary_discharge_zone }}
-              {{ form.seeg_secondary_discharge_zone.errors }}
-            </div>
-
+          <div class="row mb-3 align-items-center">
+            <div class="col-md-3 text-nowrap">{{ form.seeg_primary_discharge_zone.label_tag }}</div>
+            <div class="col-md-9">{{ form.seeg_primary_discharge_zone }}{{ form.seeg_primary_discharge_zone.errors }}</div>
+          </div>
+                    
+          <div class="row mb-3 align-items-center">
+            <div class="col-md-3 text-nowrap">{{ form.seeg_secondary_discharge_zone.label_tag }}</div>
+            <div class="col-md-9">{{ form.seeg_secondary_discharge_zone }}{{ form.seeg_secondary_discharge_zone.errors }}</div>
           </div>
 
-          <div class="mb-3">
-            {{ form.seeg_other_discharge_zone.label_tag }}
-            {{ form.seeg_other_discharge_zone }}
-            {{ form.seeg_other_discharge_zone.errors }}
+          <div class="row mb-3 align-items-center">
+            <div class="col-md-3 text-nowrap">{{ form.seeg_other_discharge_zone.label_tag }}</div>
+            <div class="col-md-9">{{ form.seeg_other_discharge_zone }}{{ form.seeg_other_discharge_zone.errors }}</div>
           </div>
 
           <div class="mt-3 mb-2">
           <strong>● SEEG 发作期放电</strong>
           </div>
-
-          <div class="mb-3 d-flex flex-wrap gap-3">
-            <div>
-              {{ form.seeg_ictal_onset_zone.label_tag }}
-              {{ form.seeg_ictal_onset_zone }}
-              {{ form.seeg_ictal_onset_zone.errors }}
+            <div class="row mb-3 align-items-center">
+              <div class="col-md-3 text-nowrap">{{ form.seeg_ictal_onset_zone.label_tag }}</div>
+              <div class="col-md-9">{{ form.seeg_ictal_onset_zone }}{{ form.seeg_ictal_onset_zone.errors }}</div>
             </div>
 
-            <div>
-              {{ form.seeg_ictal_spread_zone_sequence.label_tag }}
-              {{ form.seeg_ictal_spread_zone_sequence }}
-              {{ form.seeg_ictal_spread_zone_sequence.errors }}
+            <div class="row mb-3 align-items-center">
+              <div class="col-md-3 text-nowrap">{{ form.seeg_ictal_spread_zone_sequence.label_tag }}</div>
+              <div class="col-md-9">{{ form.seeg_ictal_spread_zone_sequence }}{{ form.seeg_ictal_spread_zone_sequence.errors }}</div>
             </div>
-          </div>
 
           <div class="row mb-3">
             <div class="col-md-2">
@@ -1207,6 +1200,12 @@
             {{ form.seeg_ictal.label_tag }}
             {{ form.seeg_ictal }}
             {{ form.seeg_ictal.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.seeg_thermocoagulation.label_tag }}
+            {{ form.seeg_thermocoagulation }}
+            {{ form.seeg_thermocoagulation.errors }}
           </div>
           
           <!-- <div class="mb-3">
@@ -1317,14 +1316,9 @@
            aria-labelledby="headingResection" data-parent="#patientAccordion">
         <div class="card-body">
           <div class="mb-3">
-            {{ form.resection_plan_convex.label_tag }}
-            {{ form.resection_plan_convex }}
-            {{ form.resection_plan_convex.errors }}
-          </div>
-          <div class="mb-3">
-            {{ form.resection_plan_concave.label_tag }}
-            {{ form.resection_plan_concave }}
-            {{ form.resection_plan_concave.errors }}
+            {{ form.resection_plan.label_tag }}
+            {{ form.resection_plan }}
+            {{ form.resection_plan.errors }}
           </div>
         </div>
       </div>
@@ -1696,6 +1690,7 @@ document.addEventListener("DOMContentLoaded", function () {
   toggleAuraText(); // 初始化
 });
 </script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const sel = document.getElementById("id_assessment_done");
@@ -1710,6 +1705,7 @@ document.addEventListener("DOMContentLoaded", function () {
   toggle();
 });
 </script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const auraSel = document.getElementById("id_major_aura");

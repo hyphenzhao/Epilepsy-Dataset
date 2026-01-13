@@ -747,6 +747,8 @@
         initHvIpsRelatedChange(body);
         initLocationToggles(body);
         initNeuroExamToggle(body);
+
+        initAssessmentScores(body);
       })
       .catch(err => {
         console.error(err);
@@ -916,6 +918,28 @@
   bind('interictal'); // 发作间期那组
   bind('ictal');      // 发作期那组
   }
+
+function initAssessmentScores(root) {
+  root = root || document;
+  const sel  = root.querySelector("#id_assessment_done");
+  const wrap = root.querySelector("#wrap_assessment_scores");
+  if (!sel || !wrap) return;
+
+  function isDone() {
+    const v = (sel.value || "").trim();
+    const txt = (sel.options[sel.selectedIndex]?.textContent || "").trim();
+    // 兼容：value 是 YES，或者 value 为空但显示文字是“已做”
+    return v === "YES" || v === "已做" || txt === "已做" || txt === "YES";
+  }
+
+  function toggle() {
+    wrap.style.display = isDone() ? "" : "none";
+  }
+
+  sel.addEventListener("change", toggle);
+  toggle(); // 初始化立刻跑一次
+}
+
 function initNeuroExamToggle(root = document) {
   const sel  = root.querySelector('#id_neuro_exam');
   const wrap = root.querySelector('#wrap_neuro_exam_desc');
@@ -1185,3 +1209,5 @@ document.addEventListener('DOMContentLoaded', function () {
 {% block extra_js %}
   <script src="{% static 'assets/js/image_preview_lightbox.js' %}"></script>
 {% endblock %}
+
+

@@ -355,6 +355,7 @@ class Patient(models.Model):
     seeg_ictal_precede_clinical_sec = models.PositiveIntegerField("SEEG发作早于症状出现（秒）",null=True,blank=True,help_text="单位：秒")
     seeg_ictal_amountt = models.CharField("数量", max_length=100, blank=True,null=True)
     seeg_ictal = models.TextField("电刺激结果", blank=True)
+    seeg_thermocoagulation = models.TextField("SEEG热凝", blank=True)
     # SEEG 文件链接（可选）
     seeg_file_link = models.URLField(
         "SEEG 原始数据下载链接",
@@ -363,10 +364,10 @@ class Patient(models.Model):
     )
     # 【二期有创性评估结果】
     second_stage_core_zone = models.TextField(
-        "二期有创评估核心区域", blank=True
+        "核心致痫区定位", blank=True
     )
     second_stage_hypothesis_zone = models.TextField(
-        "二期有创评估假设区域", blank=True
+        "症状传播区", blank=True
     )
 
     # 【外科切除计划】
@@ -376,6 +377,7 @@ class Patient(models.Model):
     resection_plan_concave = models.TextField(
         "外科切除计划 - 凹面", blank=True
     )
+    resection_plan = models.TextField("外科手术方式", blank=True)
 
     # 评估人 + 时间
     evaluator = models.CharField("评估人", max_length=100, blank=True)

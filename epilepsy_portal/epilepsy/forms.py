@@ -292,6 +292,7 @@ class PatientForm(forms.ModelForm):
             "seeg_ictal_amountt",
             "seeg_ictal_precede_clinical_sec",
             "seeg_ictal",
+            "seeg_thermocoagulation",
             "seeg_file_link",
 
             # 二期有创评估
@@ -301,6 +302,7 @@ class PatientForm(forms.ModelForm):
             # 外科切除计划
             "resection_plan_convex",
             "resection_plan_concave",
+            "resection_plan",
 
             # 评估人/日期
             "evaluator",
@@ -376,16 +378,56 @@ class PatientForm(forms.ModelForm):
                     'class': 'form-control',
                     'style': 'width:120px; display:inline-block;',
                     }),
-                        'seeg_interictal_overall': forms.Textarea(attrs={
+                    'seeg_interictal_overall': forms.Textarea(attrs={
+                    "rows": 3,   # ⬅ 控制高度
+                    "cols": 5,  # 可选：控制宽度
+                     "class": "form-control",
+                    }),
+                         'seeg_ictal': forms.Textarea(attrs={
+                          "rows": 3,   # ⬅ 控制高度
+                          "cols": 5,  # 可选：控制宽度
+                         "class": "form-control",
+                    }),
+                        'seeg_thermocoagulation': forms.Textarea(attrs={
                         "rows": 3,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
                     }),
-                        'seeg_ictal': forms.Textarea(attrs={
-                        "rows": 5,   # ⬅ 控制高度
+                    'second_stage_core_zone': forms.Textarea(attrs={
+                    "rows": 3,   # ⬅ 控制高度
+                    "cols": 5,  # 可选：控制宽度
+                    "class": "form-control",
+                    }),
+                        'second_stage_hypothesis_zone': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
+                    }), 
+                    'resection_plan': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),    
+                    "seeg_primary_discharge_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
                     }),
+                    "seeg_secondary_discharge_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_other_discharge_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_ictal_onset_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_ictal_spread_zone_sequence": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),                                     
             }
         labels = {
             "name": "患者姓名",
@@ -505,13 +547,15 @@ class PatientForm(forms.ModelForm):
             "seeg_ictal_amountt":"数量",
             "seeg_ictal_precede_clinical_sec":"SEEG发作早于症状出现",
             "seeg_ictal": "SEEG 电刺激结果",
+            "seeg_thermocoagulation":"SEEG热凝",
             "seeg_file_link": "SEEG 数据下载链接",
 
-            "second_stage_core_zone": "二期有创评估核心区域",
-            "second_stage_hypothesis_zone": "二期有创评估假设区域",
+            "second_stage_core_zone": "核心致痫区定位",
+            "second_stage_hypothesis_zone": "症状传播区",
 
             "resection_plan_convex": "外科切除计划-凸面",
             "resection_plan_concave": "外科切除计划-凹面",
+            "resection_plan": "外科手术方式",
 
             "evaluator": "评估人",
             "evaluation_date": "评估日期",

@@ -1113,7 +1113,8 @@
                   {% if val %}
                     {% if bf.field.widget.allow_multiple_selected %}
                       {% for v,l in bf.field.choices %}
-                        {% if v in val %}<span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
+                        {% if v in val %}
+                        <span class="badge badge-secondary mr-1">{{ l }}</span>{% endif %}
                       {% endfor %}
                     {% else %}
                       {% for v,l in bf.field.choices %}
@@ -3240,3 +3241,4 @@
 
   </div>
 </div>
+
