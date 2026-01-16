@@ -1526,10 +1526,15 @@
 
         if (data.success) {
           // 如果外层页面定义了关闭抽屉的回调，就调用；否则直接刷新
-          if (window.onPatientFormSaved) {
-            window.onPatientFormSaved();
-          } else {
-            window.location.reload();
+          // if (window.onPatientFormSaved) {
+          //   window.onPatientFormSaved();
+          // } else {
+          //   window.location.reload();
+          // }
+          alert("保存成功！");
+          if (data.keep_open === false && window.onPatientFormSaved) {
+              window.onPatientFormSaved();
+              return;
           }
         } else {
           alert("保存失败，请检查表单错误。");

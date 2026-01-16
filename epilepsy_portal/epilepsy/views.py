@@ -324,20 +324,30 @@ class PatientCreateView(RoleRequiredMixin, CreateView):
     model = Patient
     form_class = PatientForm
     template_name = "epilepsy/patient_form.html"
-    success_url = reverse_lazy("epilepsy:patient_list")
+    # success_url = reverse_lazy("epilepsy:patient_list")
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF]
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        # 使用 helper 处理上传
+        # response = super().form_valid(form)
+        # # 使用 helper 处理上传
+        # handle_patient_file_uploads(self.request, self.object)
+
+        # if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+        #     return JsonResponse({
+        #         "success": True,
+        #         "patient_id": self.object.pk,
+        #     })
+        # return response
+        self.object = form.save()
         handle_patient_file_uploads(self.request, self.object)
 
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return JsonResponse({
-                "success": True,
-                "patient_id": self.object.pk,
-            })
-        return response
+            return JsonResponse(
+               {"success": True, "patient_id": self.object.pk, "keep_open": True}
+            )
+
+        messages.success(self.request, "保存成功")
+        return redirect(self.request.path)
 
     def form_invalid(self, form):
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
@@ -352,13 +362,31 @@ class PatientUpdateView(RoleRequiredMixin, UpdateView):
     model = Patient
     form_class = PatientForm
     template_name = "epilepsy/patient_form_partial.html"
-    success_url = reverse_lazy("epilepsy:patient_list")
+    # success_url = reverse_lazy("epilepsy:patient_list")
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF]
 
     def get_template_names(self):
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             return ["epilepsy/patient_form_partial.html"]
         return ["epilepsy/patient_form.html"]
+
+    def form_valid(self, form):
+        # 手动保存，避免 UpdateView 默认 success_url 跳转
+        self.object = form.save()
+        handle_patient_file_uploads(self.request, self.object)
+
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse(
+                {"success": True, "patient_id": self.object.pk, "keep_open": True}
+            )
+
+        messages.success(self.request, "保存成功")
+        return redirect(self.request.path)
+
+    def form_invalid(self, form):
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "errors": form.errors})
+        return super().form_invalid(form)
 
 
 @login_required
@@ -563,8 +591,11 @@ def patient_edit(request, pk):
             handle_patient_file_uploads(request, patient)
 
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                return JsonResponse({"success": True})
-            return redirect("epilepsy:patient_list")
+                return JsonResponse({"success": True, "keep_open": True})
+            messages.success(request, "保存成功")
+            return redirect(request.path)
+                # return JsonResponse({"success": True})
+            # return redirect("epilepsy:patient_list")
     else:
         form = PatientForm(instance=patient)
 
