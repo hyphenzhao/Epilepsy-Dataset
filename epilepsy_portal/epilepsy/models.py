@@ -92,7 +92,7 @@ class Patient(models.Model):
 
     # 部位
     EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),("MIGRATORY", "游走"),("GENERALIZED", "全面"),]
-    FOCAL_LOBE_CHOICES = [ ("FRONTAL", "额叶"),("PARIETAL", "顶叶"),("OCCIPITAL", "枕叶"),("TEMPORAL", "颞叶"),]
+    FOCAL_LOBE_CHOICES = [ ("FRONTAL", "额叶"),("PARIETAL", "顶叶"),("OCCIPITAL", "枕叶"),("TEMPORAL", "颞叶"),("INSULAR", "岛叶"),]
     EEG_INTERICTAL_LATERALITY_CHOICES = [("L", "左侧"),("R", "右侧"),("M", "中线"),]
     # 波幅/波形
     EEG_INTERICTAL_MORPH_CHOICES = [("SHARP", "尖波"),("SPIKE", "棘波"),("POLY_SPIKE", "多棘波"),("SHARP_SLOW", "棘慢复合波"),]
@@ -277,6 +277,7 @@ class Patient(models.Model):
     blank=True,
     help_text="多选，用逗号分隔编码存储",
 )
+    eeg_interictal_description = models.TextField("EEG 发作间期癫痫样放电描述", blank=True)
     eeg_ictal_state = models.CharField("发作期状态（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
     eeg_ictal_location = models.CharField("发作期部位（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
     eeg_onset_pattern = models.CharField("发作起源模式", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")

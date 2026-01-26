@@ -249,6 +249,7 @@ class PatientForm(forms.ModelForm):
             "eeg_interictal_pattern",
             "eeg_interictal_eye_relation",
             "eeg_interictal",
+            "eeg_interictal_description",
             "eeg_ictal_state",
             "eeg_ictal_location",
             "eeg_onset_pattern",
@@ -350,6 +351,11 @@ class PatientForm(forms.ModelForm):
                         "class": "form-control",
                     }),
                     'eeg_interictal': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_interictal_description': forms.Textarea(attrs={
                         "rows": 2,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
@@ -512,6 +518,7 @@ class PatientForm(forms.ModelForm):
             "eeg_ictal_amount":"数量",
             "eeg_onset_pattern":"发作起源模式",
             "eeg_interictal": "EEG 发作期放电描述",
+            "eeg_interictal_description": "EEG 发作间期癫痫样放电描述",
             "eeg_ictal": "EEG 发作期",
             "eeg_relevance": "EEG 相关性",
             "eeg_ictal_precede_clinical_sec":"EEG发作早于症状出现",

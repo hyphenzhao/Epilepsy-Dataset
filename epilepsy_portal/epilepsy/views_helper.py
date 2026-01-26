@@ -518,21 +518,72 @@ def generate_patient_info_file(patient, fmt: str):
                 for label, value in fields:
                     writer.writerow(["", label, value])
     elif fmt == "word":
+        from docx.shared import Pt, Cm
+        from docx.enum.text import WD_LINE_SPACING
+        from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+
         document = Document()
-        document.add_heading("癫痫术前评估报告", level=1)
-        document.add_paragraph(f"患者姓名：{patient.name}")
-        document.add_paragraph(f"住院号：{patient.medical_record_number}")
-        document.add_paragraph("")
+
+        # 1) 全局：把 Normal 段落“段前/段后”压到 0，行距单倍
+        normal = document.styles["Normal"]
+        normal_pf = normal.paragraph_format
+        normal_pf.space_before = Pt(0)
+        normal_pf.space_after = Pt(0)
+        normal_pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+
+        def tighten_paragraph(p, after=0, before=0):
+            pf = p.paragraph_format
+            pf.space_before = Pt(before)
+            pf.space_after = Pt(after)
+            pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+            return p
+
+        # 2) 标题（Heading1 默认太松，手动压一下）
+        h1 = document.add_heading("癫痫术前评估报告", level=1)
+        tighten_paragraph(h1, after=4, before=0)
+
+        p1 = document.add_paragraph(f"患者姓名：{patient.name}")
+        tighten_paragraph(p1, after=0, before=0)
+
+        p2 = document.add_paragraph(f"住院号：{patient.medical_record_number}")
+        tighten_paragraph(p2, after=2, before=0)
 
         for section_title, fields in sections:
-            document.add_heading(section_title, level=2)
+            # 3) section 标题压紧（Heading2 默认段前段后很大）
+            h2 = document.add_heading(section_title, level=2)
+            tighten_paragraph(h2, after=2, before=4)
+
+            # 4) 表格：固定两列宽 + 单元格段落压紧
             table = document.add_table(rows=0, cols=2)
+            table.alignment = WD_TABLE_ALIGNMENT.LEFT
+            table.autofit = False
+
+            label_w = Cm(5)
+            value_w = Cm(11.5)
+
             for label, value in fields:
                 row_cells = table.add_row().cells
+
+                row_cells[0].width = label_w
+                row_cells[1].width = value_w
+
                 row_cells[0].text = str(label)
                 row_cells[1].text = str(value or "")
-            document.add_paragraph("")
+
+                row_cells[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+                row_cells[1].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+
+                # 压紧单元格内部段落（否则每行还是会高）
+                for c in row_cells:
+                    for p in c.paragraphs:
+                        tighten_paragraph(p, after=0, before=0)
+
+            # section 之间只留一点点间隔（不要用很多空行）
+            spacer = document.add_paragraph("")
+            tighten_paragraph(spacer, after=2, before=0)
+
         document.save(tmp_path)
+    
     elif fmt == "pdf":
         c = canvas.Canvas(tmp_path, pagesize=A4)
         width, height = A4

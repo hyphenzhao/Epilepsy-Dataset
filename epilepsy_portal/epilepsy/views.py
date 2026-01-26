@@ -620,7 +620,7 @@ def patient_detail(request, pk):
             ext = os.path.splitext(getattr(f, "file_name", "") or "")[1].lower()
             if ext in allowed_ext:
                 out.append(f)
-            if len(out) >= 3:
+            if len(out) >= 60:
                 break
         return out
 
