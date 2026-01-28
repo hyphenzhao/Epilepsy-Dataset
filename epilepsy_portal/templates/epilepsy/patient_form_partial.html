@@ -1,5 +1,5 @@
 {% load static %}
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" action="{% if form.instance.pk %}{% url 'epilepsy:patient_edit' form.instance.pk %}{% else %}{% url 'epilepsy:patient_new' %}{% endif %}">
   {% csrf_token %}
   {{ form.non_field_errors }}
 

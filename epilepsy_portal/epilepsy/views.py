@@ -36,6 +36,82 @@ from .views_helper import (
     generate_patient_info_file,
 )
 from .json import PATIENT_GROUP_FIELDS, FIELDS_FOR_EXPORT
+import logging
+from pprint import pformat
+
+form_debug_logger = logging.getLogger("epilepsy.formdebug")
+
+
+def log_invalid_form(request, form, *, tag="PatientForm"):
+    """
+    Log form validation errors to runserver console.
+    - field errors + non-field errors
+    - request content-type + POST keys + FILES summary
+    """
+    # Keep it safe in prod
+    try:
+        from django.conf import settings
+        if not getattr(settings, "DEBUG", False):
+            return
+    except Exception:
+        pass
+
+    try:
+        content_type = request.META.get("CONTENT_TYPE", "")
+        post_keys = sorted(list(request.POST.keys()))
+        files_keys = sorted(list(request.FILES.keys()))
+
+        files_summary = {}
+        for k in files_keys:
+            f = request.FILES.get(k)
+            if f is None:
+                continue
+            files_summary[k] = {
+                "name": getattr(f, "name", None),
+                "size": getattr(f, "size", None),
+                "content_type": getattr(f, "content_type", None),
+            }
+
+        # JSON-serializable errors with codes
+        try:
+            err_json = form.errors.get_json_data(escape_html=False)
+        except Exception:
+            err_json = {k: [str(e) for e in v] for k, v in form.errors.items()}
+
+        # Include field labels for readability
+        labeled = {}
+        for field, errs in err_json.items():
+            if field == "__all__":
+                labeled[field] = errs
+                continue
+            label = None
+            try:
+                if field in form.fields:
+                    label = form.fields[field].label
+            except Exception:
+                pass
+            labeled[f"{field} ({label})" if label else field] = errs
+
+        payload = {
+            "tag": tag,
+            "path": request.path,
+            "method": request.method,
+            "is_ajax": request.headers.get("x-requested-with") == "XMLHttpRequest",
+            "content_type": content_type,
+            "POST_keys": post_keys,
+            "FILES_keys": files_keys,
+            "FILES_summary": files_summary,
+            "non_field_errors": list(form.non_field_errors()),
+            "errors": labeled,
+        }
+
+        # logging + print ensures it shows in runserver output even if logging config is minimal
+        form_debug_logger.warning("INVALID FORM:\n%s", pformat(payload, width=140))
+        print("INVALID FORM:\n", pformat(payload, width=140))
+
+    except Exception as e:
+        form_debug_logger.exception("Failed to log invalid form: %s", e)
+        print("Failed to log invalid form:", repr(e))
 
 User = get_user_model()
 
@@ -638,16 +714,6 @@ class PatientCreateView(RoleRequiredMixin, CreateView):
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF]
 
     def form_valid(self, form):
-        # response = super().form_valid(form)
-        # # 使用 helper 处理上传
-        # handle_patient_file_uploads(self.request, self.object)
-
-        # if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-        #     return JsonResponse({
-        #         "success": True,
-        #         "patient_id": self.object.pk,
-        #     })
-        # return response
         self.object = form.save()
         handle_patient_file_uploads(self.request, self.object)
 
@@ -660,19 +726,17 @@ class PatientCreateView(RoleRequiredMixin, CreateView):
         return redirect(self.request.path)
 
     
-def form_invalid(self, form):
-    if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-        # Ensure JSON-serializable errors (list of strings per field)
-        try:
-            data = form.errors.get_json_data(escape_html=True)
-            errors = {k: [e.get("message", "") for e in v] for k, v in data.items()}
-        except Exception:
-            errors = {k: [str(e) for e in v] for k, v in form.errors.items()}
-        return JsonResponse({
-            "success": False,
-            "errors": errors,
-        })
-    return super().form_invalid(form)
+    def form_invalid(self, form):
+        log_invalid_form(self.request, form, tag="PatientCreateView.PatientForm")
+
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            try:
+                data = form.errors.get_json_data(escape_html=True)
+                errors = {k: [e.get("message", "") for e in v] for k, v in data.items()}
+            except Exception:
+                errors = {k: [str(e) for e in v] for k, v in form.errors.items()}
+            return JsonResponse({"success": False, "errors": errors})
+        return super().form_invalid(form)
 
 
 class PatientUpdateView(RoleRequiredMixin, UpdateView):
@@ -701,17 +765,17 @@ class PatientUpdateView(RoleRequiredMixin, UpdateView):
         return redirect(self.request.path)
 
     
-def form_invalid(self, form):
-    if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-        # Ensure JSON-serializable errors (list of strings per field)
-        try:
-            data = form.errors.get_json_data(escape_html=True)
-            errors = {k: [e.get("message", "") for e in v] for k, v in data.items()}
-        except Exception:
-            errors = {k: [str(e) for e in v] for k, v in form.errors.items()}
-        return JsonResponse({"success": False, "errors": errors})
-    return super().form_invalid(form)
+    def form_invalid(self, form):
+        log_invalid_form(self.request, form, tag="PatientUpdateView.PatientForm")
 
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            try:
+                data = form.errors.get_json_data(escape_html=True)
+                errors = {k: [e.get("message", "") for e in v] for k, v in data.items()}
+            except Exception:
+                errors = {k: [str(e) for e in v] for k, v in form.errors.items()}
+            return JsonResponse({"success": False, "errors": errors})
+        return super().form_invalid(form)
 
 @login_required
 def patient_delete(request, pk):
@@ -920,16 +984,19 @@ def patient_edit(request, pk):
             return redirect(request.path)
                 # return JsonResponse({"success": True})
             # return redirect("epilepsy:patient_list")
+        else:
+            log_invalid_form(request, form, tag="patient_edit.PatientForm")
     else:
         form = PatientForm(instance=patient)
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "epilepsy/patient_form_partial.html", {"form": form})
 
-    return render(request, "epilepsy/patient_edit.html", {
+    return render(request, "epilepsy/patient_form.html", {
         "form": form,
         "patient": patient,
     })
+
 
 
 def patient_detail(request, pk):
