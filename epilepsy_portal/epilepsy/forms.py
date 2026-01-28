@@ -1,577 +1,949 @@
-from django.conf import settings
-from django.db import models
-from django.utils.translation import gettext_lazy as _
-import os
+from django import forms
+from .models import *
+from django.contrib.auth import get_user_model
+import re
 
-class UserRole(models.TextChoices):
-    ADMIN = "ADMIN", _("管理员")
-    STAFF = "STAFF", _("工作人员")
-    GUEST = "GUEST", _("访客")
+User = get_user_model()
 
-class UserProfile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="profile",
+class PatientForm(forms.ModelForm):
+    # ---------- Validation helpers ----------
+    _NUMERIC_OR_RANGE_RE = re.compile(r"^\s*\d+(?:\.\d+)?(?:\s*[\-~–]\s*\d+(?:\.\d+)?)?\s*$")
+
+    # 这些字段在模型中是 CharField，但语义上属于“数字/范围”输入（例如 3 或 3-5）
+    _NUMERIC_STRING_FIELDS = []
+# 这些字段在模型中以逗号拼接存储，但在表单中以多选框呈现
+    _CSV_MULTISELECT_FIELDS = [
+        "past_medical_history",
+        "other_medical_history",
+        "eeg_interictal_state",
+        "eeg_interictal_location",
+        "eeg_interictal_morph",
+        "eeg_interictal_amount",
+        "eeg_interictal_pattern",
+        "eeg_interictal_eye_relation",
+        "eeg_ictal_state",
+        "eeg_ictal_location",
+        "eeg_onset_pattern",
+        "seeg_ictal_morph",
+        "seeg_ictal_amount",
+        "seeg_ictal_pattern",
+        "seeg_ictal_onset_pattern",
+    ]
+
+    @staticmethod
+    def _split_csv(value):
+        if not value:
+            return []
+        if isinstance(value, (list, tuple)):
+            return [x for x in value if x]
+        if isinstance(value, str):
+            return [x for x in value.split(",") if x]
+        return [str(value)]
+
+    def _validate_numeric_string_fields(self, cleaned):
+        for fname in self._NUMERIC_STRING_FIELDS:
+            if fname not in self.fields:
+                continue
+            v = cleaned.get(fname)
+            if v in (None, ""):
+                continue
+            s = str(v).strip()
+            if not self._NUMERIC_OR_RANGE_RE.match(s):
+                self.add_error(fname, "请输入数字或范围（例如 3、3.5、3-5）")
+
+    # 日期字段：生日、入院时间、评估日期 —— 日历选择
+    birthday = forms.DateField(
+        label="生日",
+        required=True,
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "form-control",
+            }
+        ),
     )
-    role = models.CharField(
-        max_length=10,
-        choices=UserRole.choices,
-        default=UserRole.GUEST,
-        verbose_name=_("角色"),
+
+    admission_date = forms.DateField(
+        label="入院时间",
+        required=True,
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "form-control",
+            }
+        ),
     )
 
-    def __str__(self):
-        return f"{self.user} ({self.get_role_display()})"
+    evaluation_date = forms.DateField(
+        label="评估日期",
+        required=False,
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "form-control",
+            }
+        ),
+    )
 
-    @property
-    def is_admin(self):
-        return self.role == UserRole.ADMIN
+    # 既往不良病史：多选 + 勾选框
+    past_medical_history = forms.MultipleChoiceField(
+        label="既往不良病史",
+        required=False,
+        choices=Patient.PAST_MEDICAL_HISTORY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
-    @property
-    def is_staff_member(self):
-        return self.role == UserRole.STAFF
+    # 其他病史：多选 + 勾选框
+    other_medical_history = forms.MultipleChoiceField(
+        label="其他病史",
+        required=False,
+        choices=Patient.OTHER_MEDICAL_HISTORY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
-    @property
-    def is_guest(self):
-        return self.role == UserRole.GUEST
+    # EEG 发作间期癫痫样放电：多选 + 勾选框
+    eeg_interictal_state = forms.MultipleChoiceField(
+        label="状态",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_STATE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
-class Patient(models.Model):
-    GENDER_CHOICES = [("M", "男"), ("F", "女"), ("O", "其他"),]
-    HAND_CHOICES = [("L", "左利手"), ("R", "右利手"), ("A", "双手"),]
-
-    # 受教育程度
-    EDUCATION_CHOICES = [("PRIMARY", "小学及以下"),("MIDDLE", "初中"),
-        ("HIGH", "高中/中专"),("COLLEGE", "大专"),("UNIVERSITY", "本科"),
-        ("POSTGRAD", "研究生及以上"),]
-
-    # 既往不良病史（多选）
-    PAST_MEDICAL_HISTORY_CHOICES = [("HYPOXIA", "围产期乏氧"),
-        ("FEBRILE_SEIZURE", "热惊厥"), ("ENCEPHALITIS", "脑炎"),
-        ("TRAUMA", "外伤"), ("BRAIN_TUMOR", "脑肿瘤"),
-    ("DEVELOPMENTAL_ABNORMALITY", "发育异常"),("NONE", "无"),]
-
-    # 其他病史（多选）
-    OTHER_MEDICAL_HISTORY_CHOICES = [ ("DM", "糖尿病"),("HTN", "高血压"),]
-
-    # 自然发作状态 清醒 / 睡眠 / 清醒或睡眠
-    SEIZURE_STATE_CHOICES = [("AWAKE", "清醒"),("SLEEP", "睡眠"),("BOTH", "清醒和睡眠")]
-
-    # 先兆 有 / 无
-    AURA_CHOICES = [("Y", "有"),("N", "无"),]
-
-    # EEG 记录电极 10-20 系统 / 10-10 系统
-    EEG_RECORDING_ELECTRODES_CHOICES = [("10-20 system", "10-20 系统"),("10-10 system", "10-10 系统"),]
-
-    # 对称性
-    EEG_SYMMETRY_CHOICES = [("bilateral", "双侧"),("left_attenuated", "左侧衰减"),("right_attenuated", "右侧衰减"),]
-
-    # 清醒期背景
-    EEG_AWAKE_BACKGROUND_CHOICES = [("normal", "正常"), ("diffuse_slow", "弥漫性慢波"), ("unilateral_slow", "偏侧性慢波"), ("focal_slow", "局灶性慢波")]
+    eeg_interictal_location = forms.MultipleChoiceField(
+        label="部位",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_LOCATION_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eeg_interictal_focal_lobe = forms.ChoiceField(
+    label="局灶部位（叶）",
+    required=False,
+    choices=Patient.FOCAL_LOBE_CHOICES,
+    )
+    eeg_interictal_laterality = forms.ChoiceField(
+    label="偏侧方向",
+    required=False,
+    choices=Patient.EEG_INTERICTAL_LATERALITY_CHOICES,
+    )
     
-    # 结果选项
-    RESULT_CHOICES = [("normal", "未见异常"), ("not_done", "未作"), ("changed", "相关改变")]
+    eeg_interictal_morph = forms.MultipleChoiceField(
+        label="波幅、波形",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_MORPH_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
-    # 慢波建立
-    EEG_HV_SLOW_WAVE_BUILD_CHOICES = [("none", "无"), ("frontal", "前头部"), ("occipital", "后头部"), ("diffuse", "广泛性"), ("mild", "少量不明显")]
+    eeg_interictal_amount = forms.MultipleChoiceField(
+        label="数量",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_AMOUNT_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_pattern = forms.MultipleChoiceField(
+        label="出现方式",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    eeg_interictal_eye_relation = forms.MultipleChoiceField(
+        label="眼状态相关",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_EYE_RELATED_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eeg_ictal_state = forms.MultipleChoiceField(
+        label="状态",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_STATE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eeg_ictal_location = forms.MultipleChoiceField(
+        label="部位",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_LOCATION_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eeg_onset_pattern = forms.MultipleChoiceField(
+        label="发作起源模式",
+        required=False,
+        choices=Patient.EEG_ONSET_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    seeg_ictal_morph = forms.MultipleChoiceField(
+        label="波幅、波形",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_MORPH_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    seeg_ictal_amount = forms.MultipleChoiceField(
+        label="数量",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_AMOUNT_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    seeg_ictal_pattern = forms.MultipleChoiceField(
+        label="出现方式",
+        required=False,
+        choices=Patient.EEG_INTERICTAL_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    seeg_ictal_onset_pattern = forms.MultipleChoiceField(
+        label="发作起始模式",
+        required=False,
+        choices=Patient.SEEG_ICTAL_ONSET_PATTERN_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+    )
     
-    # 慢波对称性
-    EEG_HV_SLOW_WAVE_SYMMETRY_CHOICES = [("bilateral", "双侧"), ("left_stronger", "左侧较强"), ("right_stronger", "右侧较强")]
-    
-    # 放电对侧性
-    EEG_HV_DISCHARGE_LATERALITY_CHOICES = [("bilateral", "双侧"), ("left", "左侧"), ("right", "右侧")]
-
-    # 睡眠周期
-    SLEEP_PERIOD_CHOICES = [("mostly_normal", "大致正常"), ("uncertain", "不明确"), ("absent", "消失")]
-   
-    # 睡眠波
-    SLEEP_WAVE_CHANGE_CHOICES = [("normal", "正常"), ("left_reduced", "左侧衰减"), ("right_reduced", "右侧衰减")]
-
-    # 状态
-    EEG_INTERICTAL_STATE_CHOICES = [ ("AWAKE", "清醒期"), ("DROWSY", "困倦期"),("SLEEP", "睡眠期"),("POST_AWAKE", "觉醒后"),("ALL", "醒-睡各期"),]
-
-    # 部位
-    EEG_INTERICTAL_LOCATION_CHOICES = [ ("FOCAL", "局灶"), ("LAT", "偏侧"),("MULTI", "多灶"),("MIGRATORY", "游走"),("GENERALIZED", "全面"),]
-    FOCAL_LOBE_CHOICES = [ ("FRONTAL", "额叶"),("PARIETAL", "顶叶"),("OCCIPITAL", "枕叶"),("TEMPORAL", "颞叶"),("INSULAR", "岛叶"),]
-    EEG_INTERICTAL_LATERALITY_CHOICES = [("L", "左侧"),("R", "右侧"),("M", "中线"),]
-    # 波幅/波形
-    EEG_INTERICTAL_MORPH_CHOICES = [("SHARP", "尖波"),("SPIKE", "棘波"),("POLY_SPIKE", "多棘波"),("SHARP_SLOW", "棘慢复合波"),]
-
-    # 数量
-    EEG_INTERICTAL_AMOUNT_CHOICES = [("RARE", "稀少"), ("OCCASIONAL", "偶见（<10/小时）"),("INTERMITTENT", "间歇"),("FREQUENT", "频繁（>10/分钟）"),("HIGH_DENSITY", "高密度（>30/小时）"),("CONTINUOUS", "连续"),]
-
-    # 出现方式
-    EEG_INTERICTAL_PATTERN_CHOICES = [("SCATTERED", "散发"),("PAROXYSMAL", "阵发"),("RHYTHMIC_PAROXYSMAL", "节律性阵发"),("CONTINUOUS", "连续发放"),("BURST", "爆发"),("INTERMITTENT", "间断性发放"),
-    ("PERIODIC", "周期性发放"),("MIGRATORY", "游走性发放"),("NEAR_CONTINUOUS", "接近持续发放"),]
-
-    # 眼状态相关
-    EEG_INTERICTAL_EYE_RELATED_CHOICES = [("NONE", "无"),("FOCAL_SENSITIVE", "有：失对焦敏感（闭眼增多）"),("PHOTOSENSITIVE", "合眼敏感"), ("BLINK_RELATED", "瞬目相关"),]
-
-    #发作起源模式
-    EEG_ONSET_PATTERN_CHOICES = [("LOW_VOLT_FAST", "低波幅快节律起始"),("ATTENUATION_DESYNC", "电位压低/去同步化起始"),("RHYTHMIC_SPIKE_SLOW", "节律性尖波/尖慢波起始"),("GENERAL_SYNC", "广泛同步起始"),("RHYTHMIC_SLOW", "节律性慢波起始"),("NO_CLEAR", "无明显放电起始"),]
-   
-    # 神经系统检查 正常 / 异常
-    NEURO_EXAM_CHOICES = [("N", "正常"),("A", "异常"),]
-
-    # 发作起始模式
-    SEEG_ICTAL_ONSET_PATTERN_CHOICES = [("LOW_VOLT_FAST", "低波幅快节律起始"),("LOW_FREQ_SHARP", "低频高幅尖波起始"),("RHYTHMIC_SPIKE_SLOW_COMPLEX", "节律性棘波/棘慢波/尖波/尖慢波起始"),("RHYTHMIC_SLOW", "节律性慢活动起始"),("ATTENUATION_LOW_VOLT", "电位压低起始"),("MULTIFOCAL_SYNC_RAPID_SWITCH", "多灶同步或快速切换起始"),("BURST_SUPPRESSION_ONSET", "爆发-抑制起始"),]
-
-    # 基本信息
-    name = models.CharField("患者姓名", max_length=20)
-    gender = models.CharField("性别", max_length=1, choices=GENDER_CHOICES)
-    birthday = models.DateField("生日")
-    handedness = models.CharField("左右利手", max_length=1, choices=HAND_CHOICES)
-    department = models.CharField("科室", max_length=20, blank=True)
-    bed_number = models.CharField("床号", max_length=20, blank=True)
-    medical_record_number = models.CharField("病历号", max_length=20, blank=True)
-    admission_date = models.DateField("入院时间")
-    education_level = models.CharField("受教育程度",max_length=20,choices=EDUCATION_CHOICES,blank=True,)
-    occupation = models.CharField("职业", max_length=20, blank=True)
-    imaging_number = models.CharField("影像号", max_length=20, blank=True)
-    admission_diagnosis = models.CharField("入院诊断", max_length=20, blank=True)
-
-    # 【病史】
-    # pregnancy_birth_history = models.TextField("母孕出生史", blank=True)
-    # education_level = models.CharField(
-    #     "受教育程度",
-    #     max_length=20,
-    #     choices=EDUCATION_CHOICES,
-    #     blank=True,
-    # )
-    #occupation = models.CharField("职业", max_length=100, blank=True)
-
-    # 既往不良病史（用逗号分隔的编码存储）
-    past_medical_history = models.CharField( "既往不良病史（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储",)
-    past_medical_history_other_text = models.CharField("既往不良病史-其他说明",max_length=255, blank=True, null=True,)
-
-    # 其他病史（用逗号分隔的编码存储）
-    other_medical_history = models.CharField( "其他病史（多选）", max_length=255,blank=True, help_text="多选，用逗号分隔编码存储",)
-    family_history = models.CharField("家族病史", max_length=20, blank=True)
-    first_seizure_age = models.DecimalField("首次发作年龄（岁）", max_digits=6, decimal_places=2, blank=True, null=True)
-    first_seizure_description = models.TextField("首次发作症状", blank=True)
-    medication_history = models.TextField("药物治疗", blank=True)
-
-    # 【发作症状学】
-    seizure_state = models.CharField("自然发作状态",max_length=10,choices=SEIZURE_STATE_CHOICES,blank=True,)
-    aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True)
-    aura_text = models.CharField(max_length=255, blank=True, null=True)
-    minor_initial_symptom = models.TextField("发作症状",blank=True,null=True)
-    major_aura = models.CharField("先兆", max_length=1, choices=AURA_CHOICES, blank=True, null=True)
-    major_aura_text = models.CharField(max_length=255, blank=True, null=True)
-    major_duration = models.CharField("发作持续时间",max_length=100,blank=True,null=True)
-    major_frequency = models.CharField("发作频率",max_length=100,blank=True,null=True)
-    # typical_seizure_time = models.CharField(
-    #     "惯常发作时间", max_length=100, blank=True
-    # )
-    # typical_seizure_semiology = models.TextField(
-    #     "惯常发作表现形式", blank=True
-    # )
-    initial_seizure_symptom = models.TextField( "首发症状",max_length=150, blank=True, )
-    evolution_symptom = models.TextField("演变症状",max_length=150, blank=True,)
-    postictal_state = models.TextField("发作后状态",max_length=150,blank=True,)
-    seizure_duration_seconds = models.CharField("发作持续时间", max_length=100, blank=True, null=True)
-    # seizure_duration_minutes = models.PositiveIntegerField(
-    #     "发作持续时间（分钟）", blank=True, null=True
-    # )
-
-    seizure_freq_per_day = models.CharField("发作频率", max_length=100, blank=True, null=True)
-    # seizure_freq_per_week = models.PositiveIntegerField(
-    #     "发作频率（次/周）", blank=True, null=True
-    # )
-    # seizure_freq_per_month = models.PositiveIntegerField(
-    #     "发作频率（次/月）", blank=True, null=True
-    # )
-    # seizure_freq_per_year = models.PositiveIntegerField(
-    #     "发作频率（次/年）", blank=True, null=True
-    # )
-
-    # 【神经系统检查】
-    neuro_exam = models.CharField("神经系统检查", max_length=1, choices=NEURO_EXAM_CHOICES, blank=True,)
-    neuro_exam_description = models.TextField( "神经系统检查异常描述", blank=True)
-
-    # 【认知和精神量表】
-    moca_score = models.DecimalField("MoCA 评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    mmse_score = models.DecimalField("MMSE 评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    hama_score = models.DecimalField("HAMA 评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    hamd_score = models.DecimalField("HAMD 评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    bai_score  = models.DecimalField("BAI 评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    bdi_score  = models.DecimalField("BDI 评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    epilepsy_scale_score = models.DecimalField("癫痫量表评分", max_digits=6, decimal_places=2, blank=True, null=True)
-    assessment_done = models.CharField(
-        "量表是否完成",
-        max_length=10,
-        choices=[("NO", "未做"), ("YES", "已做")],
-        blank=True,
-    )
-    # 【视频头皮 EEG 检查】
-    eeg_recording_electrodes = models.CharField( "EEG 记录电极", max_length=20, choices=EEG_RECORDING_ELECTRODES_CHOICES, blank=True)
-    eeg_recording_duration_days = models.DecimalField("记录时间 (天)", max_digits=6, decimal_places=2, blank=True, null=True)
-    eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True)
-    eeg_eye_response = models.CharField(
-    "睁/闭眼反应", max_length=100, choices=AURA_CHOICES, blank=True)
-    eeg_symmetry = models.CharField(
-    "对称性", max_length=100, choices=EEG_SYMMETRY_CHOICES, blank=True)
-    eeg_awake_background = models.CharField(
-    "清醒期背景", max_length=100, choices=EEG_AWAKE_BACKGROUND_CHOICES, blank=True)
-    eeg_hv_result = models.CharField("HV 结果", max_length=20, choices=RESULT_CHOICES, blank=True, null=True)
-    eeg_hv_slow_wave_build = models.CharField("慢波建立", max_length=100, choices=EEG_HV_SLOW_WAVE_BUILD_CHOICES, blank=True, null=True)
-    eeg_hv_slow_wave_frequency = models.CharField("慢波频率(Hz)", max_length=50, blank=True, null=True)
-    eeg_hv_slow_wave_symmetry = models.CharField("慢波对称性", max_length=100, choices=EEG_HV_SLOW_WAVE_SYMMETRY_CHOICES, blank=True, null=True)
-    eeg_hv_epileptiform_discharge = models.CharField("诱发癫痫样放电", max_length=50, choices=AURA_CHOICES, blank=True, null=True)
-    eeg_hv_discharge_laterality = models.CharField("放电对侧性", max_length=100, choices=EEG_HV_DISCHARGE_LATERALITY_CHOICES, blank=True, null=True)
-    ips_result = models.CharField("IPS 结果", max_length=20, choices=RESULT_CHOICES, blank=True, null=True)
-    frequency = models.CharField("闪光频率(Hz)", max_length=50, blank=True, null=True)
-    laterality = models.CharField("侧别", max_length=20, choices=EEG_HV_DISCHARGE_LATERALITY_CHOICES, blank=True, null=True)
-    eeg_sleep_period_overall = models.CharField("睡眠周期", max_length=20, choices=SLEEP_PERIOD_CHOICES, blank=True, null=True)
-    eeg_sleep_hypersynchrony_slow_wave = models.CharField("思睡期超同步化慢波", max_length=10, choices=AURA_CHOICES, blank=True, null=True)
-    eeg_sleep_vertex_wave = models.CharField("顶尖波", max_length=20, choices=SLEEP_WAVE_CHANGE_CHOICES, blank=True, null=True)
-    eeg_sleep_spindle = models.CharField("睡眠纺锤波", max_length=20, choices=SLEEP_WAVE_CHANGE_CHOICES, blank=True, null=True)
-    eeg_sleep_k_complex = models.CharField("K-综合波", max_length=20, choices=SLEEP_WAVE_CHANGE_CHOICES, blank=True, null=True)
-    eeg_sleep_post = models.CharField("POST", max_length=10, choices=AURA_CHOICES, blank=True, null=True)
-    eeg_sleep_frontal_awake_rhythm = models.CharField("额区觉醒节律", max_length=10, choices=AURA_CHOICES, blank=True, null=True)
-    eeg_sleep_other = models.CharField("睡眠周期 其他", max_length=200, blank=True, null=True)
-    eeg_interictal_state = models.CharField(
-    "状态（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    eeg_interictal_location = models.CharField(
-    "部位（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    eeg_interictal_focal_lobe = models.CharField(
-    "局灶部位（叶）",
-    max_length=20,
-    choices=FOCAL_LOBE_CHOICES,
-    blank=True,
-    null=True,
-)
-    eeg_interictal_laterality = models.CharField(
-    "偏侧方向",
-    max_length=1,
-    choices=EEG_INTERICTAL_LATERALITY_CHOICES,
-    blank=True,
-    null=True,
-)
-    eeg_interictal_morph = models.CharField(
-    "波幅/波形（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    eeg_interictal_amount = models.CharField(
-    "数量（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    eeg_interictal_pattern = models.CharField(
-    "出现方式（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    eeg_interictal_eye_relation = models.CharField(
-    "眼状态相关（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    eeg_interictal_description = models.TextField("EEG 发作间期癫痫样放电描述", blank=True)
-    eeg_ictal_state = models.CharField("发作期状态（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
-    eeg_ictal_location = models.CharField("发作期部位（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
-    eeg_onset_pattern = models.CharField("发作起源模式", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储")
-    eeg_ictal_amount = models.CharField("数量", max_length=100, blank=True,null=True)
-    eeg_interictal = models.TextField("EEG 发作期放电描述", blank=True)
-    eeg_ictal = models.TextField("EEG 发作期", blank=True)
-    eeg_relevance = models.TextField("EEG 相关性", blank=True)
-    eeg_ictal_precede_clinical_sec = models.DecimalField("EEG发作早于症状出现（秒）", max_digits=8, decimal_places=2, null=True, blank=True, help_text="单位：秒")
-    eeg_clinical_correlation = models.TextField("EEG 同步发作临床症状", blank=True)
-    # EEG 文件链接（可选）
-    eeg_file_link = models.URLField(
-        "EEG 原始数据下载链接",
-        max_length=500,
-        blank=True
-    )
-
-    # 【影像学检查结果】
-    mri_brief = models.TextField("MRI 简要描述", blank=True)
-    mri_link = models.URLField(
-        "MRI 图像下载链接", max_length=500, blank=True
-    )
-    pet_brief = models.TextField("PET 简要描述", blank=True)
-    pet_link = models.URLField(
-        "PET 图像下载链接", max_length=500, blank=True
-    )
-
-    # 【一期无创性评估结果】
-    first_stage_lateralization = models.CharField(
-        "一期无创性评估定侧", max_length=100, blank=True
-    )
-    first_stage_region = models.CharField(
-        "一期无创性评估定区域", max_length=100, blank=True
-    )
-    first_stage_location = models.CharField(
-        "一期无创性评估定具体部位", max_length=200, blank=True
-    )
-
-    # 【SEEG 发作间期放电及发作期放电】
-    seeg_record_channel_count = models.DecimalField("记录导联数（个）", max_digits=8, decimal_places=2, null=True, blank=True)
-    seeg_electrode_count = models.DecimalField("电极植入（根）", max_digits=8, decimal_places=2, null=True, blank=True)
-    seeg_record_duration_days = models.DecimalField("记录时长（天）", max_digits=6, decimal_places=2, null=True, blank=True)
-
-    seeg_electrode_coverage = models.CharField("电极覆盖位置", max_length=255, blank=True, default="")
-    seeg_ictal_morph = models.CharField(
-    "波幅/波形（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    seeg_ictal_amount = models.CharField(
-    "数量（多选）",
-    max_length=255,
-    blank=True,null=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    seeg_ictal_pattern = models.CharField(
-    "出现方式（多选）",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    seeg_primary_discharge_zone = models.CharField("主要放电区（位置和触点）", max_length=255, blank=True, default="")
-    seeg_secondary_discharge_zone = models.CharField("次要放电区", max_length=255, blank=True, default="")
-    seeg_other_discharge_zone = models.CharField("其他区域", max_length=255, blank=True, default="")
-    seeg_ictal_onset_zone = models.CharField("发作起始区（位置和触点）", max_length=255, blank=True, default="")
-    seeg_ictal_spread_zone_sequence = models.CharField("扩散区和顺序（位置和时间）", max_length=255, blank=True, default="")
-    seeg_ictal_onset_pattern = models.CharField(
-    "发作起始模式",
-    max_length=255,
-    blank=True,
-    help_text="多选，用逗号分隔编码存储",
-)
-    seeg_interictal_overall = models.TextField("SEEG 发作期对应临床表现", blank=True)
-    seeg_group1 = models.TextField("SEEG 发作间期 Group 1", blank=True)
-    seeg_group2 = models.TextField("SEEG 发作间期 Group 2", blank=True)
-    seeg_group3 = models.TextField("SEEG 发作间期 Group 3", blank=True)
-    seeg_ictal_precede_clinical_sec = models.DecimalField("SEEG发作早于症状出现（秒）", max_digits=8, decimal_places=2, null=True, blank=True, help_text="单位：秒")
-    seeg_ictal_amountt = models.CharField("数量", max_length=100, blank=True,null=True)
-    seeg_ictal = models.TextField("电刺激结果", blank=True)
-    seeg_thermocoagulation = models.TextField("SEEG热凝", blank=True)
-    # SEEG 文件链接（可选）
-    seeg_file_link = models.URLField(
-        "SEEG 原始数据下载链接",
-        max_length=500,
-        blank=True
-    )
-    # 【二期有创性评估结果】
-    second_stage_core_zone = models.TextField(
-        "核心致痫区定位", blank=True
-    )
-    second_stage_hypothesis_zone = models.TextField(
-        "症状传播区", blank=True
-    )
-
-    # 【外科切除计划】
-    resection_plan_convex = models.TextField(
-        "外科切除计划 - 凸面", blank=True
-    )
-    resection_plan_concave = models.TextField(
-        "外科切除计划 - 凹面", blank=True
-    )
-    resection_plan = models.TextField("外科手术方式", blank=True)
-
-    # 评估人 + 时间
-    evaluator = models.CharField("评估人", max_length=100, blank=True)
-    evaluation_date = models.DateField(
-        "评估日期", blank=True, null=True
-    )
-
-    # 系统字段
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)
-    updated_at = models.DateTimeField("更新时间", auto_now=True)
-
     class Meta:
-        verbose_name = "患者"
-        verbose_name_plural = "患者"
+        model = Patient
+        fields = [
+            # 基本信息
+            "name",
+            "gender",
+            "birthday",
+            "handedness",
+            "department",
+            "bed_number",
+            "medical_record_number",
+            "admission_date",
+            "education_level",
+            "imaging_number",
+            "admission_diagnosis",
+            "occupation",
 
-    def __str__(self):
-        return f"{self.name} ({self.bed_number})"
+            # 病史
+            # "pregnancy_birth_history",
+            # "education_level",
+            # "occupation",
+            "past_medical_history",
+            "past_medical_history_other_text",
+            "other_medical_history",
+            "family_history",
+            "first_seizure_age",
+            "first_seizure_description",
+            "medication_history",
 
+            # 发作症状学
+            "seizure_state",
+            "aura",
+            "aura_text",
+            "minor_initial_symptom",
+            "major_aura",
+            "major_aura_text",
+            "major_duration",
+            "major_frequency",
+            # "typical_seizure_time",
+            # "typical_seizure_semiology",
+            "initial_seizure_symptom",
+            "evolution_symptom",
+            "postictal_state",
+            "seizure_duration_seconds",
+            # "seizure_duration_minutes",
+            "seizure_freq_per_day",
+            # "seizure_freq_per_week",
+            # "seizure_freq_per_month",
+            # "seizure_freq_per_year",
 
-class PatientDataset(models.Model):
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name="datasets",
-        verbose_name="患者"
-    )
-    name = models.CharField("数据名称", max_length=200)
-    description = models.TextField("说明", blank=True)
+            # 神经系统检查
+            "neuro_exam",
+            "neuro_exam_description",
 
-    # 面向 Globus / DGPF 的字段：
-    globus_endpoint_id = models.CharField(
-        "Globus Endpoint ID",
-        max_length=64,
-        help_text="存放该患者数据的 Globus Endpoint"
-    )
-    globus_path = models.CharField(
-        "数据路径",
-        max_length=1024,
-        help_text="Endpoint 上的路径，例如 /data/epilepsy/p001/"
-    )
+            # 认知和精神量表
+            "assessment_done",
+            "moca_score",
+            "mmse_score",
+            "hama_score",
+            "hamd_score",
+            "bai_score",
+            "bdi_score",
+            "epilepsy_scale_score",
 
-    # 可选：与 Globus Search 索引的记录做关联（以后用来搜索）
-    search_subject = models.CharField(
-        "Globus Search subject",
-        max_length=256,
-        blank=True
-    )
-
-    is_active = models.BooleanField("启用", default=True)
-
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)
-
-    class Meta:
-        verbose_name = "患者数据"
-        verbose_name_plural = "患者数据"
-
-    def __str__(self):
-        return f"{self.patient.name} - {self.name}"
-
-class BasePatientFile(models.Model):
-    """
-    患者相关文件的抽象基类：
-    - parent_path: 存储在服务器/存储系统中的父路径
-    - file_name: 原始文件名（带扩展名）
-    - hash_code: 自定义哈希（例如 MD5 或你自己的规则）
-    - sha256_code: 文件内容的 SHA256 校验码
-    - save_name: 实际保存的文件名 = hash_code + 原文件扩展名
-    """
-    parent_path = models.CharField("父路径", max_length=1024, blank=True)
-    file_name = models.CharField("原始文件名", max_length=255)
-    hash_code = models.CharField("哈希码", max_length=64)
-    sha256_code = models.CharField("SHA256 校验码", max_length=64)
-    save_name = models.CharField("保存文件名", max_length=300, editable=False)
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)
-
-    class Meta:
-        abstract = True  # 不单独建表，只做基类
-
-    def save(self, *args, **kwargs):
-        # 自动根据 file_name 的扩展名生成 save_name = hash_code + ext
-        if self.file_name and self.hash_code:
-            _, ext = os.path.splitext(self.file_name)
-            ext = ext.lower()
-            self.save_name = f"{self.hash_code}{ext}"
-        super().save(*args, **kwargs)
-
-class MRIFile(BasePatientFile):
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name="mri_files",
-        verbose_name="患者"
-    )
-
-    class Meta:
-        verbose_name = "MRI 文件"
-        verbose_name_plural = "MRI 文件"
-
-    def __str__(self):
-        return f"MRI: {self.patient.name} - {self.file_name}"
-
-
-class PETFile(BasePatientFile):
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name="pet_files",
-        verbose_name="患者"
-    )
-
-    class Meta:
-        verbose_name = "PET 文件"
-        verbose_name_plural = "PET 文件"
-
-    def __str__(self):
-        return f"PET: {self.patient.name} - {self.file_name}"
-
-
-class EEGFile(BasePatientFile):
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name="eeg_files",
-        verbose_name="患者"
-    )
-
-    class Meta:
-        verbose_name = "EEG 文件"
-        verbose_name_plural = "EEG 文件"
-
-    def __str__(self):
-        return f"EEG: {self.patient.name} - {self.file_name}"
+            # 视频头皮 EEG
+            "eeg_recording_electrodes",
+            "eeg_recording_duration_days",
+            "eeg_bg_occipital_rhythm",
+            "eeg_eye_response",
+            "eeg_symmetry",
+            "eeg_awake_background",
+            "eeg_hv_result",
+            "eeg_hv_slow_wave_build",
+            "eeg_hv_slow_wave_frequency",
+            "eeg_hv_slow_wave_symmetry",
+            "eeg_hv_epileptiform_discharge",
+            "eeg_hv_discharge_laterality",
+            "ips_result", 
+            "frequency",
+            "laterality",
+            "eeg_sleep_period_overall",
+            "eeg_sleep_hypersynchrony_slow_wave",
+            "eeg_sleep_vertex_wave",
+            "eeg_sleep_spindle",
+            "eeg_sleep_k_complex",
+            "eeg_sleep_post",
+            "eeg_sleep_frontal_awake_rhythm",
+            "eeg_sleep_other",
+            "eeg_interictal_state",
+            "eeg_interictal_location",
+            "eeg_interictal_focal_lobe",
+            "eeg_interictal_laterality",
+            "eeg_interictal_morph",
+            "eeg_interictal_amount",
+            "eeg_interictal_pattern",
+            "eeg_interictal_eye_relation",
+            "eeg_interictal",
+            "eeg_interictal_description",
+            "eeg_ictal_state",
+            "eeg_ictal_location",
+            "eeg_onset_pattern",
+            "eeg_ictal_amount",
+            "eeg_ictal",
+            "eeg_relevance",
+            "eeg_ictal_precede_clinical_sec",
+            "eeg_clinical_correlation",
+            "eeg_file_link",
 
 
-class SEEGFile(BasePatientFile):
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name="seeg_files",
-        verbose_name="患者"
-    )
+            # 影像学检查
+            "mri_brief",
+            "mri_link",
+            "pet_brief",
+            "pet_link",
 
-    class Meta:
-        verbose_name = "SEEG 文件"
-        verbose_name_plural = "SEEG 文件"
+            # 一期无创评估
+            "first_stage_lateralization",
+            "first_stage_region",
+            "first_stage_location",
 
-    def __str__(self):
-        return f"SEEG: {self.patient.name} - {self.file_name}"
+            # SEEG
+            "seeg_record_channel_count",
+            "seeg_electrode_count",
+            "seeg_electrode_coverage",
+            "seeg_record_duration_days",
+            "seeg_ictal_morph",
+            "seeg_ictal_amount",
+            "seeg_ictal_pattern",
+            "seeg_primary_discharge_zone",
+            "seeg_secondary_discharge_zone",
+            "seeg_other_discharge_zone",
+            "seeg_ictal_onset_zone",
+            "seeg_ictal_spread_zone_sequence",
+            "seeg_ictal_onset_pattern",
+            "seeg_interictal_overall",
+            "seeg_group1",
+            "seeg_group2",
+            "seeg_group3",
+            "seeg_ictal_amountt",
+            "seeg_ictal_precede_clinical_sec",
+            "seeg_ictal",
+            "seeg_thermocoagulation",
+            "seeg_file_link",
 
-class PatientInfoFile(BasePatientFile):
-    """
-    患者信息导出文件：
-    - file_name：显示名，如 “张三_123456”
-    - save_name：hashcode + .csv/.docx/.pdf
-    - format：导出格式
-    """
-    class Format(models.TextChoices):
-        CSV = "CSV", "CSV"
-        WORD = "WORD", "Word"
-        PDF = "PDF", "PDF"
+            # 二期有创评估
+            "second_stage_core_zone",
+            "second_stage_hypothesis_zone",
 
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name="info_files",
-        verbose_name="患者",
-    )
-    format = models.CharField(
-        "导出格式",
-        max_length=10,
-        choices=Format.choices,
-    )
+            # 外科切除计划
+            "resection_plan_convex",
+            "resection_plan_concave",
+            "resection_plan",
 
-    class Meta:
-        verbose_name = "患者信息导出文件"
-        verbose_name_plural = "患者信息导出文件"
+            # 评估人/日期
+            "evaluator",
+            "evaluation_date",
+        ]
+        widgets = {
+            'first_seizure_description': forms.Textarea(attrs={
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+            'medication_history': forms.Textarea(attrs={
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'minor_initial_symptom': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),                    
+                    'initial_seizure_symptom': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'evolution_symptom': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'postictal_state': forms.Textarea(attrs={
+                    "rows": 2,   # ⬅ 控制高度
+                    "cols": 5,  # 可选：控制宽度
+                    "class": "form-control",
+                    }),
+                    'neuro_exam_description': forms.Textarea(attrs={
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_ictal': forms.Textarea(attrs={
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_interictal': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_interictal_description': forms.Textarea(attrs={
+                        "rows": 2,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_relevance': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_clinical_correlation': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'mri_brief': forms.Textarea(attrs={
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'pet_brief': forms.Textarea(attrs={
+                        "rows": 4,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'eeg_bg_occipital_rhythm': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'style': 'width:120px; display:inline-block;',
+                    }),
+                    'seeg_interictal_overall': forms.Textarea(attrs={
+                    "rows": 3,   # ⬅ 控制高度
+                    "cols": 5,  # 可选：控制宽度
+                     "class": "form-control",
+                    }),
+                         'seeg_ictal': forms.Textarea(attrs={
+                          "rows": 3,   # ⬅ 控制高度
+                          "cols": 5,  # 可选：控制宽度
+                         "class": "form-control",
+                    }),
+                        'seeg_thermocoagulation': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),
+                    'second_stage_core_zone': forms.Textarea(attrs={
+                    "rows": 3,   # ⬅ 控制高度
+                    "cols": 5,  # 可选：控制宽度
+                    "class": "form-control",
+                    }),
+                        'second_stage_hypothesis_zone': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }), 
+                    'resection_plan': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),    
+                    "seeg_primary_discharge_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_secondary_discharge_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_other_discharge_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_ictal_onset_zone": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),
+                    "seeg_ictal_spread_zone_sequence": forms.TextInput(attrs={
+                        "class": "form-control w-100",
+                        "style": "width:100%;",
+                    }),                                     
+            }
+        labels = {
+            "name": "患者姓名",
+            "gender": "性别",
+            "handedness": "左右利手",
+            "department": "科室",
+            "bed_number": "床号",
+            "admission_date": "入院时间",
 
-    def __str__(self):
-        return f"患者信息导出: {self.patient.name} - {self.file_name} ({self.format})"
+            "pregnancy_birth_history": "母孕出生史",
+            "education_level": "受教育程度",
+            "occupation": "职业",
+            "past_medical_history": "既往不良病史",
+            "other_medical_history": "其他病史",
+            "family_history": "家族病史",
+            "first_seizure_age": "首次发作年龄（岁）",
+            "first_seizure_description": "首次发作症状",
+            "medication_history": "药物治疗",
 
-    def save(self, *args, **kwargs):
-        # 根据 format 决定扩展名，强制 save_name = hash_code + ext
-        ext_map = {
-            self.Format.CSV: ".csv",
-            self.Format.WORD: ".docx",
-            self.Format.PDF: ".pdf",
+            "aura": "先兆",
+            "seizure_state":"自然发作状态",
+            "minor_initial_symptom":"发作症状",
+            # "typical_seizure_time": "惯常发作时间",
+            # "typical_seizure_semiology": "惯常发作表现形式",
+            "major_aura":"先兆",
+            "major_duration":"发作持续时间",
+            "major_frequency":"发作频率",
+            "initial_seizure_symptom":"首发症状",
+            "evolution_symptom":"演变症状",
+            "postictal_state":"发作后状态",
+            "seizure_duration_seconds": "发作持续时间",
+            # "seizure_duration_minutes": "发作持续时间（分钟）",
+            "seizure_freq_per_day": "发作频率",
+            # "seizure_freq_per_week": "发作频率（次/周）",
+            # "seizure_freq_per_month": "发作频率（次/月）",
+            # "seizure_freq_per_year": "发作频率（次/年）",
+
+            "neuro_exam": "神经系统检查",
+            "neuro_exam_description": "神经系统检查异常描述",
+
+            "moca_score": "MoCA 评分",
+            "mmse_score": "MMSE 评分",
+            "hama_score": "HAMA 评分",
+            "hamd_score": "HAMD 评分",
+            "bai_score": "BAI 评分",
+            "bdi_score": "BDI 评分",
+            "epilepsy_scale_score": "癫痫量表评分",
+
+            "eeg_recording_electrodes": "EEG 记录电极",
+            "eeg_recording_duration_days": "记录时间（天）",
+            "eeg_bg_occipital_rhythm":"枕区优势节律（闭目安静状态）(Hz)",
+            "eeg_eye_response": "睁/闭眼反应", 
+            "eeg_symmetry": "对称性",
+            "eeg_awake_background": "清醒期背景",
+            "eeg_hv_result":"HV 结果",
+            "eeg_hv_slow_wave_build": "HV 慢波建立",
+            "eeg_hv_slow_wave_frequency": "HV 慢波频率(Hz)",
+            "eeg_hv_slow_wave_symmetry": "HV 慢波对称性",
+            "eeg_hv_epileptiform_discharge": "HV 诱发癫痫样放电",
+            "eeg_hv_discharge_laterality": "HV 放电对侧性",
+            "ips_result":"IPS结果",
+            "frequency":"闪光频率(Hz)",
+            "laterality":"侧别",
+            "eeg_sleep_period_overall": "睡眠周期",
+            "eeg_sleep_hypersynchrony_slow_wave": "思睡期超同步化慢波",
+            "eeg_sleep_vertex_wave": "顶尖波",
+            "eeg_sleep_spindle": "睡眠纺锤波",
+            "eeg_sleep_k_complex": "K-综合波",
+            "eeg_sleep_post": "POST",
+            "eeg_sleep_frontal_awake_rhythm": "额区觉醒节律",
+            "eeg_sleep_other": "睡眠周期 其他",
+            "eeg_interictal_state": "状态",
+            "eeg_interictal_location": "部位",
+            "eeg_interictal_focal_lobe": "局灶部位（叶）", 
+            "eeg_interictal_laterality":"偏侧方向",
+            "eeg_interictal_morph": "波幅、波形",
+            "eeg_interictal_amount": "数量",
+            "eeg_interictal_pattern": "出现方式",
+            "eeg_interictal_eye_relation": "眼状态相关",
+            "eeg_ictal_state":"发作期状态（多选）",
+            "eeg_ictal_location":"发作期部位（多选）",
+            "eeg_ictal_amount":"数量",
+            "eeg_onset_pattern":"发作起源模式",
+            "eeg_interictal": "EEG 发作期放电描述",
+            "eeg_interictal_description": "EEG 发作间期癫痫样放电描述",
+            "eeg_ictal": "EEG 发作期",
+            "eeg_relevance": "EEG 相关性",
+            "eeg_ictal_precede_clinical_sec":"EEG发作早于症状出现",
+            "eeg_clinical_correlation": "EEG 同步发作临床症状",
+            "eeg_file_link": "EEG 数据下载链接",
+
+            "mri_brief": "MRI 简要描述",
+            "mri_link": "MRI 图像下载链接",
+            "pet_brief": "PET 简要描述",
+            "pet_link": "PET 图像下载链接",
+
+            "first_stage_lateralization": "一期无创评估定侧",
+            "first_stage_region": "一期无创评估定区域",
+            "first_stage_location": "一期无创评估定具体部位",
+
+            "seeg_record_channel_count":"记录导联数（个）",
+            "seeg_electrode_count":"电极植入（根）",
+            "seeg_electrode_coverage":"电极覆盖位置",
+            "seeg_record_duration_days":"记录时长（天）",
+            "seeg_ictal_morph":"波形",
+            "seeg_ictal_amount":"数量",
+            "seeg_ictal_pattern":"出现方式",
+            "seeg_primary_discharge_zone":"主要放电区（位置和触点）",
+            "seeg_secondary_discharge_zone":"次要放电区",
+            "seeg_other_discharge_zone":"其他区域",
+            "seeg_ictal_onset_zone":"发作起始区（位置和触点）",
+            "seeg_ictal_spread_zone_sequence":"扩散区和顺序（位置和时间）",
+            "seeg_ictal_onset_pattern":"发作起始模式",
+            "seeg_interictal_overall": "SEEG 发作期对应临床表现",
+            "seeg_group1": "SEEG 发作间期 Group 1",
+            "seeg_group2": "SEEG 发作间期 Group 2",
+            "seeg_group3": "SEEG 发作间期 Group 3",
+            "seeg_ictal_amountt":"数量",
+            "seeg_ictal_precede_clinical_sec":"SEEG发作早于症状出现",
+            "seeg_ictal": "SEEG 电刺激结果",
+            "seeg_thermocoagulation":"SEEG热凝",
+            "seeg_file_link": "SEEG 数据下载链接",
+
+            "second_stage_core_zone": "核心致痫区定位",
+            "second_stage_hypothesis_zone": "症状传播区",
+
+            "resection_plan_convex": "外科切除计划-凸面",
+            "resection_plan_concave": "外科切除计划-凹面",
+            "resection_plan": "外科手术方式",
+
+            "evaluator": "评估人",
+            "evaluation_date": "评估日期",
         }
-        if self.hash_code:
-            ext = ext_map.get(self.format, "")
-            self.save_name = f"{self.hash_code}{ext}"
-        # 跳过 BasePatientFile.save 的扩展名逻辑，直接走 Model.save
-        super(BasePatientFile, self).save(*args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # ---------- 1) CSV 多选字段：编辑时正确回显 ----------
+        if self.instance and self.instance.pk:
+            for fname in self._CSV_MULTISELECT_FIELDS:
+                if fname in self.fields:
+                    raw = getattr(self.instance, fname, "") or ""
+                    self.initial[fname] = self._split_csv(raw)
+
+        # ---------- 2) CharField 数字/范围字段：给前端标记 ----------
+        for fname in self._NUMERIC_STRING_FIELDS:
+            if fname not in self.fields:
+                continue
+            w = self.fields[fname].widget
+            if hasattr(w, "attrs"):
+                w.attrs.setdefault("data-validate", "number-range")
+                w.attrs.setdefault("inputmode", "decimal")
+                w.attrs.setdefault("step", "any")
+
+        # ---------- 3) 对所有 NumberInput 放开小数输入（避免浏览器默认 step=1 只允许整数） ----------
+        for _fname, _field in self.fields.items():
+            _w = getattr(_field, "widget", None)
+            if isinstance(_w, forms.NumberInput) and hasattr(_w, "attrs"):
+                _w.attrs.setdefault("step", "any")
+                _w.attrs.setdefault("inputmode", "decimal")
+
+    def clean_past_medical_history(self):
+        data = self.cleaned_data.get("past_medical_history", [])
+        # 存回模型时用逗号连接
+        return ",".join(data)
+
+    def clean_other_medical_history(self):
+        data = self.cleaned_data.get("other_medical_history", [])
+        return ",".join(data)
+    
+    def clean_eeg_interictal_state(self):
+         data = self.cleaned_data.get("eeg_interictal_state", [])
+         return ",".join(data)
+
+    def clean_eeg_interictal_location(self):
+        data = self.cleaned_data.get("eeg_interictal_location", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_morph(self):
+        data = self.cleaned_data.get("eeg_interictal_morph", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_amount(self):
+        data = self.cleaned_data.get("eeg_interictal_amount", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_pattern(self):
+        data = self.cleaned_data.get("eeg_interictal_pattern", [])
+        return ",".join(data)
+
+    def clean_eeg_interictal_eye_relation(self):
+        data = self.cleaned_data.get("eeg_interictal_eye_relation", [])
+        return ",".join(data)
+    
+    def clean_eeg_onset_pattern(self):
+        data = self.cleaned_data.get("eeg_onset_pattern", [])
+        return ",".join(data)
+    
+    def clean_eeg_ictal_state(self):
+        data = self.cleaned_data.get("eeg_ictal_state", [])
+        return ",".join(data)
+
+    def clean_eeg_ictal_location(self):
+        data = self.cleaned_data.get("eeg_ictal_location", [])
+        return ",".join(data)
+    
+    def clean_seeg_ictal_morph(self):
+        data = self.cleaned_data.get("seeg_ictal_morph", [])
+        return ",".join(data)
+    def clean_seeg_ictal_amount(self):
+        data = self.cleaned_data.get("seeg_ictal_amount", [])
+        return ",".join(data)
+    def clean_seeg_ictal_pattern(self):
+        data = self.cleaned_data.get("seeg_ictal_pattern", [])
+        return ",".join(data)
+    def clean_seeg_ictal_onset_pattern(self):
+        data = self.cleaned_data.get("seeg_ictal_onset_pattern", [])
+        return ",".join(data)
+
+
+
+    def clean(self):
+        cleaned = super().clean()
+
+        # # 基本日期逻辑
+        # birthday = cleaned.get("birthday")
+        # admission_date = cleaned.get("admission_date")
+        # evaluation_date = cleaned.get("evaluation_date")
+        # if birthday and admission_date and birthday > admission_date:
+        #     self.add_error("birthday", "生日不能晚于入院时间。")
+        # if evaluation_date and admission_date and evaluation_date < admission_date:
+        #     self.add_error("evaluation_date", "评估日期不能早于入院时间。")
+
+        # # 条件必填：先兆文本
+        # aura = cleaned.get("aura")
+        # aura_text = (cleaned.get("aura_text") or "").strip()
+        # if aura == "Y" and not aura_text:
+        #     self.add_error("aura_text", "选择“有”时请填写先兆描述。")
+        # if aura != "Y":
+        #     cleaned["aura_text"] = ""
+
+        # major_aura = cleaned.get("major_aura")
+        # major_aura_text = (cleaned.get("major_aura_text") or "").strip()
+        # if major_aura == "Y" and not major_aura_text:
+        #     self.add_error("major_aura_text", "选择“有”时请填写先兆描述。")
+        # if major_aura != "Y":
+        #     cleaned["major_aura_text"] = ""
+
+        # # 条件必填：神经系统检查异常描述
+        # neuro_exam = cleaned.get("neuro_exam")
+        # neuro_desc = (cleaned.get("neuro_exam_description") or "").strip()
+        # if neuro_exam == "A" and not neuro_desc:
+        #     self.add_error("neuro_exam_description", "选择“异常”时请补充异常描述。")
+        # if neuro_exam != "A":
+        #     cleaned["neuro_exam_description"] = ""
+
+        # # EEG 发作间期：局灶/偏侧 关联字段
+        # locations = self._split_csv(cleaned.get("eeg_interictal_location"))
+        # focal_lobe = cleaned.get("eeg_interictal_focal_lobe")
+        # laterality = cleaned.get("eeg_interictal_laterality")
+        # if "FOCAL" in locations and not focal_lobe:
+        #     self.add_error("eeg_interictal_focal_lobe", "选择“局灶”时必须指定额叶 / 顶叶 / 枕叶 / 颞叶。")
+        # if "LAT" in locations and not laterality:
+        #     self.add_error("eeg_interictal_laterality", "选择“偏侧”时必须指定左侧 / 右侧 / 中线。")
+        # if "FOCAL" not in locations:
+        #     cleaned["eeg_interictal_focal_lobe"] = ""
+        # if "LAT" not in locations:
+        #     cleaned["eeg_interictal_laterality"] = ""
+
+        # # 量表：已做时至少填一项分数
+        # score_fields = ["moca_score","mmse_score","hama_score","hamd_score","bai_score","bdi_score","epilepsy_scale_score"]
+        # if cleaned.get("assessment_done") == "YES":
+        #     if not any(cleaned.get(f) not in (None, "") for f in score_fields):
+        #         self.add_error(None, "量表已做：请至少填写一项评分。")
+        # else:
+        #     for f in score_fields:
+        #         cleaned[f] = None
+
+        # # HV / IPS：结果为“相关改变(changed)”时条件必填
+        # if cleaned.get("eeg_hv_result") == "changed":
+        #     required = ["eeg_hv_slow_wave_build","eeg_hv_slow_wave_frequency","eeg_hv_slow_wave_symmetry"]
+        #     for f in required:
+        #         if not (cleaned.get(f) not in (None, "")):
+        #             self.add_error(f, "HV 结果为“相关改变”时此项必填。")
+        #     if cleaned.get("eeg_hv_epileptiform_discharge") == "Y" and not cleaned.get("eeg_hv_discharge_laterality"):
+        #         self.add_error("eeg_hv_discharge_laterality", "已选择诱发癫痫样放电时需指定放电对侧性。")
+        # else:
+        #     for f in ["eeg_hv_slow_wave_build","eeg_hv_slow_wave_frequency","eeg_hv_slow_wave_symmetry",
+        #               "eeg_hv_epileptiform_discharge","eeg_hv_discharge_laterality"]:
+        #         cleaned[f] = "" if isinstance(cleaned.get(f), str) else None
+
+        # if cleaned.get("ips_result") == "changed":
+        #     if not (cleaned.get("frequency") or "").strip():
+        #         self.add_error("frequency", "IPS 结果为“相关改变”时请填写闪光频率。")
+        #     if not cleaned.get("laterality"):
+        #         self.add_error("laterality", "IPS 结果为“相关改变”时请填写侧别。")
+        # else:
+        #     cleaned["frequency"] = ""
+        #     cleaned["laterality"] = ""
+
+        # CharField 数字/范围格式校验
+        self._validate_numeric_string_fields(cleaned)
+
+        return cleaned
+
+
+class UserWithRoleForm(forms.ModelForm):
+    role = forms.ChoiceField(
+        label="角色",
+        choices=UserRole.choices,
+    )
+
+    # 新增两个密码字段
+    password1 = forms.CharField(
+        label="密码",
+        required=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+    password2 = forms.CharField(
+        label="确认密码",
+        required=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+
+    class Meta:
+        model = User
+        fields = ["username", "email", "is_active"]
+        labels = {
+            "username": "用户名",
+            "email": "邮箱",
+            "is_active": "启用",
+        }
+        widgets = {
+            "username": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 编辑用户时，把当前 profile.role 填入表单初始值
+        if self.instance and self.instance.pk:
+            profile = getattr(self.instance, "profile", None)
+            if profile:
+                self.initial.setdefault("role", profile.role)
+        else:
+            # 新建用户默认角色
+            self.initial.setdefault("role", UserRole.GUEST)
+            # 新建用户必须填密码
+            self.fields["password1"].required = True
+            self.fields["password2"].required = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get("password1")
+        p2 = cleaned_data.get("password2")
+
+        is_create = not (self.instance and self.instance.pk)
+
+        # 新建必须有密码
+        if is_create:
+            if not p1 or not p2:
+                raise forms.ValidationError("新建用户必须设置密码。")
+
+        # 只要有任意一项填写，就按“修改密码”处理
+        if p1 or p2:
+            if p1 != p2:
+                raise forms.ValidationError("两次输入的密码不一致。")
+            if len(p1) < 8:
+                raise forms.ValidationError("密码长度至少为 8 位。")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        # 不直接提交，先处理密码
+        user = super().save(commit=False)
+
+        password = self.cleaned_data.get("password1")
+        if password:
+            # 使用 Django 内置加密
+            user.set_password(password)
+
+        if commit:
+            user.save()
+
+        # 处理角色到 UserProfile
+        role = self.cleaned_data["role"]
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.role = role
+        profile.save()
+        return user
+
+class MRIFileForm(forms.ModelForm):
+    class Meta:
+        model = MRIFile
+        # save_name 自动生成，不用在表单里填
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
+
+
+class PETFileForm(forms.ModelForm):
+    class Meta:
+        model = PETFile
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
+
+
+class EEGFileForm(forms.ModelForm):
+    class Meta:
+        model = EEGFile
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }
+
+
+class SEEGFileForm(forms.ModelForm):
+    class Meta:
+        model = SEEGFile
+        fields = [
+            "patient",
+            "parent_path",
+            "file_name",
+            "hash_code",
+            "sha256_code",
+        ]
+        labels = {
+            "patient": "患者",
+            "parent_path": "父路径",
+            "file_name": "原始文件名",
+            "hash_code": "哈希码",
+            "sha256_code": "SHA256 校验码",
+        }

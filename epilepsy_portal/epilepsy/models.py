@@ -130,6 +130,15 @@ class Patient(models.Model):
     imaging_number = models.CharField("影像号", max_length=20, blank=True)
     admission_diagnosis = models.CharField("入院诊断", max_length=20, blank=True)
 
+    # 【病史】
+    # pregnancy_birth_history = models.TextField("母孕出生史", blank=True)
+    # education_level = models.CharField(
+    #     "受教育程度",
+    #     max_length=20,
+    #     choices=EDUCATION_CHOICES,
+    #     blank=True,
+    # )
+    #occupation = models.CharField("职业", max_length=100, blank=True)
 
     # 既往不良病史（用逗号分隔的编码存储）
     past_medical_history = models.CharField( "既往不良病史（多选）", max_length=255, blank=True, help_text="多选，用逗号分隔编码存储",)
@@ -151,13 +160,30 @@ class Patient(models.Model):
     major_aura_text = models.CharField(max_length=255, blank=True, null=True)
     major_duration = models.CharField("发作持续时间",max_length=100,blank=True,null=True)
     major_frequency = models.CharField("发作频率",max_length=100,blank=True,null=True)
-
+    # typical_seizure_time = models.CharField(
+    #     "惯常发作时间", max_length=100, blank=True
+    # )
+    # typical_seizure_semiology = models.TextField(
+    #     "惯常发作表现形式", blank=True
+    # )
     initial_seizure_symptom = models.TextField( "首发症状",max_length=150, blank=True, )
     evolution_symptom = models.TextField("演变症状",max_length=150, blank=True,)
     postictal_state = models.TextField("发作后状态",max_length=150,blank=True,)
     seizure_duration_seconds = models.CharField("发作持续时间", max_length=100, blank=True, null=True)
+    # seizure_duration_minutes = models.PositiveIntegerField(
+    #     "发作持续时间（分钟）", blank=True, null=True
+    # )
 
     seizure_freq_per_day = models.CharField("发作频率", max_length=100, blank=True, null=True)
+    # seizure_freq_per_week = models.PositiveIntegerField(
+    #     "发作频率（次/周）", blank=True, null=True
+    # )
+    # seizure_freq_per_month = models.PositiveIntegerField(
+    #     "发作频率（次/月）", blank=True, null=True
+    # )
+    # seizure_freq_per_year = models.PositiveIntegerField(
+    #     "发作频率（次/年）", blank=True, null=True
+    # )
 
     # 【神经系统检查】
     neuro_exam = models.CharField("神经系统检查", max_length=1, choices=NEURO_EXAM_CHOICES, blank=True,)
