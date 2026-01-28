@@ -13,6 +13,10 @@
   <!-- 搜索表单 -->
   <!-- 搜索 + 高级搜索表单（同一个 GET form） -->
   <form method="get" class="mb-3">
+    {# 保留当前排序（切换筛选/搜索时不丢失） #}
+    {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+    {% if sort %}<input type="hidden" name="dir" value="{{ dir }}">{% endif %}
+
     <div class="row g-2 align-items-end">
       <div class="col-auto">
         <input type="text"
@@ -105,158 +109,113 @@
             <label class="form-label small text-muted">自然发作状态</label>
             <select name="natural_state" class="form-control">
               <option value="">全部</option>
-              <option value="1" {% if natural_state == "1" %}selected{% endif %}>有</option>
-              <option value="0" {% if natural_state == "0" %}selected{% endif %}>无</option>
+              <option value="AWAKE" {% if natural_state == "AWAKE" %}selected{% endif %}>清醒</option>
+              <option value="SLEEP" {% if natural_state == "SLEEP" %}selected{% endif %}>睡眠</option>
+              <option value="BOTH" {% if natural_state == "BOTH" %}selected{% endif %}>清醒和睡眠</option>
             </select>
           </div>
           <div class="col-md-3">
             <label class="form-label small text-muted">先兆</label>
             <select name="aura" class="form-control">
               <option value="">全部</option>
-              <option value="1" {% if aura == "1" %}selected{% endif %}>有</option>
-              <option value="0" {% if aura == "0" %}selected{% endif %}>无</option>
+              <option value="Y" {% if aura == "Y" %}selected{% endif %}>有</option>
+              <option value="N" {% if aura == "N" %}selected{% endif %}>无</option>
             </select>
           </div>
 
-          <!-- MoCA / HAMA -->
-          <div class="col-md-3">
-            <label class="form-label small text-muted">MoCA ≥</label>
-            <input type="number"
-                   step="0.1"
-                   name="moca_min"
-                   value="{{ moca_min }}"
-                   class="form-control">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">MoCA ≤</label>
-            <input type="number"
-                   step="0.1"
-                   name="moca_max"
-                   value="{{ moca_max }}"
-                   class="form-control">
+                    <!-- 量表评分（区间：下限-上限） -->
+          <div class="col-md-4">
+            <label class="form-label small text-muted">MoCA</label>
+            <div class="d-flex align-items-center" style="gap:.25rem;">
+              <input type="number" step="0.1" name="moca_min" value="{{ moca_min }}" class="form-control" style="width:48%;" placeholder="下限">
+              <span class="text-muted">-</span>
+              <input type="number" step="0.1" name="moca_max" value="{{ moca_max }}" class="form-control" style="width:48%;" placeholder="上限">
+            </div>
           </div>
 
-          <div class="col-md-3">
-            <label class="form-label small text-muted">HAMA ≥</label>
-            <input type="number"
-                   step="0.1"
-                   name="hama_min"
-                   value="{{ hama_min }}"
-                   class="form-control">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">HAMA ≤</label>
-            <input type="number"
-                   step="0.1"
-                   name="hama_max"
-                   value="{{ hama_max }}"
-                   class="form-control">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">HAMA</label>
+            <div class="d-flex align-items-center" style="gap:.25rem;">
+              <input type="number" step="0.1" name="hama_min" value="{{ hama_min }}" class="form-control" style="width:48%;" placeholder="下限">
+              <span class="text-muted">-</span>
+              <input type="number" step="0.1" name="hama_max" value="{{ hama_max }}" class="form-control" style="width:48%;" placeholder="上限">
+            </div>
           </div>
 
-          <!-- HAMD / BAI -->
-          <div class="col-md-3">
-            <label class="form-label small text-muted">HAMD ≥</label>
-            <input type="number"
-                   step="0.1"
-                   name="hamd_min"
-                   value="{{ hamd_min }}"
-                   class="form-control">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">HAMD ≤</label>
-            <input type="number"
-                   step="0.1"
-                   name="hamd_max"
-                   value="{{ hamd_max }}"
-                   class="form-control">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">HAMD</label>
+            <div class="d-flex align-items-center" style="gap:.25rem;">
+              <input type="number" step="0.1" name="hamd_min" value="{{ hamd_min }}" class="form-control" style="width:48%;" placeholder="下限">
+              <span class="text-muted">-</span>
+              <input type="number" step="0.1" name="hamd_max" value="{{ hamd_max }}" class="form-control" style="width:48%;" placeholder="上限">
+            </div>
           </div>
 
-          <div class="col-md-3">
-            <label class="form-label small text-muted">BAI ≥</label>
-            <input type="number"
-                   step="0.1"
-                   name="bai_min"
-                   value="{{ bai_min }}"
-                   class="form-control">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">BAI ≤</label>
-            <input type="number"
-                   step="0.1"
-                   name="bai_max"
-                   value="{{ bai_max }}"
-                   class="form-control">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">BAI</label>
+            <div class="d-flex align-items-center" style="gap:.25rem;">
+              <input type="number" step="0.1" name="bai_min" value="{{ bai_min }}" class="form-control" style="width:48%;" placeholder="下限">
+              <span class="text-muted">-</span>
+              <input type="number" step="0.1" name="bai_max" value="{{ bai_max }}" class="form-control" style="width:48%;" placeholder="上限">
+            </div>
           </div>
 
-          <!-- BDI / 癫痫量表评分 -->
-          <div class="col-md-3">
-            <label class="form-label small text-muted">BDI ≥</label>
-            <input type="number"
-                   step="0.1"
-                   name="bdi_min"
-                   value="{{ bdi_min }}"
-                   class="form-control">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">BDI ≤</label>
-            <input type="number"
-                   step="0.1"
-                   name="bdi_max"
-                   value="{{ bdi_max }}"
-                   class="form-control">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">BDI</label>
+            <div class="d-flex align-items-center" style="gap:.25rem;">
+              <input type="number" step="0.1" name="bdi_min" value="{{ bdi_min }}" class="form-control" style="width:48%;" placeholder="下限">
+              <span class="text-muted">-</span>
+              <input type="number" step="0.1" name="bdi_max" value="{{ bdi_max }}" class="form-control" style="width:48%;" placeholder="上限">
+            </div>
           </div>
 
-          <div class="col-md-3">
-            <label class="form-label small text-muted">癫痫量表评分 ≥</label>
-            <input type="number"
-                   step="0.1"
-                   name="epilepsy_scale_min"
-                   value="{{ epilepsy_scale_min }}"
-                   class="form-control">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">癫痫量表评分 ≤</label>
-            <input type="number"
-                   step="0.1"
-                   name="epilepsy_scale_max"
-                   value="{{ epilepsy_scale_max }}"
-                   class="form-control">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">癫痫量表评分</label>
+            <div class="d-flex align-items-center" style="gap:.25rem;">
+              <input type="number" step="0.1" name="epilepsy_scale_min" value="{{ epilepsy_scale_min }}" class="form-control" style="width:48%;" placeholder="下限">
+              <span class="text-muted">-</span>
+              <input type="number" step="0.1" name="epilepsy_scale_max" value="{{ epilepsy_scale_max }}" class="form-control" style="width:48%;" placeholder="上限">
+            </div>
           </div>
 
-          <!-- 是否有 MRI / PET / EEG / sEEG 文件 -->
-          <div class="col-md-3">
-            <label class="form-label small text-muted">MRI 文件</label>
-            <select name="has_mri" class="form-control">
-              <option value="">全部</option>
-              <option value="1" {% if has_mri == "1" %}selected{% endif %}>有</option>
-              <option value="0" {% if has_mri == "0" %}selected{% endif %}>无</option>
-            </select>
+          <!-- 关键字过滤（按字段分组：在该分组的所有字段中做 contains 匹配） -->
+          <div class="col-md-6">
+            <label class="form-label small text-muted">一期无创性评估结果（关键字）</label>
+            <input type="text"
+                   name="kw_stage1_noninvasive"
+                   value="{{ kw_stage1_noninvasive }}"
+                   class="form-control"
+                   placeholder="输入关键字（多个词可用空格）">
           </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">PET 文件</label>
-            <select name="has_pet" class="form-control">
-              <option value="">全部</option>
-              <option value="1" {% if has_pet == "1" %}selected{% endif %}>有</option>
-              <option value="0" {% if has_pet == "0" %}selected{% endif %}>无</option>
-            </select>
+
+          <div class="col-md-6">
+            <label class="form-label small text-muted">SEEG 发作间期及发作期放电（关键字）</label>
+            <input type="text"
+                   name="kw_seeg_discharge"
+                   value="{{ kw_seeg_discharge }}"
+                   class="form-control"
+                   placeholder="输入关键字（多个词可用空格）">
           </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">EEG 文件</label>
-            <select name="has_eeg" class="form-control">
-              <option value="">全部</option>
-              <option value="1" {% if has_eeg == "1" %}selected{% endif %}>有</option>
-              <option value="0" {% if has_eeg == "0" %}selected{% endif %}>无</option>
-            </select>
+
+          <div class="col-md-6">
+            <label class="form-label small text-muted">二期有创性评估结果（关键字）</label>
+            <input type="text"
+                   name="kw_stage2_invasive"
+                   value="{{ kw_stage2_invasive }}"
+                   class="form-control"
+                   placeholder="输入关键字（多个词可用空格）">
           </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">sEEG 文件</label>
-            <select name="has_seeg" class="form-control">
-              <option value="">全部</option>
-              <option value="1" {% if has_seeg == "1" %}selected{% endif %}>有</option>
-              <option value="0" {% if has_seeg == "0" %}selected{% endif %}>无</option>
-            </select>
+
+          <div class="col-md-6">
+            <label class="form-label small text-muted">外科切除计划（关键字）</label>
+            <input type="text"
+                   name="kw_surgery_plan"
+                   value="{{ kw_surgery_plan }}"
+                   class="form-control"
+                   placeholder="输入关键字（多个词可用空格）">
           </div>
-        </div>
+
+</div>
 
         <div class="mt-3 text-end">
           <a href="{% url 'epilepsy:patient_list' %}" class="btn btn-outline-secondary me-2">
@@ -335,17 +294,41 @@
           </div>
       </div>
   </div>
-  <table class="table table-striped table-hover align-middle">
+  
+  <style>
+    th.sortable-header a { white-space: nowrap; }
+  </style>
+<table class="table table-striped table-hover align-middle">
     <thead>
       <tr>
         <th class="selection-cell">
           <input type="checkbox" id="select-all-patients">
         </th>
-        <th>患者姓名</th>
-        <th>性别</th>
-        <th>生日</th>
-        <th>床号</th>
-        <th>入院时间</th>
+        <th class="sortable-header">
+          <a href="{{ sort_links.name.url }}" class="text-decoration-none text-body d-inline-flex align-items-center">
+            <span>患者姓名</span>{% if sort_links.name.icon %}<span class="ms-1">{{ sort_links.name.icon }}</span>{% endif %}
+          </a>
+        </th>
+        <th class="sortable-header">
+          <a href="{{ sort_links.gender.url }}" class="text-decoration-none text-body d-inline-flex align-items-center">
+            <span>性别</span>{% if sort_links.gender.icon %}<span class="ms-1">{{ sort_links.gender.icon }}</span>{% endif %}
+          </a>
+        </th>
+        <th class="sortable-header">
+          <a href="{{ sort_links.birthday.url }}" class="text-decoration-none text-body d-inline-flex align-items-center">
+            <span>生日</span>{% if sort_links.birthday.icon %}<span class="ms-1">{{ sort_links.birthday.icon }}</span>{% endif %}
+          </a>
+        </th>
+        <th class="sortable-header">
+          <a href="{{ sort_links.bed_number.url }}" class="text-decoration-none text-body d-inline-flex align-items-center">
+            <span>床号</span>{% if sort_links.bed_number.icon %}<span class="ms-1">{{ sort_links.bed_number.icon }}</span>{% endif %}
+          </a>
+        </th>
+        <th class="sortable-header">
+          <a href="{{ sort_links.admission_date.url }}" class="text-decoration-none text-body d-inline-flex align-items-center">
+            <span>入院时间</span>{% if sort_links.admission_date.icon %}<span class="ms-1">{{ sort_links.admission_date.icon }}</span>{% endif %}
+          </a>
+        </th>
         <th>操作</th>
         <th>下载</th>
       </tr>
@@ -406,7 +389,7 @@
   </tr>
   {% empty %}
   <tr>
-    <td colspan="6" class="text-center text-muted">暂无患者</td>
+    <td colspan="8" class="text-center text-muted">暂无患者</td>
   </tr>
   {% endfor %}
 </tbody>
@@ -420,7 +403,7 @@
       {% if patients.has_previous %}
       <li class="page-item">
         <a class="page-link"
-           href="?page={{ patients.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+           href="?{% if base_qs %}{{ base_qs }}&{% endif %}page={{ patients.previous_page_number }}{% if sort %}&sort={{ sort }}&dir={{ dir }}{% endif %}">
           上一页
         </a>
       </li>
@@ -438,7 +421,7 @@
         {% elif num > patients.number|add:"-3" and num < patients.number|add:"3" %}
           <li class="page-item">
             <a class="page-link"
-               href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}">
+               href="?{% if base_qs %}{{ base_qs }}&{% endif %}page={{ num }}{% if sort %}&sort={{ sort }}&dir={{ dir }}{% endif %}">
               {{ num }}
             </a>
           </li>
@@ -448,7 +431,7 @@
       {% if patients.has_next %}
       <li class="page-item">
         <a class="page-link"
-           href="?page={{ patients.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+           href="?{% if base_qs %}{{ base_qs }}&{% endif %}page={{ patients.next_page_number }}{% if sort %}&sort={{ sort }}&dir={{ dir }}{% endif %}">
           下一页
         </a>
       </li>

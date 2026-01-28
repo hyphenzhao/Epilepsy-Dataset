@@ -1,6 +1,6 @@
 # epilepsy/views.py
 
-import os, csv, datetime, io, zipfile
+import os, csv, datetime, io, zipfile, re
 import mimetypes
 from django.utils.encoding import smart_str
 from django.conf import settings
@@ -11,7 +11,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, FileResponse, Http404
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.urls import reverse_lazy
-from django.db.models import Q
+from django.db import models
+from django.db.models import Q, F
+from django.db.models.functions import Cast
 from django.contrib.staticfiles import finders
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist, FieldError
@@ -54,8 +56,44 @@ class PatientListView(RoleRequiredMixin, ListView):
     paginate_by = 20
     allowed_roles = [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]
 
+    @staticmethod
+    def _pinyin_natural_key(value):
+        """中英混排排序 key：拼音（汉字）+ 自然数。
+
+        - 需要安装 pypinyin：pip install pypinyin
+        - 若未安装则退化为普通 lower() 排序
+        """
+        import re
+
+        s = "" if value is None else str(value)
+        s = s.strip()
+
+        try:
+            from pypinyin import lazy_pinyin
+        except Exception:
+            lazy_pinyin = None
+
+        def to_pinyin(text: str) -> str:
+            if not text:
+                return ""
+            if lazy_pinyin is None:
+                return text.lower()
+            # errors=lambda x: x 让非汉字保留原字符
+            return "".join(lazy_pinyin(text, errors=lambda x: x)).lower()
+
+        parts = []
+        for token in re.split(r"(\d+)", s):
+            if token == "":
+                continue
+            if token.isdigit():
+                parts.append((0, int(token)))
+            else:
+                parts.append((1, to_pinyin(token)))
+
+        return tuple(parts)
+
     def get_queryset(self):
-        qs = super().get_queryset().order_by("id")
+        qs = super().get_queryset()
         request = self.request
 
         # 基础关键字搜索
@@ -117,21 +155,40 @@ class PatientListView(RoleRequiredMixin, ListView):
             if lookup:
                 qs = qs.filter(**lookup)
 
-        # 自然发作状态：假定布尔字段 natural_seizure_state（1=有, 0=无）
-        natural_state = request.GET.get("natural_state")
-        if natural_state in ("1", "0") and self._field_exists("natural_seizure_state"):
-            value = (natural_state == "1")
-            try:
-                qs = qs.filter(natural_seizure_state=value)
-            except FieldError:
-                pass
+        # 自然发作状态：对应模型字段 seizure_state (AWAKE/SLEEP/BOTH)
+        natural_state = request.GET.get("natural_state", "").strip()
+        if self._field_exists("seizure_state"):
+            # 兼容旧版（1=有, 0=无）：这里解释为“该字段是否已填写”
+            if natural_state in ("1", "0"):
+                try:
+                    if natural_state == "1":
+                        qs = qs.exclude(seizure_state="").exclude(seizure_state__isnull=True)
+                    else:
+                        qs = qs.filter(Q(seizure_state="") | Q(seizure_state__isnull=True))
+                except FieldError:
+                    pass
+            elif natural_state:
+                try:
+                    qs = qs.filter(seizure_state=natural_state)
+                except FieldError:
+                    pass
 
-        # 先兆：假定布尔字段 aura（1=有, 0=无）
-        aura = request.GET.get("aura")
-        if aura in ("1", "0") and self._field_exists("aura"):
-            value = (aura == "1")
+        # 先兆：对应模型字段 aura (Y/N)。若存在 major_aura，也一并纳入“有/无”的判断
+        aura = request.GET.get("aura", "").strip()
+        # 兼容旧版（1=有, 0=无）
+        if aura in ("1", "0"):
+            aura = "Y" if aura == "1" else "N"
+
+        if aura in ("Y", "N") and self._field_exists("aura"):
+            q_yes = Q(aura="Y")
+            q_no = Q(aura="N") | Q(aura="") | Q(aura__isnull=True)
+
+            if self._field_exists("major_aura"):
+                q_yes = q_yes | Q(major_aura="Y")
+                q_no = q_no & (Q(major_aura="N") | Q(major_aura="") | Q(major_aura__isnull=True))
+
             try:
-                qs = qs.filter(aura=value)
+                qs = qs.filter(q_yes if aura == "Y" else q_no)
             except FieldError:
                 pass
 
@@ -174,27 +231,244 @@ class PatientListView(RoleRequiredMixin, ListView):
             request.GET.get("epilepsy_scale_max"),
         )
 
-        # 是否有 MRI / PET / EEG / sEEG 文件
-        for param, rel_name in (
-            ("has_mri", "mri_files"),
-            ("has_pet", "pet_files"),
-            ("has_eeg", "eeg_files"),
-            ("has_seeg", "seeg_files"),
-        ):
-            val = request.GET.get(param)
-            if val not in ("1", "0"):
+        # 关键字过滤：按字段分组（PATIENT_GROUP_FIELDS）
+        # - 输入支持“空格分隔多个词”；多个词之间采用 AND（逐词过滤），分组内字段采用 OR
+        # - 对非文本字段（JSONField/数值/布尔等）先 Cast 成 TextField，再做 icontains，避免数据库不支持导致过滤无效
+        #
+        # ⚠️ 兼容性说明：
+        # 你的 PATIENT_GROUP_FIELDS 可能会因为“字段名/标签（verbose_name）”混用而失效（导致 fields 为空或全都 _field_exists=False）。
+        # 下面会尽量把 PATIENT_GROUP_FIELDS 的值解析回真实字段名；同时提供 param 级别的兜底字段列表。
+        group_param_to_group_names = {
+            "kw_stage1_noninvasive": ["一期无创性评估结果", "一期无创性评估", "无创性评估结果"],
+            "kw_seeg_discharge": [
+                "SEEG 发作间期及发作期放电",
+                "sEEG 发作间期及发作期放电",
+                "SEEG发作间期及发作期放电",
+                "sEEG发作间期及发作期放电",
+            ],
+            "kw_stage2_invasive": ["二期有创性评估结果", "二期有创性评估", "有创性评估结果"],
+            "kw_surgery_plan": ["外科切除计划", "手术切除计划", "外科计划"],
+        }
+
+        # param -> 兜底字段名（确保关键词过滤至少能作用在这些字段上）
+        fallback_param_fields = {
+            "kw_stage1_noninvasive": [
+                "first_stage_lateralization",
+                "first_stage_region",
+                "first_stage_location",
+            ],
+            "kw_seeg_discharge": [
+                "seeg_primary_discharge_zone",
+                "seeg_secondary_discharge_zone",
+                "seeg_other_discharge_zone",
+                "seeg_ictal_onset_zone",
+                "seeg_ictal_spread_zone_sequence",
+                "seeg_interictal_overall",
+                "seeg_group1",
+                "seeg_group2",
+                "seeg_group3",
+                "seeg_ictal",
+                "seeg_thermocoagulation",
+            ],
+            "kw_stage2_invasive": [
+                "second_stage_core_zone",
+                "second_stage_hypothesis_zone",
+            ],
+            "kw_surgery_plan": [
+                "resection_plan_convex",
+                "resection_plan_concave",
+                "resection_plan",
+            ],
+        }
+
+        def _normalize_fields(obj):
+            """把 PATIENT_GROUP_FIELDS[group] 的各种可能形态统一成 field token 列表。"""
+            if obj is None:
+                return []
+            if isinstance(obj, dict):
+                iterable = obj.keys()
+            elif isinstance(obj, (list, tuple, set)):
+                iterable = obj
+            else:
+                return []
+            out = []
+            for it in iterable:
+                if isinstance(it, (list, tuple)) and it:
+                    out.append(str(it[0]).strip())
+                else:
+                    out.append(str(it).strip())
+            return [x for x in out if x]
+
+        def _resolve_field_token(token: str):
+            """把 token（可能是字段名/verbose_name/其它标签）解析成真实字段名。"""
+            token = ("" if token is None else str(token)).strip()
+            if not token:
+                return None
+
+            # ORM 路径（关联字段）直接放行
+            if "__" in token:
+                return token
+
+            # 真实字段名
+            if self._field_exists(token):
+                return token
+
+            # verbose_name / 标签 -> 字段名
+            want = re.sub(r"\s+", "", token)
+            for f in self.model._meta.get_fields():
+                if not getattr(f, "concrete", False) or getattr(f, "many_to_many", False):
+                    continue
+                vn = getattr(f, "verbose_name", None)
+                if vn is None:
+                    continue
+                vn_norm = re.sub(r"\s+", "", str(vn))
+                if vn_norm == want or vn_norm.startswith(want) or (want and want in vn_norm):
+                    return f.name
+
+            return None
+
+        def _get_group_fields(param: str, candidates):
+            """从 PATIENT_GROUP_FIELDS 取字段，并做最大化容错解析；必要时使用 fallback。"""
+            candidates = list(candidates or [])
+
+            # 额外兼容：有人会把 key 写成 param 或简写
+            candidates.extend([
+                param,
+                param.replace("kw_", ""),
+                param.replace("kw_", "").replace("_", " "),
+            ])
+
+            raw_fields = []
+
+            # 1) 直接 key 命中
+            for name in candidates:
+                if name in (PATIENT_GROUP_FIELDS or {}):
+                    raw_fields = _normalize_fields((PATIENT_GROUP_FIELDS or {}).get(name))
+                    break
+
+            # 2) key 去空白后命中
+            if not raw_fields:
+                normalized = {re.sub(r"\s+", "", str(k)): v for k, v in (PATIENT_GROUP_FIELDS or {}).items()}
+                for name in candidates:
+                    key = re.sub(r"\s+", "", str(name or ""))
+                    if key in normalized:
+                        raw_fields = _normalize_fields(normalized.get(key))
+                        break
+
+            # 3) token -> 真实字段名（或 ORM 路径）
+            resolved = []
+            for token in raw_fields:
+                real = _resolve_field_token(token)
+                if real:
+                    resolved.append(real)
+
+            # 4) param 兜底字段
+            if not resolved and param in fallback_param_fields:
+                for f in fallback_param_fields[param]:
+                    if "__" in f or self._field_exists(f):
+                        resolved.append(f)
+
+            # 去重（保序）
+            seen = set()
+            out = []
+            for f in resolved:
+                if f in seen:
+                    continue
+                seen.add(f)
+                out.append(f)
+            return out
+
+        for param, group_names in group_param_to_group_names.items():
+            raw = (request.GET.get(param) or "").strip()
+            if not raw:
                 continue
-            try:
-                if val == "1":
-                    qs = qs.filter(**{f"{rel_name}__isnull": False})
-                else:  # val == "0"
-                    qs = qs.filter(**{f"{rel_name}__isnull": True})
-            except FieldError:
-                # 关系名不正确时直接忽略该条件
-                pass
+
+            fields = _get_group_fields(param, group_names)
+            if not fields:
+                continue
+
+            # 为分组内“非文本字段”准备 Cast 注解
+            field_alias = {}
+            annotations = {}
+            for field in fields:
+                if "__" in field:
+                    continue
+                if not self._field_exists(field):
+                    continue
+                try:
+                    mf = self.model._meta.get_field(field)
+                except Exception:
+                    continue
+
+                if isinstance(mf, (models.CharField, models.TextField)):
+                    continue
+
+                alias = "cast_" + re.sub(r"[^0-9a-zA-Z_]+", "_", field)
+                field_alias[field] = alias
+                annotations[alias] = Cast(F(field), output_field=models.TextField())
+
+            if annotations:
+                qs = qs.annotate(**annotations)
+
+            # 多关键词：逐词 AND；分组字段：OR
+            for kw in [x for x in re.split(r"\s+", raw) if x]:
+                q_obj = Q()
+                for field in fields:
+                    try:
+                        if "__" in field:
+                            q_obj |= Q(**{f"{field}__icontains": kw})
+                        elif field in field_alias:
+                            q_obj |= Q(**{f"{field_alias[field]}__icontains": kw})
+                        else:
+                            if not self._field_exists(field):
+                                continue
+                            q_obj |= Q(**{f"{field}__icontains": kw})
+                    except Exception:
+                        continue
+
+                if q_obj:
+                    qs = qs.filter(q_obj)
 
         # 防止关联过滤导致重复
-        return qs.distinct()
+        qs = qs.distinct()
+
+        # ---------- 排序（点击表头） ----------
+        sort = (request.GET.get("sort") or "").strip()
+        direction = (request.GET.get("dir") or "asc").lower()
+        if direction not in ("asc", "desc"):
+            direction = "asc"
+        reverse = (direction == "desc")
+
+        allowed = {"name", "gender", "birthday", "bed_number", "admission_date"}
+        if sort not in allowed:
+            return qs.order_by("id")
+
+        # 日期字段：用数据库排序
+        if sort in ("birthday", "admission_date"):
+            order = f"-{sort}" if reverse else sort
+            return qs.order_by(order, "id")
+
+        # 其余：Python 侧排序（支持拼音/自定义顺序）
+        objs = list(qs)
+
+        # 先按 id 排一次，保证主键稳定（随后再按主排序规则排序）
+        objs.sort(key=lambda o: o.id)
+
+        if sort == "gender":
+            order_map = {"M": 0, "F": 1, "O": 2}
+            objs.sort(key=lambda o: order_map.get(getattr(o, "gender", None), 9), reverse=reverse)
+            return objs
+
+        if sort == "name":
+            objs.sort(key=lambda o: self._pinyin_natural_key(getattr(o, "name", "")), reverse=reverse)
+            return objs
+
+        if sort == "bed_number":
+            objs.sort(key=lambda o: self._pinyin_natural_key(getattr(o, "bed_number", "")), reverse=reverse)
+            return objs
+
+        return objs
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -225,10 +499,10 @@ class PatientListView(RoleRequiredMixin, ListView):
                 "bdi_max": request.GET.get("bdi_max", ""),
                 "epilepsy_scale_min": request.GET.get("epilepsy_scale_min", ""),
                 "epilepsy_scale_max": request.GET.get("epilepsy_scale_max", ""),
-                "has_mri": request.GET.get("has_mri", ""),
-                "has_pet": request.GET.get("has_pet", ""),
-                "has_eeg": request.GET.get("has_eeg", ""),
-                "has_seeg": request.GET.get("has_seeg", ""),
+                "kw_stage1_noninvasive": request.GET.get("kw_stage1_noninvasive", ""),
+                "kw_seeg_discharge": request.GET.get("kw_seeg_discharge", ""),
+                "kw_stage2_invasive": request.GET.get("kw_stage2_invasive", ""),
+                "kw_surgery_plan": request.GET.get("kw_surgery_plan", ""),
             }
         )
 
@@ -254,12 +528,48 @@ class PatientListView(RoleRequiredMixin, ListView):
             "bdi_max",
             "epilepsy_scale_min",
             "epilepsy_scale_max",
-            "has_mri",
-            "has_pet",
-            "has_eeg",
-            "has_seeg",
+            "kw_stage1_noninvasive",
+            "kw_seeg_discharge",
+            "kw_stage2_invasive",
+            "kw_surgery_plan",
         ]
         context["advanced_open"] = any(request.GET.get(k) for k in advanced_keys)
+
+
+        # ---------- 表头排序回显 & 链接 ----------
+        sort = (request.GET.get("sort") or "").strip()
+        direction = (request.GET.get("dir") or "asc").lower()
+        if direction not in ("asc", "desc"):
+            direction = "asc"
+
+        allowed = {"name", "gender", "birthday", "bed_number", "admission_date"}
+        if sort not in allowed:
+            sort = ""
+
+        context["sort"] = sort
+        context["dir"] = direction
+
+        # base_qs：保留除 sort/dir/page 之外的查询参数（用于表头排序和分页）
+        params = request.GET.copy()
+        for k in ("sort", "dir", "page"):
+            if k in params:
+                params.pop(k)
+        base_qs = params.urlencode()
+        context["base_qs"] = base_qs
+
+        def _mk_url(field: str, next_dir: str) -> str:
+            prefix = f"?{base_qs}&" if base_qs else "?"
+            return f"{prefix}sort={field}&dir={next_dir}"
+
+        sort_fields = ["name", "gender", "birthday", "bed_number", "admission_date"]
+        sort_links = {}
+        for field in sort_fields:
+            is_cur = (sort == field)
+            next_dir = "desc" if (is_cur and direction == "asc") else "asc"
+            icon = "▲" if (is_cur and direction == "asc") else ("▼" if (is_cur and direction == "desc") else "")
+            sort_links[field] = {"url": _mk_url(field, next_dir), "icon": icon}
+
+        context["sort_links"] = sort_links
 
         return context
 
@@ -349,13 +659,20 @@ class PatientCreateView(RoleRequiredMixin, CreateView):
         messages.success(self.request, "保存成功")
         return redirect(self.request.path)
 
-    def form_invalid(self, form):
-        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return JsonResponse({
-                "success": False,
-                "errors": form.errors,
-            })
-        return super().form_invalid(form)
+    
+def form_invalid(self, form):
+    if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+        # Ensure JSON-serializable errors (list of strings per field)
+        try:
+            data = form.errors.get_json_data(escape_html=True)
+            errors = {k: [e.get("message", "") for e in v] for k, v in data.items()}
+        except Exception:
+            errors = {k: [str(e) for e in v] for k, v in form.errors.items()}
+        return JsonResponse({
+            "success": False,
+            "errors": errors,
+        })
+    return super().form_invalid(form)
 
 
 class PatientUpdateView(RoleRequiredMixin, UpdateView):
@@ -383,10 +700,17 @@ class PatientUpdateView(RoleRequiredMixin, UpdateView):
         messages.success(self.request, "保存成功")
         return redirect(self.request.path)
 
-    def form_invalid(self, form):
-        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return JsonResponse({"success": False, "errors": form.errors})
-        return super().form_invalid(form)
+    
+def form_invalid(self, form):
+    if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+        # Ensure JSON-serializable errors (list of strings per field)
+        try:
+            data = form.errors.get_json_data(escape_html=True)
+            errors = {k: [e.get("message", "") for e in v] for k, v in data.items()}
+        except Exception:
+            errors = {k: [str(e) for e in v] for k, v in form.errors.items()}
+        return JsonResponse({"success": False, "errors": errors})
+    return super().form_invalid(form)
 
 
 @login_required
@@ -623,14 +947,24 @@ def patient_detail(request, pk):
             if len(out) >= 60:
                 break
         return out
-
+    def all_images(qs):
+        out = []
+        for f in qs.order_by("-created_at"):
+            ext = os.path.splitext(getattr(f, "file_name", "") or "")[1].lower()
+            if ext in allowed_ext:
+                out.append(f)
+        return out
     context = {
         "patient": patient,
         "form": form,
-        "preview_mri": first_three_images(patient.mri_files.all()),
-        "preview_pet": first_three_images(patient.pet_files.all()),
-        "preview_eeg": first_three_images(patient.eeg_files.all()),
-        "preview_seeg": first_three_images(patient.seeg_files.all()),
+        # "preview_mri": first_three_images(patient.mri_files.all()),
+        # "preview_pet": first_three_images(patient.pet_files.all()),
+        # "preview_eeg": first_three_images(patient.eeg_files.all()),
+        # "preview_seeg": first_three_images(patient.seeg_files.all()),
+        "preview_mri": all_images(patient.mri_files.all()),
+        "preview_pet": all_images(patient.pet_files.all()),
+        "preview_eeg": all_images(patient.eeg_files.all()),
+        "preview_seeg": all_images(patient.seeg_files.all()),
     }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":

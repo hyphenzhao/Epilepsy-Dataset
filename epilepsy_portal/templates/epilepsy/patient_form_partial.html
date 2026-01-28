@@ -539,7 +539,7 @@
             <div class="col-md-4">
               {{ form.frequency.label_tag }}
               {{ form.frequency }}
-              {{ form.frequency.error }}
+              {{ form.frequency.errors }}
             </div>
 
             <div class="col-md-4">
@@ -1402,66 +1402,345 @@
 
 <script>
 (function() {
-  var form = document.querySelector("#patientAccordion");
-  if (!form) return;
-  form = form.closest("form");
+  var accordion = document.querySelector("#patientAccordion");
+  if (!accordion) return;
+  var form = accordion.closest("form");
   if (!form) return;
 
-  //========= 工具函数 =========//
+  // ============================================================
+  // UI helpers (required markers + inline errors + jump-to-error)
+  // ============================================================
+  window.EPI_FORM_UI = window.EPI_FORM_UI || {};
+
+  function _getGlobalErrorBox() {
+    var box = form.querySelector("#js-form-global-errors");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "js-form-global-errors";
+      box.className = "alert alert-danger d-none";
+      box.style.whiteSpace = "pre-line";
+
+      // Put it right under CSRF token
+      var csrf = form.querySelector('input[name="csrfmiddlewaretoken"]');
+      if (csrf && csrf.parentNode) {
+        csrf.parentNode.insertBefore(box, csrf.nextSibling);
+      } else {
+        form.insertBefore(box, form.firstChild);
+      }
+    }
+    return box;
+  }
+
+  function _normalizeMsgs(v) {
+    if (v == null) return [];
+    if (typeof v === "string") return [v];
+    if (Array.isArray(v)) {
+      return v.map(function(x) {
+        if (x == null) return "";
+        if (typeof x === "string") return x;
+        if (typeof x === "object" && x.message) return x.message;
+        return String(x);
+      }).filter(Boolean);
+    }
+    if (typeof v === "object") {
+      if (v.message) return [String(v.message)];
+      return [String(v)];
+    }
+    return [String(v)];
+  }
+
+  function clearErrors() {
+    form.querySelectorAll(".js-inline-error").forEach(function(el) { el.remove(); });
+    form.querySelectorAll(".is-invalid").forEach(function(el) { el.classList.remove("is-invalid"); });
+    form.querySelectorAll(".js-group-invalid").forEach(function(el) {
+      el.classList.remove("js-group-invalid", "border", "border-danger", "rounded", "p-2");
+    });
+
+    var box = _getGlobalErrorBox();
+    box.textContent = "";
+    box.classList.add("d-none");
+  }
+
+  function _markInvalid(target) {
+    if (!target) return;
+    if (target.matches && target.matches("input, select, textarea")) {
+      target.classList.add("is-invalid");
+      return;
+    }
+    target.classList.add("js-group-invalid", "border", "border-danger", "rounded", "p-2");
+    target.querySelectorAll("input, select, textarea").forEach(function(el) {
+      el.classList.add("is-invalid");
+    });
+  }
+
+  function setInlineError(target, message) {
+    if (!target) return;
+
+    _markInvalid(target);
+
+    var msg = document.createElement("div");
+    msg.className = "invalid-feedback d-block js-inline-error";
+    msg.textContent = message || "输入有误";
+
+    if (typeof target.insertAdjacentElement === "function") {
+      target.insertAdjacentElement("afterend", msg);
+    } else if (target.parentNode) {
+      target.parentNode.appendChild(msg);
+    }
+  }
+
+  function showErrors(errors) {
+    clearErrors();
+
+    var firstTarget = null;
+
+    var nonField = [];
+    if (errors) {
+      if (errors.__all__) nonField = nonField.concat(_normalizeMsgs(errors.__all__));
+      if (errors.non_field_errors) nonField = nonField.concat(_normalizeMsgs(errors.non_field_errors));
+    }
+    if (nonField.length) {
+      var box = _getGlobalErrorBox();
+      box.textContent = nonField.join("\n");
+      box.classList.remove("d-none");
+    }
+
+    if (errors) {
+      Object.keys(errors).forEach(function(fname) {
+        if (fname === "__all__" || fname === "non_field_errors") return;
+
+        var msgs = _normalizeMsgs(errors[fname]);
+        if (!msgs.length) return;
+
+        var target = document.getElementById("id_" + fname);
+
+        // CheckboxSelectMultiple etc: Django uses wrapper div with id="id_xxx"
+        if (target && !(target.matches && target.matches("input, select, textarea"))) {
+          var focusable = target.querySelector("input, select, textarea");
+          if (focusable) {
+            _markInvalid(focusable);
+            setInlineError(target, msgs[0]);
+            if (!firstTarget) firstTarget = focusable;
+            return;
+          }
+        }
+
+        if (target) {
+          setInlineError(target, msgs[0]);
+          if (!firstTarget) firstTarget = target;
+        }
+      });
+    }
+
+    if (firstTarget) {
+      var collapse = firstTarget.closest(".collapse");
+      if (collapse && typeof $ !== "undefined" && $.fn.collapse) {
+        $(collapse).collapse("show");
+      } else if (collapse) {
+        collapse.classList.add("show");
+      }
+
+      setTimeout(function() {
+        try {
+          firstTarget.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (typeof firstTarget.focus === "function") firstTarget.focus({ preventScroll: true });
+        } catch (e) {}
+      }, 250);
+    }
+  }
+
+  function refreshRequiredMarkers(rootForm) {
+    var f = rootForm || form;
+
+    // per-field stars (based on HTML required attribute)
+    f.querySelectorAll("input[required], select[required], textarea[required]").forEach(function(el) {
+      if (!el.id) return;
+      var label = f.querySelector('label[for="' + el.id + '"]');
+      if (!label) return;
+
+      if (!label.querySelector(".js-required-star")) {
+        var star = document.createElement("span");
+        star.className = "js-required-star text-danger ml-1";
+        star.textContent = "*";
+        label.appendChild(star);
+      }
+    });
+
+    // section title star
+    f.querySelectorAll('.card-header button[data-target^="#collapse"]').forEach(function(btn) {
+      var sel = btn.getAttribute("data-target");
+      if (!sel) return;
+      var panel = document.querySelector(sel);
+      if (!panel) return;
+
+      var hasReq = !!panel.querySelector("input[required], select[required], textarea[required]");
+      var hasStar = !!btn.querySelector(".js-section-required-star");
+
+      if (hasReq && !hasStar) {
+        var s = document.createElement("span");
+        s.className = "js-section-required-star text-danger ml-1";
+        s.textContent = "*";
+        btn.appendChild(s);
+      }
+      if (!hasReq && hasStar) {
+        btn.querySelector(".js-section-required-star").remove();
+      }
+    });
+  }
+
+  window.EPI_FORM_UI.clearErrors = clearErrors;
+  window.EPI_FORM_UI.showErrors = showErrors;
+  window.EPI_FORM_UI.setInlineError = setInlineError;
+  window.EPI_FORM_UI.refreshRequiredMarkers = refreshRequiredMarkers;
+
+  // initial paint
+  refreshRequiredMarkers(form);
+
+  // ============================================================
+  // File upload helpers (DataTransfer: accumulate + removable)
+  // ============================================================
   function hasFilesToUpload() {
     var names = ["mri_files", "pet_files", "eeg_files", "seeg_files"];
     for (var i = 0; i < names.length; i++) {
       var input = form.querySelector('input[name="' + names[i] + '"]');
-      if (input && input.files && input.files.length > 0) {
-        return true;
-      }
+      if (input && input.files && input.files.length > 0) return true;
     }
     return false;
   }
 
-  //========= “添加文件” 按钮：触发隐藏的 <input type="file"> =========//
+  // “添加文件” triggers hidden input
   form.querySelectorAll(".js-add-file-btn").forEach(function(btn) {
     btn.addEventListener("click", function() {
       var sel = btn.getAttribute("data-input-selector");
       var input = form.querySelector(sel);
-      if (input) {
-        input.click();
-      }
+      if (input) input.click();
     });
   });
 
-  //========= 文件 input 变更时，在表格中增加“待上传”行 =========//
-  function bindFileInput(fieldType) {
-    var inputName = fieldType + "_files";
-    var input = form.querySelector('input[name="' + inputName + '"]');
-    var tbody = form.querySelector('tbody[data-file-type="' + fieldType + '"]');
-    if (!input || !tbody) return;
+  // Maintain cumulative file lists per type, and allow removing pending files.
+  var _supportsDataTransfer = (typeof DataTransfer !== "undefined");
+  var _dtMap = _supportsDataTransfer ? {
+    mri: new DataTransfer(),
+    pet: new DataTransfer(),
+    eeg: new DataTransfer(),
+    seeg: new DataTransfer()
+  } : null;
+
+  function _fileKey(f) { return [f.name, f.size, f.lastModified].join("|"); }
+  function _getTbody(type) { return form.querySelector('tbody[data-file-type="' + type + '"]'); }
+  function _getInput(type) { return form.querySelector('input[name="' + type + '_files"]'); }
+
+  function _rebuildInputFiles(type) {
+    if (!_supportsDataTransfer) return;
+    var input = _getInput(type);
+    if (input && _dtMap && _dtMap[type]) input.files = _dtMap[type].files;
+  }
+
+  function _ensureEmptyRow(tbody) {
+    if (!tbody) return;
+    if (tbody.querySelectorAll("tr").length > 0) return;
+    var tr = document.createElement("tr");
+    tr.className = "js-empty-row";
+    tr.innerHTML = '<td colspan="4" class="text-muted">暂无文件</td>';
+    tbody.appendChild(tr);
+  }
+
+  function _hasPendingRow(tbody, key) {
+    var rows = Array.from(tbody.querySelectorAll('tr[data-new-file-key]'));
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute("data-new-file-key") === key) return true;
+    }
+    return false;
+  }
+
+  function _appendPendingRow(tbody, file, key) {
+    var tr = document.createElement("tr");
+    tr.setAttribute("data-new-file", "1");
+    tr.setAttribute("data-new-file-key", key);
+    tr.innerHTML =
+      "<td>" + file.name + "</td>" +
+      "<td>待上传</td>" +
+      "<td>—</td>" +
+      '<td><button type="button" class="btn btn-sm btn-outline-danger js-row-remove">删除</button></td>';
+    tbody.appendChild(tr);
+  }
+
+  function _addFiles(type, files) {
+    var tbody = _getTbody(type);
+    if (!tbody) return;
+
+    var emptyRow = tbody.querySelector(".js-empty-row");
+    if (emptyRow) emptyRow.parentNode.removeChild(emptyRow);
+
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var key = _fileKey(f);
+
+      if (_supportsDataTransfer && _dtMap && _dtMap[type]) {
+        // de-dup
+        var exists = false;
+        var existingFiles = Array.from(_dtMap[type].files);
+        for (var j = 0; j < existingFiles.length; j++) {
+          if (_fileKey(existingFiles[j]) === key) { exists = true; break; }
+        }
+        if (!exists) _dtMap[type].items.add(f);
+      }
+
+      if (!_hasPendingRow(tbody, key)) _appendPendingRow(tbody, f, key);
+    }
+
+    _rebuildInputFiles(type);
+  }
+
+  function _removePendingFile(type, key) {
+    if (!_supportsDataTransfer || !_dtMap || !_dtMap[type]) return;
+    var next = new DataTransfer();
+    var files = Array.from(_dtMap[type].files);
+    for (var i = 0; i < files.length; i++) {
+      if (_fileKey(files[i]) !== key) next.items.add(files[i]);
+    }
+    _dtMap[type] = next;
+    _rebuildInputFiles(type);
+  }
+
+  function resetPendingUploads() {
+    ["mri", "pet", "eeg", "seeg"].forEach(function(type) {
+      var tbody = _getTbody(type);
+      if (tbody) {
+        Array.from(tbody.querySelectorAll('tr[data-new-file="1"]')).forEach(function(r) {
+          r.parentNode.removeChild(r);
+        });
+        _ensureEmptyRow(tbody);
+      }
+
+      var input = _getInput(type);
+      if (input) input.value = "";
+
+      if (_supportsDataTransfer && _dtMap) {
+        _dtMap[type] = new DataTransfer();
+        _rebuildInputFiles(type);
+      }
+    });
+  }
+
+  function bindFileInput(type) {
+    var input = _getInput(type);
+    if (!input) return;
 
     input.addEventListener("change", function() {
       var files = Array.from(input.files || []);
       if (!files.length) return;
 
-      var emptyRow = tbody.querySelector(".js-empty-row");
-      if (emptyRow) {
-        emptyRow.parentNode.removeChild(emptyRow);
-      }
+      _addFiles(type, files);
 
-      files.forEach(function(f) {
-        var tr = document.createElement("tr");
-        tr.setAttribute("data-new-file", "1");
-        tr.innerHTML =
-          "<td>" + f.name + "</td>" +
-          "<td>待上传</td>" +
-          "<td>—</td>" +
-          '<td><button type="button" class="btn btn-sm btn-outline-danger js-row-remove">删除</button></td>';
-        tbody.appendChild(tr);
-      });
+      // allow selecting the same file again
+      input.value = "";
     });
   }
 
   ["mri", "pet", "eeg", "seeg"].forEach(bindFileInput);
 
-  //========= 点击“删除”按钮：对已有文件记录，记入隐藏字段；对新文件直接移除行 =========//
+  // Delete: existing -> mark hidden delete ids; pending -> remove from DataTransfer
   form.addEventListener("click", function(evt) {
     var target = evt.target;
     if (!target.classList.contains("js-row-remove")) return;
@@ -1473,32 +1752,40 @@
     var tbody = tr.closest("tbody");
     var type = tbody ? tbody.getAttribute("data-file-type") : null;
 
-    // 已存在的文件（数据库中已有），记录到 delete_xxx_file_ids
     if (fileId && type) {
       var hiddenName = "delete_" + type + "_file_ids";
       var hidden = form.querySelector('input[name="' + hiddenName + '"]');
       if (hidden) {
         var current = hidden.value ? hidden.value.split(",") : [];
-        if (current.indexOf(fileId) === -1) {
-          current.push(fileId);
-        }
+        if (current.indexOf(fileId) === -1) current.push(fileId);
         hidden.value = current.join(",");
       }
     }
 
-    // 从表格中移除行
+    var pendingKey = tr.getAttribute("data-new-file-key");
+    if (pendingKey && type) _removePendingFile(type, pendingKey);
+
     tr.parentNode.removeChild(tr);
+    if (tbody) _ensureEmptyRow(tbody);
   });
 
-  //========= 表单提交：统一走 XHR；如有文件则弹出进度条窗口 =========//
+  // ============================================================
+  // Submit via XHR (show errors inline, jump-to-error)
+  // ============================================================
   form.addEventListener("submit", function(evt) {
     evt.preventDefault();
+
+    if (window.EPI_FORM_UI && window.EPI_FORM_UI.clearErrors) window.EPI_FORM_UI.clearErrors();
+
+    if (typeof validatePatientFormFormat === "function") {
+      var ok = validatePatientFormFormat();
+      if (!ok) return;
+    }
 
     var hasFiles = hasFilesToUpload();
     var modalEl = document.getElementById("uploadProgressModal");
     var progressBar = document.getElementById("uploadProgressBar");
 
-    // 有待上传文件 -> 弹出阻塞窗口
     if (hasFiles && modalEl && typeof $ !== "undefined" && $.fn.modal) {
       $(modalEl).modal("show");
       if (progressBar) {
@@ -1525,34 +1812,35 @@
         $(modalEl).modal("hide");
       }
 
-      if (xhr.status >= 200 && xhr.status < 300) {
-        var data = {};
-        try {
-          data = JSON.parse(xhr.responseText || "{}");
-        } catch (e) {}
+      var data = {};
+      try { data = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
 
+      if (xhr.status >= 200 && xhr.status < 300) {
         if (data.success) {
-          // 如果外层页面定义了关闭抽屉的回调，就调用；否则直接刷新
-          // if (window.onPatientFormSaved) {
-          //   window.onPatientFormSaved();
-          // } else {
-          //   window.location.reload();
-          // }
           alert("保存成功！");
+          resetPendingUploads();
+          refreshRequiredMarkers(form);
           if (data.keep_open === false && window.onPatientFormSaved) {
-              window.onPatientFormSaved();
-              return;
+            window.onPatientFormSaved();
           }
+          return;
+        }
+
+        if (window.EPI_FORM_UI && window.EPI_FORM_UI.showErrors) {
+          window.EPI_FORM_UI.showErrors(data.errors || {});
         } else {
           alert("保存失败，请检查表单错误。");
         }
-      } else {
-        alert("上传失败，HTTP 状态码: " + xhr.status);
+        return;
       }
+
+      // non-2xx
+      var box = _getGlobalErrorBox();
+      box.textContent = "提交失败，HTTP 状态码: " + xhr.status;
+      box.classList.remove("d-none");
     };
 
-    var formData = new FormData(form);
-    xhr.send(formData);
+    xhr.send(new FormData(form));
   });
 })();
 </script>
@@ -1571,6 +1859,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (wrapFocal) wrapFocal.style.display = hasFocal ? "" : "none";
     if (wrapLat) wrapLat.style.display = hasLat ? "" : "none";
+
+    var focalSel = document.getElementById("id_eeg_interictal_focal_lobe");
+    var latSel = document.getElementById("id_eeg_interictal_laterality");
+    if (focalSel) focalSel.required = hasFocal;
+    if (latSel) latSel.required = hasLat;
+    if (window.EPI_FORM_UI && window.EPI_FORM_UI.refreshRequiredMarkers) window.EPI_FORM_UI.refreshRequiredMarkers();
   }
 
   boxes.forEach(cb => cb.addEventListener("change", toggle));
@@ -1590,11 +1884,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const opt = sel.options[sel.selectedIndex];
       const val = (sel.value || "").trim();
       const text = (opt ? opt.textContent : "").trim();
-      return val === "RELATED_CHANGE" || text === "相关改变";
+      return val === "changed" || text === "相关改变";
     }
 
     function toggle() {
-      wrap.style.display = isRelated() ? "" : "none";
+      var show = isRelated();
+      wrap.style.display = show ? "" : "none";
+      // When visible, mark inner controls as required (matches backend conditional validation)
+      wrap.querySelectorAll("input, select, textarea").forEach(function(el){ el.required = show; });
+      if (window.EPI_FORM_UI && window.EPI_FORM_UI.refreshRequiredMarkers) window.EPI_FORM_UI.refreshRequiredMarkers();
     }
 
     sel.addEventListener("change", toggle);
@@ -1641,11 +1939,15 @@ document.addEventListener('DOMContentLoaded', function () {
   function isAbnormal() {
     const v = (sel.value || '').trim();
     const t = (sel.options[sel.selectedIndex]?.textContent || '').trim();
-    return v === 'ABNORMAL' || t === '异常';
+    return v === 'A' || t === '异常';
   }
 
   function toggle() {
     wrap.style.display = isAbnormal() ? '' : 'none';
+
+    var textarea = document.getElementById('id_neuro_exam_description');
+    if (textarea) textarea.required = isAbnormal();
+    if (window.EPI_FORM_UI && window.EPI_FORM_UI.refreshRequiredMarkers) window.EPI_FORM_UI.refreshRequiredMarkers();
 
     // 可选：隐藏时清空，避免误保存
     if (!isAbnormal()) {
@@ -1689,12 +1991,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const val = (auraSel.value || "").trim();
     const opt = auraSel.options[auraSel.selectedIndex];
     const text = (opt ? opt.textContent : "").trim();
-    return val === "YES" || text === "有";
+    return val === "Y" || text === "有";
   }
 
   function toggleAuraText() {
     const show = isAuraYes();
     wrap.style.display = show ? "" : "none";
+    if (input) input.required = show;
+    if (window.EPI_FORM_UI && window.EPI_FORM_UI.refreshRequiredMarkers) window.EPI_FORM_UI.refreshRequiredMarkers();
     if (!show && input) input.value = "";
   }
 
@@ -1735,10 +2039,167 @@ document.addEventListener("DOMContentLoaded", function () {
   function toggleAuraText() {
     const show = isAuraYes();
     wrap.style.display = show ? "" : "none";
+    if (input) input.required = show;
+    if (window.EPI_FORM_UI && window.EPI_FORM_UI.refreshRequiredMarkers) window.EPI_FORM_UI.refreshRequiredMarkers();
     if (!show && input) input.value = "";
   }
 
   auraSel.addEventListener("change", toggleAuraText);
   toggleAuraText();
 });
+</script>
+
+<script>
+  function validatePatientFormFormat() {
+    var ok = true;
+
+    var accordion = document.querySelector("#patientAccordion");
+    var form = accordion ? accordion.closest("form") : document.querySelector("form");
+
+    // 允许：12、12.5、12-15、12~15
+    var re = /^\s*\d+(?:\.\d+)?(?:\s*[\-~–]\s*\d+(?:\.\d+)?)?\s*$/;
+
+    var ui = window.EPI_FORM_UI || null;
+
+    function clearInvalid(el) {
+      if (!el) return;
+      if (typeof el.setCustomValidity === "function") el.setCustomValidity("");
+      el.classList.remove("is-invalid");
+    }
+
+    function setInvalid(el, msg) {
+      ok = false;
+      if (!el) return;
+      if (typeof el.setCustomValidity === "function") el.setCustomValidity(msg || "格式错误");
+      el.classList.add("is-invalid");
+      if (ui && typeof ui.setInlineError === "function") {
+        // show message below the field
+        ui.setInlineError(el, msg || "输入有误");
+      }
+    }
+
+    // start with a clean state (remove previous inline messages)
+    if (ui && typeof ui.clearErrors === "function") ui.clearErrors();
+
+    // 1) data-validate="number-range"：允许数字或范围
+    document.querySelectorAll('[data-validate="number-range"]').forEach(function(el) {
+      clearInvalid(el);
+      var v = (el.value || "").trim();
+      if (!v) return;
+      if (!re.test(v)) setInvalid(el, "请输入数字或范围（例如 3、3.5、3-5）");
+    });
+
+    // 2) 条件必填：aura/major aura/neuro exam
+    var auraSel = document.getElementById("id_aura");
+    var auraText = document.getElementById("id_aura_text");
+    if (auraSel && auraText) {
+      clearInvalid(auraText);
+      if ((auraSel.value || "").trim() === "Y" && !(auraText.value || "").trim()) {
+        setInvalid(auraText, "选择“有”时请填写先兆描述");
+      }
+    }
+
+    var majorAuraSel = document.getElementById("id_major_aura");
+    var majorAuraText = document.getElementById("id_major_aura_text");
+    if (majorAuraSel && majorAuraText) {
+      clearInvalid(majorAuraText);
+      if ((majorAuraSel.value || "").trim() === "Y" && !(majorAuraText.value || "").trim()) {
+        setInvalid(majorAuraText, "选择“有”时请填写先兆描述");
+      }
+    }
+
+    var neuroSel = document.getElementById("id_neuro_exam");
+    var neuroDesc = document.getElementById("id_neuro_exam_description");
+    if (neuroSel && neuroDesc) {
+      clearInvalid(neuroDesc);
+      if ((neuroSel.value || "").trim() === "A" && !(neuroDesc.value || "").trim()) {
+        setInvalid(neuroDesc, "选择“异常”时请补充异常描述");
+      }
+    }
+
+    // 3) 量表：已做时至少填一个
+    var assessSel = document.getElementById("id_assessment_done");
+    if (assessSel && (assessSel.value || "").trim() === "YES") {
+      var scoreIds = ["id_moca_score","id_mmse_score","id_hama_score","id_hamd_score","id_bai_score","id_bdi_score","id_epilepsy_scale_score"];
+      var hasAny = scoreIds.some(function(id){
+        var el = document.getElementById(id);
+        return el && (el.value || "").trim() !== "";
+      });
+      if (!hasAny) {
+        ok = false;
+        var box = document.getElementById("js-form-global-errors");
+        if (box) {
+          box.textContent = "量表已做：请至少填写一项评分。";
+          box.classList.remove("d-none");
+        } else {
+          alert("量表已做：请至少填写一项评分。");
+        }
+      }
+    }
+
+    // 4) EEG interictal：勾选 FOCAL/LAT 时要求对应字段
+    var interBoxes = Array.prototype.slice.call(document.querySelectorAll('input[name="eeg_interictal_location"]'));
+    if (interBoxes.length) {
+      var hasFocal = interBoxes.some(function(cb){ return cb.checked && cb.value === "FOCAL"; });
+      var hasLat = interBoxes.some(function(cb){ return cb.checked && cb.value === "LAT"; });
+
+      var focalSel = document.getElementById("id_eeg_interictal_focal_lobe");
+      var latSel = document.getElementById("id_eeg_interictal_laterality");
+
+      if (hasFocal && focalSel && !(focalSel.value || "").trim()) setInvalid(focalSel, "选择“局灶”时必须指定叶");
+      if (hasLat && latSel && !(latSel.value || "").trim()) setInvalid(latSel, "选择“偏侧”时必须指定方向");
+    }
+
+    // 5) HV/IPS：结果为 changed 时条件必填
+    var hvSel = document.getElementById("id_eeg_hv_result");
+    if (hvSel && (hvSel.value || "").trim() === "changed") {
+      ["id_eeg_hv_slow_wave_build","id_eeg_hv_slow_wave_frequency","id_eeg_hv_slow_wave_symmetry"].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el && !(el.value || "").trim()) setInvalid(el, "HV 结果为相关改变时必填");
+      });
+
+      var hvDis = document.getElementById("id_eeg_hv_epileptiform_discharge");
+      var hvLat = document.getElementById("id_eeg_hv_discharge_laterality");
+      if (hvDis && (hvDis.value || "").trim() === "Y" && hvLat && !(hvLat.value || "").trim()) {
+        setInvalid(hvLat, "已选择诱发癫痫样放电时需指定放电对侧性");
+      }
+    }
+
+    var ipsSel = document.getElementById("id_ips_result");
+    if (ipsSel && (ipsSel.value || "").trim() === "changed") {
+      var freq = document.getElementById("id_frequency");
+      var lat2 = document.getElementById("id_laterality");
+      if (freq && !(freq.value || "").trim()) setInvalid(freq, "IPS 结果为相关改变时请填写频率");
+      if (lat2 && !(lat2.value || "").trim()) setInvalid(lat2, "IPS 结果为相关改变时请填写侧别");
+    }
+
+    // jump to first invalid
+    if (!ok) {
+      var first = document.querySelector(".is-invalid");
+      if (first) {
+        var collapse = first.closest(".collapse");
+        if (collapse && typeof $ !== "undefined" && $.fn.collapse) {
+          $(collapse).collapse("show");
+        } else if (collapse) {
+          collapse.classList.add("show");
+        }
+        setTimeout(function() {
+          try {
+            first.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (typeof first.focus === "function") first.focus({ preventScroll: true });
+          } catch (e) {}
+        }, 200);
+      }
+      if (form && typeof form.reportValidity === "function") {
+        try { form.reportValidity(); } catch(e) {}
+      }
+    }
+
+    // keep required markers updated (conditional required might toggle)
+    if (window.EPI_FORM_UI && typeof window.EPI_FORM_UI.refreshRequiredMarkers === "function") {
+      window.EPI_FORM_UI.refreshRequiredMarkers();
+    }
+
+    return ok;
+  }
 </script>

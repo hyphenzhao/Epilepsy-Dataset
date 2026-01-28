@@ -147,7 +147,7 @@ class Patient(models.Model):
     # 其他病史（用逗号分隔的编码存储）
     other_medical_history = models.CharField( "其他病史（多选）", max_length=255,blank=True, help_text="多选，用逗号分隔编码存储",)
     family_history = models.CharField("家族病史", max_length=20, blank=True)
-    first_seizure_age = models.PositiveIntegerField("首次发作年龄（岁）", blank=True, null=True)
+    first_seizure_age = models.DecimalField("首次发作年龄（岁）", max_digits=6, decimal_places=2, blank=True, null=True)
     first_seizure_description = models.TextField("首次发作症状", blank=True)
     medication_history = models.TextField("药物治疗", blank=True)
 
@@ -190,19 +190,22 @@ class Patient(models.Model):
     neuro_exam_description = models.TextField( "神经系统检查异常描述", blank=True)
 
     # 【认知和精神量表】
-    assessment_done = models.CharField("量表是否完成", max_length=10,choices=[ ("NO", "未做"), ("YES", "已做"),], blank=True,)
-    moca_score = models.PositiveIntegerField("MoCA 评分", blank=True, null=True)
-    mmse_score = models.PositiveIntegerField("MMSE 评分", blank=True, null=True)
-    hama_score = models.PositiveIntegerField("HAMA 评分", blank=True, null=True)
-    hamd_score = models.PositiveIntegerField("HAMD 评分", blank=True, null=True)
-    bai_score = models.PositiveIntegerField("BAI 评分", blank=True, null=True)
-    bdi_score = models.PositiveIntegerField("BDI 评分", blank=True, null=True)
-    epilepsy_scale_score = models.PositiveIntegerField(
-        "癫痫量表评分", blank=True, null=True )
-
+    moca_score = models.DecimalField("MoCA 评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    mmse_score = models.DecimalField("MMSE 评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    hama_score = models.DecimalField("HAMA 评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    hamd_score = models.DecimalField("HAMD 评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    bai_score  = models.DecimalField("BAI 评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    bdi_score  = models.DecimalField("BDI 评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    epilepsy_scale_score = models.DecimalField("癫痫量表评分", max_digits=6, decimal_places=2, blank=True, null=True)
+    assessment_done = models.CharField(
+        "量表是否完成",
+        max_length=10,
+        choices=[("NO", "未做"), ("YES", "已做")],
+        blank=True,
+    )
     # 【视频头皮 EEG 检查】
     eeg_recording_electrodes = models.CharField( "EEG 记录电极", max_length=20, choices=EEG_RECORDING_ELECTRODES_CHOICES, blank=True)
-    eeg_recording_duration_days = models.PositiveIntegerField("记录时间 (天)", blank=True, null=True)
+    eeg_recording_duration_days = models.DecimalField("记录时间 (天)", max_digits=6, decimal_places=2, blank=True, null=True)
     eeg_bg_occipital_rhythm = models.CharField("枕区优势节律（闭目安静状态）",max_length=100, blank=True,null=True)
     eeg_eye_response = models.CharField(
     "睁/闭眼反应", max_length=100, choices=AURA_CHOICES, blank=True)
@@ -285,7 +288,7 @@ class Patient(models.Model):
     eeg_interictal = models.TextField("EEG 发作期放电描述", blank=True)
     eeg_ictal = models.TextField("EEG 发作期", blank=True)
     eeg_relevance = models.TextField("EEG 相关性", blank=True)
-    eeg_ictal_precede_clinical_sec = models.PositiveIntegerField("EEG发作早于症状出现（秒）",null=True,blank=True,help_text="单位：秒")
+    eeg_ictal_precede_clinical_sec = models.DecimalField("EEG发作早于症状出现（秒）", max_digits=8, decimal_places=2, null=True, blank=True, help_text="单位：秒")
     eeg_clinical_correlation = models.TextField("EEG 同步发作临床症状", blank=True)
     # EEG 文件链接（可选）
     eeg_file_link = models.URLField(
@@ -316,10 +319,11 @@ class Patient(models.Model):
     )
 
     # 【SEEG 发作间期放电及发作期放电】
-    seeg_record_channel_count = models.PositiveIntegerField("记录导联数（个）", null=True, blank=True)
-    seeg_electrode_count = models.PositiveIntegerField("电极植入（根）", null=True, blank=True)
+    seeg_record_channel_count = models.DecimalField("记录导联数（个）", max_digits=8, decimal_places=2, null=True, blank=True)
+    seeg_electrode_count = models.DecimalField("电极植入（根）", max_digits=8, decimal_places=2, null=True, blank=True)
+    seeg_record_duration_days = models.DecimalField("记录时长（天）", max_digits=6, decimal_places=2, null=True, blank=True)
+
     seeg_electrode_coverage = models.CharField("电极覆盖位置", max_length=255, blank=True, default="")
-    seeg_record_duration_days = models.PositiveIntegerField("记录时长（天）", null=True, blank=True)
     seeg_ictal_morph = models.CharField(
     "波幅/波形（多选）",
     max_length=255,
@@ -353,7 +357,7 @@ class Patient(models.Model):
     seeg_group1 = models.TextField("SEEG 发作间期 Group 1", blank=True)
     seeg_group2 = models.TextField("SEEG 发作间期 Group 2", blank=True)
     seeg_group3 = models.TextField("SEEG 发作间期 Group 3", blank=True)
-    seeg_ictal_precede_clinical_sec = models.PositiveIntegerField("SEEG发作早于症状出现（秒）",null=True,blank=True,help_text="单位：秒")
+    seeg_ictal_precede_clinical_sec = models.DecimalField("SEEG发作早于症状出现（秒）", max_digits=8, decimal_places=2, null=True, blank=True, help_text="单位：秒")
     seeg_ictal_amountt = models.CharField("数量", max_length=100, blank=True,null=True)
     seeg_ictal = models.TextField("电刺激结果", blank=True)
     seeg_thermocoagulation = models.TextField("SEEG热凝", blank=True)

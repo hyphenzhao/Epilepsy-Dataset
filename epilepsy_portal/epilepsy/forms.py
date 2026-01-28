@@ -1,10 +1,67 @@
 from django import forms
 from .models import *
 from django.contrib.auth import get_user_model
+import re
 
 User = get_user_model()
 
 class PatientForm(forms.ModelForm):
+    # ---------- Validation helpers ----------
+    _NUMERIC_OR_RANGE_RE = re.compile(r"^\s*\d+(?:\.\d+)?(?:\s*[\-~–]\s*\d+(?:\.\d+)?)?\s*$")
+
+    # 这些字段在模型中是 CharField，但语义上属于“数字/范围”输入（例如 3 或 3-5）
+    _NUMERIC_STRING_FIELDS = [
+        "seizure_duration_seconds",
+        "seizure_freq_per_day",
+        "major_duration",
+        "major_frequency",
+        "eeg_bg_occipital_rhythm",
+        "eeg_hv_slow_wave_frequency",
+        "frequency",
+        "eeg_ictal_amount",
+        "seeg_ictal_amountt",
+    ]
+
+    # 这些字段在模型中以逗号拼接存储，但在表单中以多选框呈现
+    _CSV_MULTISELECT_FIELDS = [
+        "past_medical_history",
+        "other_medical_history",
+        "eeg_interictal_state",
+        "eeg_interictal_location",
+        "eeg_interictal_morph",
+        "eeg_interictal_amount",
+        "eeg_interictal_pattern",
+        "eeg_interictal_eye_relation",
+        "eeg_ictal_state",
+        "eeg_ictal_location",
+        "eeg_onset_pattern",
+        "seeg_ictal_morph",
+        "seeg_ictal_amount",
+        "seeg_ictal_pattern",
+        "seeg_ictal_onset_pattern",
+    ]
+
+    @staticmethod
+    def _split_csv(value):
+        if not value:
+            return []
+        if isinstance(value, (list, tuple)):
+            return [x for x in value if x]
+        if isinstance(value, str):
+            return [x for x in value.split(",") if x]
+        return [str(value)]
+
+    def _validate_numeric_string_fields(self, cleaned):
+        for fname in self._NUMERIC_STRING_FIELDS:
+            if fname not in self.fields:
+                continue
+            v = cleaned.get(fname)
+            if v in (None, ""):
+                continue
+            s = str(v).strip()
+            if not self._NUMERIC_OR_RANGE_RE.match(s):
+                self.add_error(fname, "请输入数字或范围（例如 3、3.5、3-5）")
+
     # 日期字段：生日、入院时间、评估日期 —— 日历选择
     birthday = forms.DateField(
         label="生日",
@@ -73,12 +130,12 @@ class PatientForm(forms.ModelForm):
     label="局灶部位（叶）",
     required=False,
     choices=Patient.FOCAL_LOBE_CHOICES,
-)
+    )
     eeg_interictal_laterality = forms.ChoiceField(
     label="偏侧方向",
     required=False,
     choices=Patient.EEG_INTERICTAL_LATERALITY_CHOICES,
-)
+    )
     
     eeg_interictal_morph = forms.MultipleChoiceField(
         label="波幅、波形",
@@ -570,18 +627,30 @@ class PatientForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 初始化多选框数据（模型里存的是用逗号连接的字符串）
+
+        # ---------- 1) CSV 多选字段：编辑时正确回显 ----------
         if self.instance and self.instance.pk:
-            self.initial["past_medical_history"] = (
-                self.instance.past_medical_history.split(",")
-                if self.instance.past_medical_history
-                else []
-            )
-            self.initial["other_medical_history"] = (
-                self.instance.other_medical_history.split(",")
-                if self.instance.other_medical_history
-                else []
-            )
+            for fname in self._CSV_MULTISELECT_FIELDS:
+                if fname in self.fields:
+                    raw = getattr(self.instance, fname, "") or ""
+                    self.initial[fname] = self._split_csv(raw)
+
+        # ---------- 2) CharField 数字/范围字段：给前端标记 ----------
+        for fname in self._NUMERIC_STRING_FIELDS:
+            if fname not in self.fields:
+                continue
+            w = self.fields[fname].widget
+            if hasattr(w, "attrs"):
+                w.attrs.setdefault("data-validate", "number-range")
+                w.attrs.setdefault("inputmode", "decimal")
+                w.attrs.setdefault("step", "any")
+
+        # ---------- 3) 对所有 NumberInput 放开小数输入（避免浏览器默认 step=1 只允许整数） ----------
+        for _fname, _field in self.fields.items():
+            _w = getattr(_field, "widget", None)
+            if isinstance(_w, forms.NumberInput) and hasattr(_w, "attrs"):
+                _w.attrs.setdefault("step", "any")
+                _w.attrs.setdefault("inputmode", "decimal")
 
     def clean_past_medical_history(self):
         data = self.cleaned_data.get("past_medical_history", [])
@@ -646,21 +715,87 @@ class PatientForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
 
-        locations = cleaned.get("eeg_interictal_location") or []
+        # 基本日期逻辑
+        birthday = cleaned.get("birthday")
+        admission_date = cleaned.get("admission_date")
+        evaluation_date = cleaned.get("evaluation_date")
+        if birthday and admission_date and birthday > admission_date:
+            self.add_error("birthday", "生日不能晚于入院时间。")
+        if evaluation_date and admission_date and evaluation_date < admission_date:
+            self.add_error("evaluation_date", "评估日期不能早于入院时间。")
+
+        # 条件必填：先兆文本
+        aura = cleaned.get("aura")
+        aura_text = (cleaned.get("aura_text") or "").strip()
+        if aura == "Y" and not aura_text:
+            self.add_error("aura_text", "选择“有”时请填写先兆描述。")
+        if aura != "Y":
+            cleaned["aura_text"] = ""
+
+        major_aura = cleaned.get("major_aura")
+        major_aura_text = (cleaned.get("major_aura_text") or "").strip()
+        if major_aura == "Y" and not major_aura_text:
+            self.add_error("major_aura_text", "选择“有”时请填写先兆描述。")
+        if major_aura != "Y":
+            cleaned["major_aura_text"] = ""
+
+        # 条件必填：神经系统检查异常描述
+        neuro_exam = cleaned.get("neuro_exam")
+        neuro_desc = (cleaned.get("neuro_exam_description") or "").strip()
+        if neuro_exam == "A" and not neuro_desc:
+            self.add_error("neuro_exam_description", "选择“异常”时请补充异常描述。")
+        if neuro_exam != "A":
+            cleaned["neuro_exam_description"] = ""
+
+        # EEG 发作间期：局灶/偏侧 关联字段
+        locations = self._split_csv(cleaned.get("eeg_interictal_location"))
         focal_lobe = cleaned.get("eeg_interictal_focal_lobe")
-
-        # 勾选了“局灶” → 必须选叶
+        laterality = cleaned.get("eeg_interictal_laterality")
         if "FOCAL" in locations and not focal_lobe:
-            self.add_error(
-                "eeg_interictal_focal_lobe",
-                "选择“局灶”时必须指定额叶 / 顶叶 / 枕叶 / 颞叶"
-            )
-
-        # 没选“局灶” → 清空叶字段，避免脏数据
+            self.add_error("eeg_interictal_focal_lobe", "选择“局灶”时必须指定额叶 / 顶叶 / 枕叶 / 颞叶。")
+        if "LAT" in locations and not laterality:
+            self.add_error("eeg_interictal_laterality", "选择“偏侧”时必须指定左侧 / 右侧 / 中线。")
         if "FOCAL" not in locations:
             cleaned["eeg_interictal_focal_lobe"] = ""
+        if "LAT" not in locations:
+            cleaned["eeg_interictal_laterality"] = ""
+
+        # 量表：已做时至少填一项分数
+        score_fields = ["moca_score","mmse_score","hama_score","hamd_score","bai_score","bdi_score","epilepsy_scale_score"]
+        if cleaned.get("assessment_done") == "YES":
+            if not any(cleaned.get(f) not in (None, "") for f in score_fields):
+                self.add_error(None, "量表已做：请至少填写一项评分。")
+        else:
+            for f in score_fields:
+                cleaned[f] = None
+
+        # HV / IPS：结果为“相关改变(changed)”时条件必填
+        if cleaned.get("eeg_hv_result") == "changed":
+            required = ["eeg_hv_slow_wave_build","eeg_hv_slow_wave_frequency","eeg_hv_slow_wave_symmetry"]
+            for f in required:
+                if not (cleaned.get(f) not in (None, "")):
+                    self.add_error(f, "HV 结果为“相关改变”时此项必填。")
+            if cleaned.get("eeg_hv_epileptiform_discharge") == "Y" and not cleaned.get("eeg_hv_discharge_laterality"):
+                self.add_error("eeg_hv_discharge_laterality", "已选择诱发癫痫样放电时需指定放电对侧性。")
+        else:
+            for f in ["eeg_hv_slow_wave_build","eeg_hv_slow_wave_frequency","eeg_hv_slow_wave_symmetry",
+                      "eeg_hv_epileptiform_discharge","eeg_hv_discharge_laterality"]:
+                cleaned[f] = "" if isinstance(cleaned.get(f), str) else None
+
+        if cleaned.get("ips_result") == "changed":
+            if not (cleaned.get("frequency") or "").strip():
+                self.add_error("frequency", "IPS 结果为“相关改变”时请填写闪光频率。")
+            if not cleaned.get("laterality"):
+                self.add_error("laterality", "IPS 结果为“相关改变”时请填写侧别。")
+        else:
+            cleaned["frequency"] = ""
+            cleaned["laterality"] = ""
+
+        # CharField 数字/范围格式校验
+        self._validate_numeric_string_fields(cleaned)
 
         return cleaned
+
 
 class UserWithRoleForm(forms.ModelForm):
     role = forms.ChoiceField(
