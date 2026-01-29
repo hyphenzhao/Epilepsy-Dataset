@@ -308,9 +308,8 @@ class Patient(models.Model):
     )
 
     # 【一期无创性评估结果】
-    first_stage_lateralization = models.CharField(
-        "一期无创性评估定侧", max_length=100, blank=True
-    )
+    first_stage_lateralization =models.TextField("一期无创性评估结果", blank=True) 
+    
     first_stage_region = models.CharField(
         "一期无创性评估定区域", max_length=100, blank=True
     )

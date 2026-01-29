@@ -459,7 +459,12 @@ class PatientForm(forms.ModelForm):
                         "rows": 3,   # ⬅ 控制高度
                         "cols": 5,  # 可选：控制宽度
                         "class": "form-control",
-                    }),    
+                    }),   
+                    'first_stage_lateralization': forms.Textarea(attrs={
+                        "rows": 3,   # ⬅ 控制高度
+                        "cols": 5,  # 可选：控制宽度
+                        "class": "form-control",
+                    }),  
                     "seeg_primary_discharge_zone": forms.TextInput(attrs={
                         "class": "form-control w-100",
                         "style": "width:100%;",
@@ -576,7 +581,7 @@ class PatientForm(forms.ModelForm):
             "pet_brief": "PET 简要描述",
             "pet_link": "PET 图像下载链接",
 
-            "first_stage_lateralization": "一期无创评估定侧",
+            "first_stage_lateralization": "一期无创评估结果",
             "first_stage_region": "一期无创评估定区域",
             "first_stage_location": "一期无创评估定具体部位",
 

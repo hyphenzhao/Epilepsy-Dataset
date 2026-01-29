@@ -1,5 +1,5 @@
 {% load static %}
-<form method="post" enctype="multipart/form-data" action="{% if form.instance.pk %}{% url 'epilepsy:patient_edit' form.instance.pk %}{% else %}{% url 'epilepsy:patient_new' %}{% endif %}">
+<form method="post" enctype="multipart/form-data" action="{% if form.instance.pk %}{% url 'epilepsy:patient_edit' form.instance.pk %}{% else %}{% url 'epilepsy:patient_create' %}{% endif %}">
   {% csrf_token %}
   {{ form.non_field_errors }}
 
@@ -1040,20 +1040,10 @@
            aria-labelledby="headingFirstStage" data-parent="#patientAccordion">
         <div class="card-body">
           <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-md-12 mb-3">
               {{ form.first_stage_lateralization.label_tag }}
               {{ form.first_stage_lateralization }}
               {{ form.first_stage_lateralization.errors }}
-            </div>
-            <div class="col-md-4 mb-3">
-              {{ form.first_stage_region.label_tag }}
-              {{ form.first_stage_region }}
-              {{ form.first_stage_region.errors }}
-            </div>
-            <div class="col-md-4 mb-3">
-              {{ form.first_stage_location.label_tag }}
-              {{ form.first_stage_location }}
-              {{ form.first_stage_location.errors }}
             </div>
           </div>
         </div>
@@ -1187,7 +1177,7 @@
 
           <div class="mb-3">
             <label class="mr-2">
-              EEG发作早于症状出现
+              SEEG发作早于症状出现
             </label>
 
             {{ form.seeg_ictal_precede_clinical_sec }}
