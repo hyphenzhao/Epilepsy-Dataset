@@ -5,7 +5,24 @@
   <div class="card-body">
     <h4 class="mb-3">{{ patient.name }}</h4>
     <hr class="my-3">
-    <h5 class="mb-3">文件预览</h5>
+
+    <div id="patientAccordion">
+
+    <!-- 文件预览 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingPreview">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapsePreview"
+                  aria-expanded="false" aria-controls="collapsePreview">
+            文件预览
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapsePreview" class="collapse"
+           aria-labelledby="headingPreview" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-12 col-lg-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -88,8 +105,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <h5 class="mb-3">一、基本信息（默认展开）</h5>
+    <!-- 一、基本信息 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingBasic">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left" type="button"
+                  data-toggle="collapse" data-target="#collapseBasic"
+                  aria-expanded="true" aria-controls="collapseBasic">
+            一、基本信息
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseBasic" class="collapse show"
+           aria-labelledby="headingBasic" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -452,9 +486,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">二、病史</h5>
+    <!-- 二、病史 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingHistory">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseHistory"
+                  aria-expanded="false" aria-controls="collapseHistory">
+            二、病史
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseHistory" class="collapse"
+           aria-labelledby="headingHistory" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -637,9 +687,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">三、发作症状学</h5>
+    <!-- 三、发作症状学 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingSemiology">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseSemiology"
+                  aria-expanded="false" aria-controls="collapseSemiology">
+            三、发作症状学
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseSemiology" class="collapse"
+           aria-labelledby="headingSemiology" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -1032,9 +1098,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">四、神经系统检查</h5>
+    <!-- 四、神经系统检查 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingNeuro">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseNeuro"
+                  aria-expanded="false" aria-controls="collapseNeuro">
+            四、神经系统检查
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseNeuro" class="collapse"
+           aria-labelledby="headingNeuro" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -1097,9 +1179,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">五、认知和精神量表</h5>
+    <!-- 五、认知和精神量表 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingCognitive">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseCognitive"
+                  aria-expanded="false" aria-controls="collapseCognitive">
+            五、认知和精神量表
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseCognitive" class="collapse"
+           aria-labelledby="headingCognitive" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -1343,9 +1441,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">六、视频头皮 EEG 检查</h5>
+    <!-- 六、视频头皮 EEG 检查 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingEEG">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseEEG"
+                  aria-expanded="false" aria-controls="collapseEEG">
+            六、视频头皮 EEG 检查
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseEEG" class="collapse"
+           aria-labelledby="headingEEG" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -2368,9 +2482,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">七、影像学检查</h5>
+    <!-- 七、影像学检查 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingImaging">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseImaging"
+                  aria-expanded="false" aria-controls="collapseImaging">
+            七、影像学检查
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseImaging" class="collapse"
+           aria-labelledby="headingImaging" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -2433,9 +2563,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">八、一期无创性评估结果</h5>
+    <!-- 八、一期无创性评估结果 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingFirstStage">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseFirstStage"
+                  aria-expanded="false" aria-controls="collapseFirstStage">
+            八、一期无创性评估结果
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseFirstStage" class="collapse"
+           aria-labelledby="headingFirstStage" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -2528,9 +2674,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">九、SEEG 发作间期及发作期放电</h5>
+    <!-- 九、SEEG 发作间期及发作期放电 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingSEEG">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseSEEG"
+                  aria-expanded="false" aria-controls="collapseSEEG">
+            九、SEEG 发作间期及发作期放电
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseSEEG" class="collapse"
+           aria-labelledby="headingSEEG" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -3043,9 +3205,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">十、二期有创性评估结果</h5>
+    <!-- 十、二期有创性评估结果 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingSecondStage">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseSecondStage"
+                  aria-expanded="false" aria-controls="collapseSecondStage">
+            十、二期有创性评估结果
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseSecondStage" class="collapse"
+           aria-labelledby="headingSecondStage" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -3108,9 +3286,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">十一、外科切除计划</h5>
+    <!-- 十一、外科切除计划 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingResection">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseResection"
+                  aria-expanded="false" aria-controls="collapseResection">
+            十一、外科切除计划
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseResection" class="collapse"
+           aria-labelledby="headingResection" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -3173,9 +3367,25 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
-    <hr class="my-4">
-    <h5 class="mb-3">十二、评估信息</h5>
+    <!-- 十二、评估信息 -->
+    <div class="card mb-3">
+      <div class="card-header" id="headingEvaluation">
+        <h5 class="mb-0">
+          <button class="btn btn-link btn-block text-left collapsed" type="button"
+                  data-toggle="collapse" data-target="#collapseEvaluation"
+                  aria-expanded="false" aria-controls="collapseEvaluation">
+            十二、评估信息
+          </button>
+        </h5>
+      </div>
+
+      <div id="collapseEvaluation" class="collapse"
+           aria-labelledby="headingEvaluation" data-parent="#patientAccordion">
+        <div class="card-body">
     <div class="row">
       <div class="col-md-6 mb-3">
         <div class="border rounded p-2 h-100">
@@ -3238,7 +3448,11 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+    </div>
 
+    </div>
   </div>
 </div>
 
