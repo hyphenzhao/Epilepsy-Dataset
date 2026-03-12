@@ -7,7 +7,6 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),  # 全局总览
     path("patients/", views.PatientListView.as_view(), name="patient_list"),  # 浏览患者
     path("patients/new/", views.PatientCreateView.as_view(), name="patient_create"),  # 新建患者
-    # path("patients/<int:pk>/edit/", views.PatientUpdateView.as_view(), name="patient_update"),  # 修改
     path("patients/<int:pk>/delete/", views.patient_delete, name="patient_delete"),  # 删除 (POST)
     path("patients/<int:pk>/datasets/", views.PatientDatasetListView.as_view(),
          name="patient_datasets"),
@@ -22,6 +21,9 @@ urlpatterns = [
     path('patients/batch_delete/', views.batch_delete_patients, name='batch_delete_patients'),
     path('patients/batch_download_files/', views.batch_download_files, name='batch_download_files'),
     path("patients/files/preview/<str:file_type>/<int:file_id>/", views.patient_file_preview, name="patient_file_preview"),
+    path("patients/<int:pk>/followups/", views.patient_followup_detail, name="patient_followup_detail"),
+    path("patients/<int:pk>/followups/edit/", views.patient_followup_edit, name="patient_followup_edit"),
+    path("followups/<int:pk>/download/", views.followup_file_download, name="followup_file_download"),
 
     path("settings/users/", views.UserListView.as_view(), name="user_list"),  # 管理设置
     path("users/", views.UserListView.as_view(), name="user_list"),

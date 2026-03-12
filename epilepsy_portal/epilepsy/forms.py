@@ -790,7 +790,59 @@ class PatientForm(forms.ModelForm):
 
         return cleaned
 
+class PatientFollowUpForm(forms.ModelForm):
+    class Meta:
+        model = PatientFollowUp
+        fields = ["completed", "followup_date", "record_file", "note"]
+        widgets = {
+            "followup_date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "form-control",
+                }
+            ),
+            "note": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                }
+            ),
+        }
+        labels = {
+            "completed": "是否已完成",
+            "followup_date": "随访时间",
+            "record_file": "随访记录文件",
+            "note": "备注",
+        }
 
+    def __init__(self, *args, **kwargs):
+        self.request_user = kwargs.pop("request_user", None)
+        super().__init__(*args, **kwargs)
+
+        self.fields["completed"].widget.attrs["class"] = "form-check-input"
+
+        # 已勾选但没有时间时，默认填当前日期
+        if self.instance and self.instance.completed and not self.instance.followup_date:
+            self.initial["followup_date"] = timezone.localdate()
+
+        # 不可编辑时，整体禁用
+        if self.instance and not self.instance.editable:
+            for field in self.fields.values():
+                field.disabled = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        completed = cleaned_data.get("completed")
+        followup_date = cleaned_data.get("followup_date")
+
+        if completed and not followup_date:
+            cleaned_data["followup_date"] = timezone.localdate()
+
+        if not completed:
+            cleaned_data["followup_date"] = None
+
+        return cleaned_data
+        
 class UserWithRoleForm(forms.ModelForm):
     role = forms.ChoiceField(
         label="角色",

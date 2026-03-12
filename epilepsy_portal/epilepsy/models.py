@@ -2,6 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 import os
+from datetime import timedelta
+from django.utils import timezone
 
 class UserRole(models.TextChoices):
     ADMIN = "ADMIN", _("管理员")
@@ -396,10 +398,97 @@ class Patient(models.Model):
     class Meta:
         verbose_name = "患者"
         verbose_name_plural = "患者"
+    def ensure_default_followups(self):
+        if not self.admission_date:
+            return
 
+        mapping = [
+            (FollowUpType.HALF_YEAR, self.admission_date + timedelta(days=183)),
+            (FollowUpType.ONE_YEAR, self.admission_date + timedelta(days=365)),
+            (FollowUpType.FIVE_YEAR, self.admission_date + timedelta(days=365 * 5)),
+        ]
+
+        for followup_type, target_date in mapping:
+            obj, created = PatientFollowUp.objects.get_or_create(
+                patient=self,
+                followup_type=followup_type,
+                defaults={"target_date": target_date},
+            )
+            if not created and obj.target_date != target_date:
+                obj.target_date = target_date
+                obj.save(update_fields=["target_date", "updated_at"])
+
+    @property
+    def has_overdue_followup(self):
+        self.ensure_default_followups()
+        return self.followups.filter(completed=False, target_date__lt=timezone.localdate()).exists()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.admission_date:
+            self.ensure_default_followups()
+            
     def __str__(self):
         return f"{self.name} ({self.bed_number})"
 
+class FollowUpType(models.TextChoices):
+    HALF_YEAR = "HALF_YEAR", "半年"
+    ONE_YEAR = "ONE_YEAR", "1年"
+    FIVE_YEAR = "FIVE_YEAR", "5年"
+
+
+class PatientFollowUp(models.Model):
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="followups",
+        verbose_name="患者",
+    )
+
+    followup_type = models.CharField(
+        "随访类型",
+        max_length=20,
+        choices=FollowUpType.choices,
+    )
+
+    target_date = models.DateField("目标随访时间")
+    completed = models.BooleanField("是否已完成", default=False)
+    followup_date = models.DateField("随访时间", blank=True, null=True)
+
+    record_file = models.FileField(
+        "随访记录文件",
+        upload_to="followup_records/%Y/%m/",
+        blank=True,
+        null=True,
+    )
+
+    note = models.TextField("备注", blank=True)
+
+    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        verbose_name = "患者随访"
+        verbose_name_plural = "患者随访"
+        unique_together = ("patient", "followup_type")
+        ordering = ["target_date"]
+
+    def __str__(self):
+        return f"{self.patient.name} - {self.get_followup_type_display()}"
+
+    @property
+    def editable(self):
+        today = timezone.localdate()
+        if not self.target_date:
+            return False
+        half_year_before_target = self.target_date - timedelta(days=183)
+        return today >= half_year_before_target
+
+    @property
+    def overdue(self):
+        """超过目标随访时间但仍未完成 -> 逾期"""
+        today = timezone.localdate()
+        return (not self.completed) and self.target_date and today > self.target_date
 
 class PatientDataset(models.Model):
     patient = models.ForeignKey(

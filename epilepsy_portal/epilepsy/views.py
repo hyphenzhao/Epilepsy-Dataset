@@ -20,12 +20,8 @@ from django.core.exceptions import FieldDoesNotExist, FieldError
 from django.utils import timezone
 import markdown
 from .mixins import RoleRequiredMixin
-from .models import (
-    Patient, UserRole,
-    PatientDataset,
-    MRIFile, PETFile, EEGFile, SEEGFile,
-)
-from .forms import PatientForm, UserWithRoleForm
+from .models import *
+from .forms import *
 
 # 新增：导入 helper
 from .views_helper import (
@@ -41,6 +37,9 @@ from pprint import pformat
 
 form_debug_logger = logging.getLogger("epilepsy.formdebug")
 
+def can_edit_followup(user):
+    profile = getattr(user, "profile", None)
+    return bool(profile and profile.role in [UserRole.ADMIN, UserRole.STAFF])
 
 def log_invalid_form(request, form, *, tag="PatientForm"):
     """
@@ -115,6 +114,116 @@ def log_invalid_form(request, form, *, tag="PatientForm"):
 
 User = get_user_model()
 
+@login_required
+def patient_followup_detail(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+    patient.ensure_default_followups()
+    followups = patient.followups.all().order_by("target_date")
+
+    context = {
+        "patient": patient,
+        "followups": followups,
+        "can_edit": can_edit_followup(request.user),
+    }
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "epilepsy/patient_followup_detail_partial.html", context)
+
+    return render(request, "epilepsy/patient_followup_detail.html", context)
+
+@login_required
+def patient_followup_edit(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+    patient.ensure_default_followups()
+    followups = patient.followups.all().order_by("target_date")
+
+    if not can_edit_followup(request.user):
+        return HttpResponseForbidden("无权限修改随访记录")
+
+    editable_forms = []
+    readonly_followups = []
+
+    for followup in followups:
+        if request.method == "POST":
+            form = PatientFollowUpForm(
+                request.POST,
+                request.FILES,
+                instance=followup,
+                prefix=followup.followup_type,
+                request_user=request.user,
+            )
+            editable_forms.append((followup, form))
+        else:
+            form = PatientFollowUpForm(
+                instance=followup,
+                prefix=followup.followup_type,
+                request_user=request.user,
+            )
+            editable_forms.append((followup, form))
+
+        if not followup.editable:
+            readonly_followups.append(followup)
+
+    if request.method == "POST":
+        all_valid = True
+        for followup, form in editable_forms:
+            if followup.editable:
+                if not form.is_valid():
+                    all_valid = False
+
+        if all_valid:
+            for followup, form in editable_forms:
+                if followup.editable:
+                    # 如果上传了新文件，会自动替换字段指向的新文件
+                    # 如果你还想删掉旧物理文件，可在 save 前手动处理
+                    old_file = followup.record_file if followup.pk else None
+                    instance = form.save(commit=False)
+
+                    if instance.completed and not instance.followup_date:
+                        from django.utils import timezone
+                        instance.followup_date = timezone.localdate()
+
+                    # 替换文件时删除旧文件（可选，但建议）
+                    file_field_name = f"{followup.followup_type}-record_file"
+                    if old_file and file_field_name in request.FILES:
+                        new_file = request.FILES[file_field_name]
+                        if old_file.name != new_file.name:
+                            old_file.delete(save=False)
+
+                    instance.save()
+
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"success": True})
+
+            return redirect("epilepsy:patient_list")
+
+    context = {
+        "patient": patient,
+        "editable_forms": editable_forms,
+        "readonly_followups": readonly_followups,
+    }
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "epilepsy/patient_followup_edit_partial.html", context)
+
+    return render(request, "epilepsy/patient_followup_edit.html", context)
+
+@login_required
+def followup_file_download(request, pk):
+    followup = get_object_or_404(PatientFollowUp, pk=pk)
+    profile = getattr(request.user, "profile", None)
+
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限下载")
+
+    if not followup.record_file:
+        raise Http404("暂无文件")
+
+    return FileResponse(
+        followup.record_file.open("rb"),
+        as_attachment=True,
+        filename=followup.record_file.name.split("/")[-1],
+    )
 
 @login_required
 def dashboard(request):
@@ -169,7 +278,7 @@ class PatientListView(RoleRequiredMixin, ListView):
         return tuple(parts)
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().prefetch_related("followups").order_by("id")
         request = self.request
 
         # 基础关键字搜索

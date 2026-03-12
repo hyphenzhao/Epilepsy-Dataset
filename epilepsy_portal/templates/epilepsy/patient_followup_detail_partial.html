@@ -1,0 +1,51 @@
+<h5 class="mb-3">{{ patient.name }} - 随访记录</h5>
+
+<table class="table table-bordered align-middle">
+  <thead>
+    <tr>
+      <th>随访类型</th>
+      <th>目标时间</th>
+      <th>状态</th>
+      <th>随访时间</th>
+      <th>文件</th>
+      <th>提醒</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in followups %}
+      <tr>
+        <td>{{ f.get_followup_type_display }}</td>
+        <td>{{ f.target_date }}</td>
+        <td>
+          {% if f.completed %}
+            <span class="badge bg-success">已完成</span>
+          {% else %}
+            <span class="badge bg-secondary">未完成</span>
+          {% endif %}
+        </td>
+        <td>{{ f.followup_date|default:"" }}</td>
+        <td>
+          {% if f.record_file %}
+            <a href="{% url 'epilepsy:followup_file_download' f.id %}" class="btn btn-sm btn-outline-success">
+              下载
+            </a>
+            <div class="small text-muted mt-1">
+              {{ f.record_file.name|cut:"followup_records/" }}
+            </div>
+          {% else %}
+            <span class="text-muted">暂无文件</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if f.overdue %}
+            <span class="badge bg-danger">已逾期</span>
+          {% elif f.editable %}
+            <span class="badge bg-warning text-dark">可编辑</span>
+          {% else %}
+            <span class="badge bg-light text-dark">未开放</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

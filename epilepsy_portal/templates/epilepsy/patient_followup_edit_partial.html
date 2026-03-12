@@ -1,0 +1,85 @@
+<h5 class="mb-3">{{ patient.name }} - 修改随访记录</h5>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {% for followup, form in editable_forms %}
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>{{ followup.get_followup_type_display }}</strong>
+        <div>
+          <span class="me-2">目标时间：{{ followup.target_date }}</span>
+          {% if followup.overdue %}
+            <span class="badge bg-danger">已逾期</span>
+          {% elif followup.editable %}
+            <span class="badge bg-warning text-dark">可编辑</span>
+          {% else %}
+            <span class="badge bg-secondary">未开放</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if followup.editable %}
+          <div class="mb-3 form-check">
+            {{ form.completed }}
+            <label class="form-check-label" for="{{ form.completed.id_for_label }}">
+              是否已完成
+            </label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.followup_date.label }}</label>
+            {{ form.followup_date }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.record_file.label }}</label>
+
+            {% if followup.record_file %}
+              <div class="mb-2">
+                当前文件：
+                <a href="{% url 'epilepsy:followup_file_download' followup.id %}">
+                  {{ followup.record_file.name|cut:"followup_records/" }}
+                </a>
+              </div>
+              <div class="mb-2 text-muted">重新上传将替换原文件</div>
+            {% endif %}
+
+            {{ form.record_file }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.note.label }}</label>
+            {{ form.note }}
+          </div>
+        {% else %}
+          <div class="text-muted">
+            当前时间尚未到该随访节点允许编辑的时间窗口。
+          </div>
+
+          <div class="mt-2">
+            {% if followup.completed %}
+              <span class="badge bg-success">已完成</span>
+              <span class="ms-2">随访时间：{{ followup.followup_date }}</span>
+            {% else %}
+              <span class="badge bg-secondary">未完成</span>
+            {% endif %}
+          </div>
+
+          {% if followup.record_file %}
+            <div class="mt-2">
+              <a href="{% url 'epilepsy:followup_file_download' followup.id %}" class="btn btn-sm btn-outline-success">
+                下载当前文件
+              </a>
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+
+  <div class="text-end">
+    <button type="submit" class="btn btn-primary">保存</button>
+  </div>
+</form>

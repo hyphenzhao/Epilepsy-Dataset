@@ -330,6 +330,7 @@
           </a>
         </th>
         <th>操作</th>
+        <th>随访记录</th>
         <th>下载</th>
       </tr>
     </thead>
@@ -366,6 +367,29 @@
       {% else %}
         <span class="text-muted">只读</span>
       {% endif %}
+    </td>
+    <td onclick="event.stopPropagation();">
+      <div class="d-flex flex-column gap-1">
+        <div>
+          <button class="btn btn-sm btn-outline-info"
+                  onclick="openFollowupViewPanel({{ p.id }});">
+            查看
+          </button>
+
+          {% if user.is_authenticated and user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
+            <button class="btn btn-sm btn-outline-primary"
+                    onclick="openFollowupEditPanel({{ p.id }});">
+              修改
+            </button>
+          {% endif %}
+        </div>
+
+        {% if p.has_overdue_followup %}
+          <span class="badge bg-danger">⚠️有逾期随访⚠️</span>
+        {% else %}
+          <span class="badge bg-secondary">正常</span>
+        {% endif %}
+      </div>
     </td>
     <td>
       {# 如果有任意 MRI / PET / EEG / SEEG 文件，则显示“下载管理”按钮 #}
@@ -948,6 +972,101 @@ function initNeuroExamToggle(root = document) {
 }
 
 </script>
+
+<script>
+  function openFollowupViewPanel(patientId) {
+    const body = document.getElementById('editPatientBody');
+    const titleEl = document.getElementById('editPatientDrawerTitle');
+
+    titleEl.textContent = '随访记录查看';
+    showDrawer();
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    const url = `/epilepsy/patients/${patientId}/followups/`;
+
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
+  }
+
+  function openFollowupEditPanel(patientId) {
+    const body = document.getElementById('editPatientBody');
+    const titleEl = document.getElementById('editPatientDrawerTitle');
+
+    titleEl.textContent = '随访记录修改';
+    showDrawer();
+    body.innerHTML = '<div class="text-center text-muted">加载中...</div>';
+
+    const url = `/epilepsy/patients/${patientId}/followups/edit/`;
+
+    fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(resp => resp.text())
+      .then(html => {
+        body.innerHTML = html;
+        bindFollowupAutoDate(body);
+        attachFollowupFormHandler(url);
+      })
+      .catch(err => {
+        console.error(err);
+        body.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+      });
+  }
+
+  function attachFollowupFormHandler(url) {
+    const body = document.getElementById('editPatientBody');
+    const form = body.querySelector('form');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
+      const csrfToken = csrfInput ? csrfInput.value : '';
+
+      fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfToken
+        }
+      })
+        .then(response => {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.indexOf('application/json') !== -1) {
+            return response.json();
+          }
+          return response.text();
+        })
+        .then(data => {
+          if (typeof data === 'object' && data.success) {
+            closeEditPanel();
+            window.location.reload();
+          } else if (typeof data === 'string') {
+            body.innerHTML = data;
+            bindFollowupAutoDate(body);
+            attachFollowupFormHandler(url);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert('保存失败，请稍后再试');
+        });
+    }, { once: true });
+  }
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const selectAllCheckbox = document.getElementById('select-all-patients');
@@ -1091,6 +1210,35 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script>
+  function bindFollowupAutoDate(root) {
+    if (!root) return;
+
+    const checkboxes = root.querySelectorAll('input.form-check-input[type="checkbox"]');
+
+    checkboxes.forEach(function (checkbox) {
+      checkbox.addEventListener('change', function () {
+        const cardBody = checkbox.closest('.card-body');
+        if (!cardBody) return;
+
+        const dateInput = cardBody.querySelector('input[type="date"]');
+        if (!dateInput) return;
+
+        if (checkbox.checked && !dateInput.value) {
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, '0');
+          const dd = String(today.getDate()).padStart(2, '0');
+          dateInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        if (!checkbox.checked) {
+          dateInput.value = '';
+        }
+      });
+    });
+  }
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', function () {
     const batchActions = document.getElementById('batch-actions');
     const patientCheckboxes = document.querySelectorAll('.patient-select');
@@ -1191,6 +1339,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 {% block extra_js %}
   <script src="{% static 'assets/js/image_preview_lightbox.js' %}"></script>
+
 {% endblock %}
 
 
