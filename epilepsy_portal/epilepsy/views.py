@@ -1,6 +1,6 @@
 # epilepsy/views.py
 
-import os, csv, datetime, io, zipfile, re
+import os, csv, datetime, io, zipfile, re, traceback
 import mimetypes
 import urllib.request
 import urllib.error
@@ -78,21 +78,47 @@ def stream_ollama_report(patient, server):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=600) as response:
-        for raw_line in response:
-            line = raw_line.decode("utf-8").strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if obj.get("thinking"):
-                yield f"data: {json.dumps({'type': 'thinking', 'text': obj.get('thinking')})}\n\n"
-            if obj.get("response"):
-                yield f"data: {json.dumps({'type': 'output', 'text': obj.get('response')})}\n\n"
-            if obj.get("done"):
-                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+    try:
+        with urllib.request.urlopen(req, timeout=600) as response:
+            for raw_line in response:
+                line = raw_line.decode("utf-8").strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if obj.get("thinking"):
+                    yield f"data: {json.dumps({'type': 'thinking', 'text': obj.get('thinking')})}\n\n"
+                if obj.get("response"):
+                    yield f"data: {json.dumps({'type': 'output', 'text': obj.get('response')})}\n\n"
+                if obj.get("done"):
+                    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+    except urllib.error.HTTPError as exc:
+        error_body = ""
+        try:
+            error_body = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            error_body = ""
+        debug_payload = {
+            "stage": "ollama_generate",
+            "url": f"{server.base_url}/api/generate",
+            "status": getattr(exc, "code", None),
+            "reason": getattr(exc, "reason", ""),
+            "model": server.model,
+            "response_body": error_body,
+            "request_payload": payload,
+        }
+        raise RuntimeError(f"Ollama HTTPError: {json.dumps(debug_payload, ensure_ascii=False)}")
+    except urllib.error.URLError as exc:
+        debug_payload = {
+            "stage": "ollama_generate",
+            "url": f"{server.base_url}/api/generate",
+            "reason": str(exc.reason) if hasattr(exc, 'reason') else str(exc),
+            "model": server.model,
+            "request_payload": payload,
+        }
+        raise RuntimeError(f"Ollama URLError: {json.dumps(debug_payload, ensure_ascii=False)}")
 
 
 def render_markdown_to_html(markdown_text):
@@ -1218,7 +1244,8 @@ def patient_generate_report_stream(request, pk):
         try:
             yield from stream_ollama_report(patient, server)
         except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
+            debug_text = f"{str(exc)}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            yield f"data: {json.dumps({'type': 'error', 'text': debug_text})}\n\n"
 
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     response["Cache-Control"] = "no-cache"
