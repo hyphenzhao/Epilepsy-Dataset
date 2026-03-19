@@ -257,48 +257,8 @@ def build_docx_from_markdown(markdown_text, title="患者报告"):
     return bio
 
 
-def iter_fast_markdown_blocks(markdown_text):
-    lines = (markdown_text or "").splitlines()
-    paragraph = []
-
-    def flush_paragraph():
-        nonlocal paragraph
-        if paragraph:
-            yield ("paragraph", "<br/>".join(escape(x) for x in paragraph))
-            paragraph = []
-
-    for raw_line in lines:
-        line = raw_line.rstrip()
-        stripped = line.strip()
-        if not stripped:
-            yield from flush_paragraph()
-            continue
-
-        if stripped.startswith("#"):
-            yield from flush_paragraph()
-            level = len(stripped) - len(stripped.lstrip("#"))
-            yield (f"heading{min(level, 4)}", escape(stripped[level:].strip()))
-            continue
-
-        bullet_match = re.match(r"^[-*]\s+(.*)$", stripped)
-        if bullet_match:
-            yield from flush_paragraph()
-            yield ("bullet", escape(bullet_match.group(1).strip()))
-            continue
-
-        ordered_match = re.match(r"^\d+[\.)]\s+(.*)$", stripped)
-        if ordered_match:
-            yield from flush_paragraph()
-            yield ("ordered", escape(ordered_match.group(1).strip()))
-            continue
-
-        paragraph.append(stripped)
-
-    yield from flush_paragraph()
-
-
-
 def build_pdf_from_markdown(markdown_text, title="患者报告"):
+    root = parse_markdown_root(markdown_text)
     bio = io.BytesIO()
     doc = SimpleDocTemplate(bio, pagesize=A4)
     styles = getSampleStyleSheet()
@@ -313,30 +273,65 @@ def build_pdf_from_markdown(markdown_text, title="患者报告"):
         styles[style_name].fontName = font_name
         styles[style_name].wordWrap = "CJK"
 
-    list_style = styles["BodyText"].clone("FastListBody")
-    list_style.leftIndent = 18
-    list_style.firstLineIndent = -10
-
     story = [Paragraph(escape(title or "患者报告"), styles["Title"]), Spacer(1, 12)]
-    ordered_index = 0
 
-    for kind, text in iter_fast_markdown_blocks(markdown_text):
-        if kind.startswith("heading"):
-            ordered_index = 0
-            style = styles[f"Heading{min(int(kind[-1]), 4)}"]
-            story.append(Paragraph(text, style))
+    for node in root:
+        tag = (node.tag or "").lower() if hasattr(node, "tag") else ""
+        if tag in {"h1", "h2", "h3", "h4"}:
+            style = styles[f"Heading{min(int(tag[1]), 4)}"]
+            story.append(Paragraph(_html_to_reportlab_markup(node), style))
             story.append(Spacer(1, 8))
-        elif kind == "bullet":
-            ordered_index = 0
-            story.append(Paragraph(f"• {text}", list_style))
+        elif tag == "p":
+            story.append(Paragraph(_html_to_reportlab_markup(node), styles["BodyText"]))
+            story.append(Spacer(1, 8))
+        elif tag == "blockquote":
+            quote_style = styles["BodyText"].clone("QuoteBody")
+            quote_style.leftIndent = 18
+            quote_style.textColor = colors.HexColor("#555555")
+            story.append(Paragraph(_html_to_reportlab_markup(node), quote_style))
+            story.append(Spacer(1, 8))
+        elif tag == "pre":
+            pre_style = styles["BodyText"].clone("PreBody")
+            pre_style.fontName = font_name
+            pre_style.backColor = colors.HexColor("#F4F4F4")
+            story.append(Paragraph(escape(node.text_content()).replace("\n", "<br/>"), pre_style))
+            story.append(Spacer(1, 8))
+        elif tag in {"ul", "ol"}:
+            list_style = styles["BodyText"].clone(f"ListBody_{id(node)}")
+            list_style.leftIndent = 18
+            list_style.firstLineIndent = -10
+            for idx, li in enumerate(node.findall("./li"), start=1):
+                bullet = "•" if tag == "ul" else f"{idx}."
+                story.append(Paragraph(f"{bullet} {_html_list_item_markup(li)}", list_style))
+                story.append(Spacer(1, 4))
             story.append(Spacer(1, 4))
-        elif kind == "ordered":
-            ordered_index += 1
-            story.append(Paragraph(f"{ordered_index}. {text}", list_style))
-            story.append(Spacer(1, 4))
-        else:
-            ordered_index = 0
-            story.append(Paragraph(text, styles["BodyText"]))
+        elif tag == "table":
+            rows = node.findall(".//tr")
+            if not rows:
+                continue
+            table_data = []
+            for row in rows:
+                cells = row.findall("./th|./td")
+                table_data.append([
+                    Paragraph(_html_to_reportlab_markup(cell), styles["BodyText"])
+                    for cell in cells
+                ])
+            table = Table(table_data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ("FONTNAME", (0, 0), (-1, -1), font_name),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EFEFEF")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.append(table)
+            story.append(Spacer(1, 10))
+        elif tag:
+            story.append(Paragraph(_html_to_reportlab_markup(node), styles["BodyText"]))
             story.append(Spacer(1, 8))
 
     doc.build(story)
