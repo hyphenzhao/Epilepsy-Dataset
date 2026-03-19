@@ -5,6 +5,16 @@ import mimetypes
 import urllib.request
 import urllib.error
 import json
+from docx import Document
+from docx.shared import Pt
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from lxml import html as lxml_html
+from xml.sax.saxutils import escape
 from django.utils.encoding import smart_str
 from django.conf import settings
 from django.views.decorators.http import require_POST
@@ -83,6 +93,255 @@ def stream_ollama_report(patient, server):
                 yield f"data: {json.dumps({'type': 'output', 'text': obj.get('response')})}\n\n"
             if obj.get("done"):
                 yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+
+def render_markdown_to_html(markdown_text):
+    return markdown.markdown(
+        markdown_text or "",
+        extensions=["extra", "nl2br", "sane_lists", "tables", "fenced_code"],
+    )
+
+
+def parse_markdown_root(markdown_text):
+    html = render_markdown_to_html(markdown_text)
+    return lxml_html.fragment_fromstring(f"<div>{html}</div>", create_parent=True)
+
+
+def _append_docx_inline(paragraph, node, *, bold=False, italic=False):
+    if node.text:
+        run = paragraph.add_run(node.text)
+        run.bold = bold
+        run.italic = italic
+        run.font.size = Pt(11)
+
+    for child in node:
+        tag = (child.tag or "").lower() if hasattr(child, "tag") else ""
+        child_bold = bold or tag in {"strong", "b"}
+        child_italic = italic or tag in {"em", "i"}
+        if tag == "br":
+            paragraph.add_run().add_break()
+        elif tag == "code":
+            run = paragraph.add_run(child.text_content())
+            run.font.name = "Consolas"
+            run.bold = child_bold
+            run.italic = child_italic
+        else:
+            _append_docx_inline(paragraph, child, bold=child_bold, italic=child_italic)
+        if child.tail:
+            run = paragraph.add_run(child.tail)
+            run.bold = bold
+            run.italic = italic
+            run.font.size = Pt(11)
+
+
+def _html_to_plain_text(node):
+    return " ".join((node.text_content() or "").split())
+
+
+def _append_docx_list_item(paragraph, li_node):
+    if li_node.text and li_node.text.strip():
+        paragraph.add_run(li_node.text.strip())
+
+    first_block = True
+    for child in li_node:
+        tag = (child.tag or "").lower() if hasattr(child, "tag") else ""
+        if tag in {"p", "div"}:
+            if not first_block:
+                paragraph.add_run().add_break()
+            _append_docx_inline(paragraph, child)
+            first_block = False
+        elif tag == "br":
+            paragraph.add_run().add_break()
+        else:
+            if not first_block:
+                paragraph.add_run().add_break()
+            _append_docx_inline(paragraph, child)
+            first_block = False
+        if child.tail and child.tail.strip():
+            paragraph.add_run(child.tail.strip())
+
+
+
+def _html_to_reportlab_markup(node):
+    parts = []
+    if node.text:
+        parts.append(escape(node.text))
+    for child in node:
+        tag = (child.tag or "").lower() if hasattr(child, "tag") else ""
+        inner = _html_to_reportlab_markup(child)
+        if tag in {"strong", "b"}:
+            parts.append(f"<b>{inner}</b>")
+        elif tag in {"em", "i"}:
+            parts.append(f"<i>{inner}</i>")
+        elif tag == "br":
+            parts.append("<br/>")
+        elif tag == "code":
+            parts.append(f"<font face='Courier'>{inner}</font>")
+        else:
+            parts.append(inner)
+        if child.tail:
+            parts.append(escape(child.tail))
+    return "".join(parts)
+
+
+def _html_list_item_markup(li_node):
+    parts = []
+    if li_node.text and li_node.text.strip():
+        parts.append(escape(li_node.text.strip()))
+    first_block = True
+    for child in li_node:
+        tag = (child.tag or "").lower() if hasattr(child, "tag") else ""
+        child_markup = _html_to_reportlab_markup(child)
+        if tag in {"p", "div", "br"} and not first_block:
+            parts.append("<br/>")
+        elif not first_block:
+            parts.append("<br/>")
+        parts.append(child_markup)
+        first_block = False
+        if child.tail and child.tail.strip():
+            parts.append(escape(child.tail.strip()))
+    return "".join(parts)
+
+
+def build_docx_from_markdown(markdown_text, title="患者报告"):
+    root = parse_markdown_root(markdown_text)
+    document = Document()
+    document.add_heading(title or "患者报告", level=1)
+
+    for node in root:
+        tag = (node.tag or "").lower() if hasattr(node, "tag") else ""
+        if tag in {"h1", "h2", "h3", "h4"}:
+            level = min(int(tag[1]), 4)
+            p = document.add_heading(level=level)
+            _append_docx_inline(p, node)
+        elif tag == "p":
+            p = document.add_paragraph()
+            _append_docx_inline(p, node)
+        elif tag == "blockquote":
+            p = document.add_paragraph(style="Intense Quote")
+            for child in node:
+                _append_docx_inline(p, child)
+            if not list(node):
+                _append_docx_inline(p, node)
+        elif tag == "pre":
+            p = document.add_paragraph(style="No Spacing")
+            run = p.add_run(node.text_content())
+            run.font.name = "Consolas"
+        elif tag in {"ul", "ol"}:
+            style = "List Bullet" if tag == "ul" else "List Number"
+            for li in node.findall("./li"):
+                p = document.add_paragraph(style=style)
+                _append_docx_list_item(p, li)
+        elif tag == "table":
+            rows = node.findall(".//tr")
+            if not rows:
+                continue
+            col_count = max(len(row.findall("./th|./td")) for row in rows)
+            table = document.add_table(rows=0, cols=col_count)
+            table.style = "Table Grid"
+            for row in rows:
+                cells = row.findall("./th|./td")
+                row_cells = table.add_row().cells
+                for idx, cell in enumerate(cells):
+                    row_cells[idx].text = _html_to_plain_text(cell)
+                    if cell.tag.lower() == "th" and row_cells[idx].paragraphs:
+                        for run in row_cells[idx].paragraphs[0].runs:
+                            run.bold = True
+        elif tag:
+            p = document.add_paragraph()
+            _append_docx_inline(p, node)
+
+    bio = io.BytesIO()
+    document.save(bio)
+    bio.seek(0)
+    return bio
+
+
+def iter_fast_markdown_blocks(markdown_text):
+    lines = (markdown_text or "").splitlines()
+    paragraph = []
+
+    def flush_paragraph():
+        nonlocal paragraph
+        if paragraph:
+            yield ("paragraph", "<br/>".join(escape(x) for x in paragraph))
+            paragraph = []
+
+    for raw_line in lines:
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            yield from flush_paragraph()
+            continue
+
+        if stripped.startswith("#"):
+            yield from flush_paragraph()
+            level = len(stripped) - len(stripped.lstrip("#"))
+            yield (f"heading{min(level, 4)}", escape(stripped[level:].strip()))
+            continue
+
+        bullet_match = re.match(r"^[-*]\s+(.*)$", stripped)
+        if bullet_match:
+            yield from flush_paragraph()
+            yield ("bullet", escape(bullet_match.group(1).strip()))
+            continue
+
+        ordered_match = re.match(r"^\d+[\.)]\s+(.*)$", stripped)
+        if ordered_match:
+            yield from flush_paragraph()
+            yield ("ordered", escape(ordered_match.group(1).strip()))
+            continue
+
+        paragraph.append(stripped)
+
+    yield from flush_paragraph()
+
+
+
+def build_pdf_from_markdown(markdown_text, title="患者报告"):
+    bio = io.BytesIO()
+    doc = SimpleDocTemplate(bio, pagesize=A4)
+    styles = getSampleStyleSheet()
+
+    font_name = "STSong-Light"
+    try:
+        pdfmetrics.getFont(font_name)
+    except KeyError:
+        pdfmetrics.registerFont(UnicodeCIDFont(font_name))
+
+    for style_name in ["Title", "Heading1", "Heading2", "Heading3", "Heading4", "BodyText"]:
+        styles[style_name].fontName = font_name
+        styles[style_name].wordWrap = "CJK"
+
+    list_style = styles["BodyText"].clone("FastListBody")
+    list_style.leftIndent = 18
+    list_style.firstLineIndent = -10
+
+    story = [Paragraph(escape(title or "患者报告"), styles["Title"]), Spacer(1, 12)]
+    ordered_index = 0
+
+    for kind, text in iter_fast_markdown_blocks(markdown_text):
+        if kind.startswith("heading"):
+            ordered_index = 0
+            style = styles[f"Heading{min(int(kind[-1]), 4)}"]
+            story.append(Paragraph(text, style))
+            story.append(Spacer(1, 8))
+        elif kind == "bullet":
+            ordered_index = 0
+            story.append(Paragraph(f"• {text}", list_style))
+            story.append(Spacer(1, 4))
+        elif kind == "ordered":
+            ordered_index += 1
+            story.append(Paragraph(f"{ordered_index}. {text}", list_style))
+            story.append(Spacer(1, 4))
+        else:
+            ordered_index = 0
+            story.append(Paragraph(text, styles["BodyText"]))
+            story.append(Spacer(1, 8))
+
+    doc.build(story)
+    bio.seek(0)
+    return bio
 
 
 def can_edit_followup(user):
@@ -969,6 +1228,56 @@ def patient_generate_report_stream(request, pk):
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     response["Cache-Control"] = "no-cache"
     return response
+
+
+@login_required
+@require_POST
+def report_render_markdown(request):
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限")
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        payload = {}
+    markdown_text = payload.get("markdown", "")
+    return JsonResponse({"html": render_markdown_to_html(markdown_text)})
+
+
+@login_required
+@require_POST
+def report_export(request, fmt):
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限")
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        payload = {}
+    markdown_text = payload.get("markdown", "") or ""
+    patient_name = (payload.get("patient_name", "患者报告") or "患者报告").strip()
+    safe_name = re.sub(r'[\\/:*?"<>|]+', '_', patient_name)
+
+    if fmt == "word":
+        bio = build_docx_from_markdown(markdown_text, title=patient_name)
+        response = FileResponse(
+            bio,
+            as_attachment=True,
+            filename=f"{safe_name}_报告.docx",
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        return response
+    if fmt == "pdf":
+        bio = build_pdf_from_markdown(markdown_text, title=patient_name)
+        response = FileResponse(
+            bio,
+            as_attachment=True,
+            filename=f"{safe_name}_报告.pdf",
+            content_type="application/pdf",
+        )
+        return response
+
+    return HttpResponseForbidden("不支持的导出格式")
 
 
 class UserListView(RoleRequiredMixin, ListView):

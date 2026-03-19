@@ -578,8 +578,12 @@
 <div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header align-items-center">
         <h5 class="modal-title" id="reportModalTitle">生成报告</h5>
+        <div class="ml-auto mr-3 d-flex align-items-center gap-2">
+          <button type="button" id="reportStopBtn" class="btn btn-sm btn-outline-danger mr-2" style="display:none;">停止</button>
+          <button type="button" id="reportRegenerateBtn" class="btn btn-sm btn-outline-primary" style="display:none;">重新生成</button>
+        </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -588,17 +592,82 @@
         <div class="row">
           <div class="col-md-5 border-end">
             <h6>Thinking</h6>
-            <pre id="reportThinking" style="white-space: pre-wrap; min-height: 360px; background:#f8f9fa; padding:1rem; border-radius:8px;"></pre>
+            <div id="reportThinking" class="report-pane report-pane-text"><span id="reportThinkingText"></span><span id="reportThinkingCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span></div>
           </div>
           <div class="col-md-7">
             <h6>Output</h6>
-            <pre id="reportOutput" style="white-space: pre-wrap; min-height: 360px; background:#f8f9fa; padding:1rem; border-radius:8px;"></pre>
+            <div id="reportOutput" class="report-pane report-pane-markdown"><span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span></div>
           </div>
+        </div>
+        <div id="reportExportActions" class="mt-3" style="display:none;">
+          <button type="button" id="reportExportWordBtn" class="btn btn-outline-primary mr-2">导出Word</button>
+          <button type="button" id="reportExportPdfBtn" class="btn btn-outline-secondary">导出PDF</button>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  .report-pane {
+    height: 420px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+  }
+  .report-pane-text {
+    white-space: pre-wrap;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  .report-pane-markdown {
+    white-space: normal;
+  }
+  .report-pane-markdown h1,
+  .report-pane-markdown h2,
+  .report-pane-markdown h3,
+  .report-pane-markdown h4 {
+    margin-top: 1rem;
+    margin-bottom: .75rem;
+  }
+  .report-pane-markdown p,
+  .report-pane-markdown ul,
+  .report-pane-markdown ol,
+  .report-pane-markdown blockquote {
+    margin-bottom: .75rem;
+  }
+  .report-pane-markdown table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+  }
+  .report-pane-markdown th,
+  .report-pane-markdown td {
+    border: 1px solid #dee2e6;
+    padding: .5rem;
+    vertical-align: top;
+  }
+  .typing-cursor {
+    display: inline-block;
+    animation: reportBlink 1s steps(1) infinite;
+    vertical-align: text-bottom;
+  }
+  .typing-cursor-block {
+    width: .75em;
+    height: 1.15em;
+    margin-left: .12em;
+    background: #111;
+    border: 1px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.12);
+  }
+  @keyframes reportBlink {
+    50% {
+      opacity: 0;
+      background: #fff;
+    }
+  }
+</style>
 
 <script>
   function initHvIpsRelatedChange(root=document) {
@@ -1365,26 +1434,139 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <script>
-async function openReportPanel(patientId, patientName) {
+const reportState = {
+  patientId: null,
+  patientName: '',
+  controller: null,
+  generating: false,
+  stopped: false,
+  finished: false,
+  rawMarkdown: '',
+};
+
+function getCsrfToken() {
+  const el = document.querySelector('input[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+
+function scrollReportPaneToBottom(el) {
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function setStreamingPaneText(containerId, textId, cursorId, text) {
+  const container = document.getElementById(containerId);
+  const textEl = document.getElementById(textId);
+  const cursorEl = document.getElementById(cursorId);
+  if (textEl) textEl.textContent = text || '';
+  if (cursorEl) cursorEl.style.display = reportState.generating ? '' : 'none';
+  scrollReportPaneToBottom(container);
+}
+
+function setReportButtons() {
+  const stopBtn = document.getElementById('reportStopBtn');
+  const regenerateBtn = document.getElementById('reportRegenerateBtn');
+  const exportWrap = document.getElementById('reportExportActions');
+  const thinkingCursor = document.getElementById('reportThinkingCursor');
+  const outputCursor = document.getElementById('reportOutputCursor');
+
+  stopBtn.style.display = reportState.generating ? '' : 'none';
+  regenerateBtn.style.display = reportState.generating ? 'none' : '';
+  exportWrap.style.display = reportState.finished && !reportState.stopped ? '' : 'none';
+  thinkingCursor.style.display = reportState.generating ? '' : 'none';
+  outputCursor.style.display = reportState.generating ? '' : 'none';
+}
+
+async function renderReportMarkdown(markdownText) {
+  const outputEl = document.getElementById('reportOutput');
+  try {
+    const response = await fetch(`/epilepsy/reports/render-markdown/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({ markdown: markdownText || '' }),
+    });
+    if (!response.ok) throw new Error('Markdown 渲染失败');
+    const data = await response.json();
+    outputEl.innerHTML = data.html || '';
+  } catch (err) {
+    outputEl.innerHTML = '';
+    setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', markdownText || `Markdown 渲染失败：${err}`);
+  }
+  scrollReportPaneToBottom(outputEl);
+}
+
+async function exportGeneratedReport(fmt) {
+  if (!reportState.rawMarkdown || !(reportState.finished && !reportState.stopped)) return;
+  const response = await fetch(`/epilepsy/reports/export/${fmt}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({
+      markdown: reportState.rawMarkdown,
+      patient_name: reportState.patientName || '患者报告',
+    }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `导出${fmt.toUpperCase()}失败`);
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+  const filename = match ? decodeURIComponent(match[1] || match[2]) : `report.${fmt}`;
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+async function runReportGeneration(patientId, patientName) {
   const title = document.getElementById('reportModalTitle');
   const thinkingEl = document.getElementById('reportThinking');
   const outputEl = document.getElementById('reportOutput');
+  const thinkingTextEl = document.getElementById('reportThinkingText');
+  const outputTextEl = document.getElementById('reportOutputText');
+
+  reportState.patientId = patientId;
+  reportState.patientName = patientName;
+  reportState.controller = new AbortController();
+  reportState.generating = true;
+  reportState.stopped = false;
+  reportState.finished = false;
+  reportState.rawMarkdown = '';
   title.textContent = `生成报告 - ${patientName}`;
-  thinkingEl.textContent = '正在连接 Ollama...';
-  outputEl.textContent = '';
-  $('#reportModal').modal('show');
+  thinkingEl.innerHTML = '<span id="reportThinkingText"></span><span id="reportThinkingCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
+  outputEl.innerHTML = '<span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
+  setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', '正在连接 Ollama...');
+  setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', '');
+  setReportButtons();
 
   try {
-    const response = await fetch(`/epilepsy/patients/${patientId}/generate-report/`);
+    const response = await fetch(`/epilepsy/patients/${patientId}/generate-report/`, {
+      signal: reportState.controller.signal,
+    });
     if (!response.ok || !response.body) {
-      outputEl.textContent = '无法启动报告生成。';
+      setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', '无法启动报告生成。');
+      reportState.generating = false;
+      setReportButtons();
       return;
     }
 
-    thinkingEl.textContent = '';
+    setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', '');
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let receivedDone = false;
 
     while (true) {
       const { value, done } = await reader.read();
@@ -1396,22 +1578,92 @@ async function openReportPanel(patientId, patientName) {
         if (!chunk.startsWith('data: ')) continue;
         const payload = JSON.parse(chunk.slice(6));
         if (payload.type === 'thinking') {
-          thinkingEl.textContent += payload.text;
+          const nextThinking = (document.getElementById('reportThinkingText')?.textContent || '') + payload.text;
+          setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', nextThinking);
         } else if (payload.type === 'output') {
-          outputEl.textContent += payload.text;
+          reportState.rawMarkdown += payload.text;
+          setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', reportState.rawMarkdown);
         } else if (payload.type === 'error') {
-          outputEl.textContent += `\n[错误] ${payload.text}`;
+          const nextOutput = (document.getElementById('reportOutputText')?.textContent || '') + `\n[错误] ${payload.text}`;
+          setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', nextOutput);
+        } else if (payload.type === 'done') {
+          receivedDone = true;
         }
       }
     }
 
-    if (!thinkingEl.textContent.trim()) {
-      thinkingEl.textContent = '（当前模型未返回 thinking 内容）';
+    reportState.generating = false;
+    reportState.finished = receivedDone;
+    setReportButtons();
+
+    if (!(document.getElementById('reportThinkingText')?.textContent || '').trim()) {
+      setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', '（当前模型未返回 thinking 内容）');
+    }
+
+    if (receivedDone) {
+      await renderReportMarkdown(reportState.rawMarkdown);
     }
   } catch (err) {
-    outputEl.textContent = `生成失败：${err}`;
+    reportState.generating = false;
+    if (err.name === 'AbortError') {
+      reportState.stopped = true;
+      const nextOutput = (document.getElementById('reportOutputText')?.textContent || reportState.rawMarkdown || '') + '\n\n[已停止生成]';
+      setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', nextOutput);
+    } else {
+      setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', `生成失败：${err}`);
+    }
+    setReportButtons();
+  } finally {
+    reportState.controller = null;
   }
 }
+
+async function openReportPanel(patientId, patientName) {
+  $('#reportModal').modal('show');
+  await runReportGeneration(patientId, patientName);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const stopBtn = document.getElementById('reportStopBtn');
+  const regenerateBtn = document.getElementById('reportRegenerateBtn');
+  const exportWordBtn = document.getElementById('reportExportWordBtn');
+  const exportPdfBtn = document.getElementById('reportExportPdfBtn');
+
+  stopBtn.addEventListener('click', function () {
+    if (reportState.controller && reportState.generating) {
+      reportState.controller.abort();
+    }
+  });
+
+  regenerateBtn.addEventListener('click', function () {
+    if (!reportState.patientId || reportState.generating) return;
+    runReportGeneration(reportState.patientId, reportState.patientName);
+  });
+
+  exportWordBtn.addEventListener('click', async function () {
+    try {
+      await exportGeneratedReport('word');
+    } catch (err) {
+      window.alert(`导出 Word 失败：${err}`);
+    }
+  });
+
+  exportPdfBtn.addEventListener('click', async function () {
+    try {
+      await exportGeneratedReport('pdf');
+    } catch (err) {
+      window.alert(`导出 PDF 失败：${err}`);
+    }
+  });
+
+  $('#reportModal').on('hidden.bs.modal', function () {
+    if (reportState.controller && reportState.generating) {
+      reportState.controller.abort();
+    }
+  });
+
+  setReportButtons();
+});
 </script>
 
 {% endblock %}
