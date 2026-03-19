@@ -2,13 +2,16 @@
 
 import os, csv, datetime, io, zipfile, re
 import mimetypes
+import urllib.request
+import urllib.error
+import json
 from django.utils.encoding import smart_str
 from django.conf import settings
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model, logout
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, FileResponse, Http404
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, FileResponse, Http404, StreamingHttpResponse
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.urls import reverse_lazy
 from django.db import models
@@ -30,12 +33,57 @@ from .views_helper import (
     handle_patient_file_uploads,
     build_patient_file_path,
     generate_patient_info_file,
+    build_patient_export_json,
 )
 from .json import PATIENT_GROUP_FIELDS, FIELDS_FOR_EXPORT
 import logging
 from pprint import pformat
 
 form_debug_logger = logging.getLogger("epilepsy.formdebug")
+
+def build_patient_report_text(patient):
+    export_payload = build_patient_export_json(patient)
+    return json.dumps(
+        {
+            "task": "请基于以下导出数据生成患者报告。不要编造未提供的信息；如果某项为空或缺失，请明确说明信息未提供。",
+            "source": "patient_export_pipeline",
+            "patient": export_payload,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
+def stream_ollama_report(patient, server):
+    patient_text = build_patient_report_text(patient)
+    payload = {
+        "model": server.model,
+        "system": server.prompt,
+        "prompt": patient_text,
+        "stream": True,
+    }
+    req = urllib.request.Request(
+        f"{server.base_url}/api/generate",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=600) as response:
+        for raw_line in response:
+            line = raw_line.decode("utf-8").strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if obj.get("thinking"):
+                yield f"data: {json.dumps({'type': 'thinking', 'text': obj.get('thinking')})}\n\n"
+            if obj.get("response"):
+                yield f"data: {json.dumps({'type': 'output', 'text': obj.get('response')})}\n\n"
+            if obj.get("done"):
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
 
 def can_edit_followup(user):
     profile = getattr(user, "profile", None)
@@ -899,11 +947,41 @@ def patient_delete(request, pk):
     return render(request, "epilepsy/patient_confirm_delete.html", {"patient": patient})
 
 
+@login_required
+def patient_generate_report_stream(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限生成报告")
+
+    server = OllamaServer.objects.filter(is_enabled=True).first()
+    if not server:
+        return StreamingHttpResponse(iter([
+            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 Ollama 服务器。'})}\n\n"
+        ]), content_type="text/event-stream")
+
+    def event_stream():
+        try:
+            yield from stream_ollama_report(patient, server)
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    return response
+
+
 class UserListView(RoleRequiredMixin, ListView):
     model = User
     template_name = "epilepsy/user_list.html"
     context_object_name = "users"
     allowed_roles = [UserRole.ADMIN]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["ollama_servers"] = OllamaServer.objects.all()
+        context["ollama_form"] = OllamaServerForm()
+        return context
 
 
 def user_create(request):
@@ -987,6 +1065,84 @@ def user_delete(request, pk):
         return redirect("epilepsy:user_list")
 
     return render(request, "epilepsy/user_confirm_delete.html", {"user_obj": user_obj})
+
+
+def ollama_server_create(request):
+    deny = require_admin(request)
+    if deny:
+        return deny
+    if request.method != "POST":
+        return HttpResponseForbidden("只允许 POST 请求")
+    form = OllamaServerForm(request.POST)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Ollama 服务器已添加。")
+    else:
+        messages.error(request, "添加 Ollama 服务器失败，请检查填写内容。")
+    return redirect("epilepsy:user_list")
+
+
+def ollama_server_edit(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+    server = get_object_or_404(OllamaServer, pk=pk)
+    if request.method == "POST":
+        form = OllamaServerForm(request.POST, instance=server)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Ollama 服务器已更新。")
+        else:
+            messages.error(request, "更新失败，请检查填写内容。")
+        return redirect("epilepsy:user_list")
+    return render(request, "epilepsy/ollama_form.html", {"form": OllamaServerForm(instance=server), "server": server})
+
+
+def ollama_server_delete(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+    server = get_object_or_404(OllamaServer, pk=pk)
+    if request.method == "POST":
+        server.delete()
+        messages.success(request, "Ollama 服务器已删除。")
+    return redirect("epilepsy:user_list")
+
+
+def ollama_server_enable(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+    if request.method != "POST":
+        return HttpResponseForbidden("只允许 POST 请求")
+    server = get_object_or_404(OllamaServer, pk=pk)
+    OllamaServer.objects.update(is_enabled=False)
+    server.is_enabled = True
+    server.save(update_fields=["is_enabled", "updated_at"])
+    messages.success(request, f"已启用 Ollama 服务器：{server.display_name}")
+    return redirect("epilepsy:user_list")
+
+
+def ollama_server_test(request, pk):
+    deny = require_admin(request)
+    if deny:
+        return deny
+    if request.method != "POST":
+        return HttpResponseForbidden("只允许 POST 请求")
+    server = get_object_or_404(OllamaServer, pk=pk)
+    try:
+        with urllib.request.urlopen(f"{server.base_url}/api/tags", timeout=5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        models_found = [m.get("name") for m in payload.get("models", [])]
+        if server.model in models_found:
+            messages.success(request, f"测试成功：已连接 {server.base_url}，并找到模型 {server.model}")
+        else:
+            messages.warning(request, f"连接成功，但目标模型 {server.model} 不在服务端模型列表中。")
+    except urllib.error.URLError as exc:
+        messages.error(request, f"连接失败：{exc}")
+    except Exception as exc:
+        messages.error(request, f"测试失败：{exc}")
+    return redirect("epilepsy:user_list")
 
 
 class PatientDatasetListView(RoleRequiredMixin, DetailView):

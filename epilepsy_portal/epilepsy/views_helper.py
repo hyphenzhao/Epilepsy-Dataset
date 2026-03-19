@@ -290,6 +290,31 @@ def build_patient_sections(patient: Patient):
     return sections
 
 
+def build_patient_export_json(patient: Patient):
+    """
+    Reuse the same structured data source as CSV/Word export and return a
+    JSON-serializable payload for downstream consumers such as Ollama.
+    """
+    sections_payload = []
+    for section_title, fields in build_patient_sections(patient):
+        items = []
+        for label, value in fields:
+            if value in (None, ""):
+                continue
+            items.append({"label": str(label), "value": str(value)})
+        sections_payload.append({
+            "title": str(section_title),
+            "items": items,
+        })
+
+    return {
+        "patient_id": patient.id,
+        "patient_name": str(getattr(patient, "name", "") or ""),
+        "medical_record_number": str(getattr(patient, "medical_record_number", "") or ""),
+        "sections": sections_payload,
+    }
+
+
 # =======================
 #  文件上传 / 下载辅助
 # =======================

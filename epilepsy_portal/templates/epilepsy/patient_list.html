@@ -354,6 +354,10 @@
                   onclick="event.stopPropagation(); openEditPanel({{ p.id }});">
             修改
           </button>
+          <button class="btn btn-sm btn-outline-success"
+                  onclick="event.stopPropagation(); openReportPanel({{ p.id }}, '{{ p.name|escapejs }}');">
+            生成报告
+          </button>
           <form method="post"
                 action="{% url 'epilepsy:patient_delete' p.id %}"
                 style="display:inline;">
@@ -568,6 +572,31 @@
   </div>
   <div class="drawer-body" id="editPatientBody">
     <div class="text-center text-muted">请选择要查看的患者</div>
+  </div>
+</div>
+
+<div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportModalTitle">生成报告</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-5 border-end">
+            <h6>Thinking</h6>
+            <pre id="reportThinking" style="white-space: pre-wrap; min-height: 360px; background:#f8f9fa; padding:1rem; border-radius:8px;"></pre>
+          </div>
+          <div class="col-md-7">
+            <h6>Output</h6>
+            <pre id="reportOutput" style="white-space: pre-wrap; min-height: 360px; background:#f8f9fa; padding:1rem; border-radius:8px;"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1334,6 +1363,56 @@ document.addEventListener('DOMContentLoaded', function () {
     <img id="imgPreviewOverlayImg" src="" alt="">
   </div>
 </div>
+
+<script>
+async function openReportPanel(patientId, patientName) {
+  const title = document.getElementById('reportModalTitle');
+  const thinkingEl = document.getElementById('reportThinking');
+  const outputEl = document.getElementById('reportOutput');
+  title.textContent = `生成报告 - ${patientName}`;
+  thinkingEl.textContent = '正在连接 Ollama...';
+  outputEl.textContent = '';
+  $('#reportModal').modal('show');
+
+  try {
+    const response = await fetch(`/epilepsy/patients/${patientId}/generate-report/`);
+    if (!response.ok || !response.body) {
+      outputEl.textContent = '无法启动报告生成。';
+      return;
+    }
+
+    thinkingEl.textContent = '';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop();
+      for (const chunk of parts) {
+        if (!chunk.startsWith('data: ')) continue;
+        const payload = JSON.parse(chunk.slice(6));
+        if (payload.type === 'thinking') {
+          thinkingEl.textContent += payload.text;
+        } else if (payload.type === 'output') {
+          outputEl.textContent += payload.text;
+        } else if (payload.type === 'error') {
+          outputEl.textContent += `\n[错误] ${payload.text}`;
+        }
+      }
+    }
+
+    if (!thinkingEl.textContent.trim()) {
+      thinkingEl.textContent = '（当前模型未返回 thinking 内容）';
+    }
+  } catch (err) {
+    outputEl.textContent = `生成失败：${err}`;
+  }
+}
+</script>
 
 {% endblock %}
 

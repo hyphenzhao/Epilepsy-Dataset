@@ -38,6 +38,55 @@ class UserProfile(models.Model):
     def is_guest(self):
         return self.role == UserRole.GUEST
 
+class OllamaServer(models.Model):
+    name = models.CharField(max_length=100, verbose_name="名称", default="默认 Ollama")
+    ip = models.CharField(max_length=255, verbose_name="IP / 主机名")
+    port = models.PositiveIntegerField(default=11434, verbose_name="端口")
+    model = models.CharField(max_length=255, verbose_name="模型")
+    prompt = models.TextField(blank=True, default="", verbose_name="Prompt")
+    enabled = models.BooleanField(default=False, verbose_name="启用")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ollama 服务"
+        verbose_name_plural = "Ollama 服务"
+        ordering = ["-enabled", "name", "id"]
+
+    def __str__(self):
+        return f"{self.name} ({self.ip}:{self.port})"
+
+    @property
+    def base_url(self):
+        return f"http://{self.ip}:{self.port}"
+
+
+class OllamaServer(models.Model):
+    name = models.CharField(max_length=100, blank=True, default="")
+    ip = models.CharField(max_length=255, verbose_name="IP / Host")
+    port = models.PositiveIntegerField(default=11434)
+    model = models.CharField(max_length=255, verbose_name="模型")
+    prompt = models.TextField(blank=True, default="", verbose_name="提示词")
+    is_enabled = models.BooleanField(default=False, verbose_name="启用")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_enabled", "name", "id"]
+        verbose_name = "Ollama 服务器"
+        verbose_name_plural = "Ollama 服务器"
+
+    def __str__(self):
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return self.name or f"{self.ip}:{self.port} · {self.model}"
+
+    @property
+    def base_url(self):
+        return f"http://{self.ip}:{self.port}"
+
 class Patient(models.Model):
     GENDER_CHOICES = [("M", "男"), ("F", "女"), ("O", "其他"),]
     HAND_CHOICES = [("L", "左利手"), ("R", "右利手"), ("A", "双手"),]

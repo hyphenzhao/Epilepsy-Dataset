@@ -929,6 +929,25 @@ class UserWithRoleForm(forms.ModelForm):
         profile.save()
         return user
 
+class OllamaServerForm(forms.ModelForm):
+    class Meta:
+        model = OllamaServer
+        fields = ["name", "ip", "port", "model", "prompt"]
+        labels = {
+            "name": "名称",
+            "ip": "IP / Host",
+            "port": "端口",
+            "model": "模型",
+            "prompt": "提示词",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "例如：本地 Ollama"}),
+            "ip": forms.TextInput(attrs={"class": "form-control", "placeholder": "127.0.0.1"}),
+            "port": forms.NumberInput(attrs={"class": "form-control", "placeholder": 11434}),
+            "model": forms.TextInput(attrs={"class": "form-control", "placeholder": "llama3.1:8b"}),
+            "prompt": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": "用于生成患者报告的系统提示词"}),
+        }
+
 class MRIFileForm(forms.ModelForm):
     class Meta:
         model = MRIFile
