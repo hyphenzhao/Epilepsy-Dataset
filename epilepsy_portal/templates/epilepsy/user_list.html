@@ -99,7 +99,13 @@
               </td>
               <td>
                 <form method="post" action="{% url 'epilepsy:ollama_server_test' server.id %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-info">测试</button></form>
-                <form method="post" action="{% url 'epilepsy:ollama_server_enable' server.id %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-success">启用</button></form>
+                <form method="post" action="{% url 'epilepsy:ollama_server_enable' server.id %}" style="display:inline;">{% csrf_token %}
+                  {% if server.is_enabled %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">停用</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-sm btn-outline-success">启用</button>
+                  {% endif %}
+                </form>
                 <a href="{% url 'epilepsy:ollama_server_edit' server.id %}" class="btn btn-sm btn-outline-primary">编辑</a>
                 <form method="post" action="{% url 'epilepsy:ollama_server_delete' server.id %}" style="display:inline;" onsubmit="return confirm('确认删除该 Ollama 服务器？');">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">删除</button></form>
               </td>

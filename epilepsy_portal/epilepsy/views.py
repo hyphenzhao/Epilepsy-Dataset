@@ -1109,6 +1109,13 @@ def ollama_server_delete(request, pk):
     return redirect("epilepsy:user_list")
 
 
+def check_ollama_server_available(server, timeout=5):
+    with urllib.request.urlopen(f"{server.base_url}/api/tags", timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    models_found = [m.get("name") for m in payload.get("models", [])]
+    return server.model in models_found, models_found
+
+
 def ollama_server_enable(request, pk):
     deny = require_admin(request)
     if deny:
@@ -1116,7 +1123,26 @@ def ollama_server_enable(request, pk):
     if request.method != "POST":
         return HttpResponseForbidden("只允许 POST 请求")
     server = get_object_or_404(OllamaServer, pk=pk)
-    OllamaServer.objects.update(is_enabled=False)
+
+    if server.is_enabled:
+        server.is_enabled = False
+        server.save(update_fields=["is_enabled", "updated_at"])
+        messages.success(request, f"已停用 Ollama 服务器：{server.display_name}")
+        return redirect("epilepsy:user_list")
+
+    try:
+        ok, models_found = check_ollama_server_available(server)
+        if not ok:
+            messages.error(request, f"启用失败：已连接 {server.base_url}，但未找到模型 {server.model}。")
+            return redirect("epilepsy:user_list")
+    except urllib.error.URLError as exc:
+        messages.error(request, f"启用失败：连接 {server.base_url} 失败：{exc}")
+        return redirect("epilepsy:user_list")
+    except Exception as exc:
+        messages.error(request, f"启用失败：测试 {server.display_name} 时出错：{exc}")
+        return redirect("epilepsy:user_list")
+
+    OllamaServer.objects.exclude(pk=server.pk).update(is_enabled=False)
     server.is_enabled = True
     server.save(update_fields=["is_enabled", "updated_at"])
     messages.success(request, f"已启用 Ollama 服务器：{server.display_name}")
@@ -1131,10 +1157,8 @@ def ollama_server_test(request, pk):
         return HttpResponseForbidden("只允许 POST 请求")
     server = get_object_or_404(OllamaServer, pk=pk)
     try:
-        with urllib.request.urlopen(f"{server.base_url}/api/tags", timeout=5) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        models_found = [m.get("name") for m in payload.get("models", [])]
-        if server.model in models_found:
+        ok, models_found = check_ollama_server_available(server)
+        if ok:
             messages.success(request, f"测试成功：已连接 {server.base_url}，并找到模型 {server.model}")
         else:
             messages.warning(request, f"连接成功，但目标模型 {server.model} 不在服务端模型列表中。")
