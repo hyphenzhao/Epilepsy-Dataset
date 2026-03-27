@@ -64,16 +64,61 @@ def build_patient_report_text(patient):
     )
 
 
+def _build_patient_report_messages(patient, server):
+    system_prompt = (getattr(server, "prompt", "") or "").strip()
+    user_prompt = build_patient_report_text(patient)
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": user_prompt})
+    return messages
+
+
+def _split_report_thinking_delta(delta, state):
+    if not delta:
+        return "", ""
+
+    thinking_parts = []
+    answer_parts = []
+    buf = delta
+
+    while buf:
+        if state["in_think"]:
+            end = buf.find("</think>")
+            if end == -1:
+                thinking_parts.append(buf)
+                buf = ""
+            else:
+                thinking_parts.append(buf[:end])
+                buf = buf[end + len("</think>"):]
+                state["in_think"] = False
+            continue
+
+        start = buf.find("<think>")
+        if start == -1:
+            answer_parts.append(buf)
+            buf = ""
+        else:
+            if start > 0:
+                answer_parts.append(buf[:start])
+            buf = buf[start + len("<think>"):]
+            state["in_think"] = True
+
+    return "".join(thinking_parts), "".join(answer_parts)
+
+
 def stream_ollama_report(patient, server):
-    patient_text = build_patient_report_text(patient)
+    messages = _build_patient_report_messages(patient, server)
     payload = {
         "model": server.model,
-        "system": server.prompt,
-        "prompt": patient_text,
+        "messages": messages,
         "stream": True,
     }
+    if getattr(server, "enable_thinking", False):
+        payload["think"] = True
+    think_state = {"in_think": False}
     req = urllib.request.Request(
-        f"{server.base_url}/api/generate",
+        f"{server.base_url}/api/chat",
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -88,12 +133,37 @@ def stream_ollama_report(patient, server):
                     obj = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if obj.get("thinking"):
-                    yield f"data: {json.dumps({'type': 'thinking', 'text': obj.get('thinking')})}\n\n"
-                if obj.get("response"):
-                    yield f"data: {json.dumps({'type': 'output', 'text': obj.get('response')})}\n\n"
+                yield f"data: {json.dumps({'type': 'raw', 'data': obj}, ensure_ascii=False)}\n\n"
+                message = obj.get("message") or {}
+                direct_thinking_text = obj.get("thinking") or obj.get("reasoning")
+                if not direct_thinking_text and isinstance(message, dict):
+                    direct_thinking_text = message.get("thinking") or message.get("reasoning")
+
+                content_text = obj.get("response")
+                if not content_text and isinstance(message, dict):
+                    content_text = message.get("content") or message.get("response")
+
+                thinking_text = ""
+                output_text = ""
+
+                if direct_thinking_text:
+                    thinking_text += direct_thinking_text
+
+                if content_text:
+                    tagged_thinking_text, answer_text = _split_report_thinking_delta(content_text, think_state)
+                    if tagged_thinking_text:
+                        thinking_text += tagged_thinking_text
+                    if answer_text:
+                        output_text = answer_text
+                    elif not direct_thinking_text:
+                        output_text = content_text
+
+                if thinking_text:
+                    yield f"data: {json.dumps({'type': 'thinking', 'text': thinking_text}, ensure_ascii=False)}\n\n"
+                if output_text:
+                    yield f"data: {json.dumps({'type': 'output', 'text': output_text}, ensure_ascii=False)}\n\n"
                 if obj.get("done"):
-                    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
     except urllib.error.HTTPError as exc:
         error_body = ""
         try:
@@ -101,8 +171,8 @@ def stream_ollama_report(patient, server):
         except Exception:
             error_body = ""
         debug_payload = {
-            "stage": "ollama_generate",
-            "url": f"{server.base_url}/api/generate",
+            "stage": "ollama_chat",
+            "url": f"{server.base_url}/api/chat",
             "status": getattr(exc, "code", None),
             "reason": getattr(exc, "reason", ""),
             "model": server.model,
@@ -112,8 +182,8 @@ def stream_ollama_report(patient, server):
         raise RuntimeError(f"Ollama HTTPError: {json.dumps(debug_payload, ensure_ascii=False)}")
     except urllib.error.URLError as exc:
         debug_payload = {
-            "stage": "ollama_generate",
-            "url": f"{server.base_url}/api/generate",
+            "stage": "ollama_chat",
+            "url": f"{server.base_url}/api/chat",
             "reason": str(exc.reason) if hasattr(exc, 'reason') else str(exc),
             "model": server.model,
             "request_payload": payload,

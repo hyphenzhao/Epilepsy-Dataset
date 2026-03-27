@@ -67,6 +67,7 @@ class OllamaServer(models.Model):
     port = models.PositiveIntegerField(default=11434)
     model = models.CharField(max_length=255, verbose_name="模型")
     prompt = models.TextField(blank=True, default="", verbose_name="提示词")
+    enable_thinking = models.BooleanField(default=True, verbose_name="启用推理输出")
     is_enabled = models.BooleanField(default=False, verbose_name="启用")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

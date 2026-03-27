@@ -932,13 +932,14 @@ class UserWithRoleForm(forms.ModelForm):
 class OllamaServerForm(forms.ModelForm):
     class Meta:
         model = OllamaServer
-        fields = ["name", "ip", "port", "model", "prompt"]
+        fields = ["name", "ip", "port", "model", "prompt", "enable_thinking"]
         labels = {
             "name": "名称",
             "ip": "IP / Host",
             "port": "端口",
             "model": "模型",
             "prompt": "提示词",
+            "enable_thinking": "启用推理输出",
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "例如：本地 Ollama"}),
@@ -946,6 +947,7 @@ class OllamaServerForm(forms.ModelForm):
             "port": forms.NumberInput(attrs={"class": "form-control", "placeholder": 11434}),
             "model": forms.TextInput(attrs={"class": "form-control", "placeholder": "llama3.1:8b"}),
             "prompt": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": "用于生成患者报告的系统提示词"}),
+            "enable_thinking": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
 class MRIFileForm(forms.ModelForm):

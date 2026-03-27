@@ -603,6 +603,12 @@
           <button type="button" id="reportExportWordBtn" class="btn btn-outline-primary mr-2">导出Word</button>
           <button type="button" id="reportExportPdfBtn" class="btn btn-outline-secondary">导出PDF</button>
         </div>
+        <div class="mt-3">
+          <button type="button" id="reportDebugToggleBtn" class="btn btn-sm btn-outline-secondary">显示原始 JSON</button>
+          <div id="reportDebugPanel" class="report-debug-panel mt-2" style="display:none;">
+            <pre id="reportDebugText" class="mb-0"></pre>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -666,6 +672,21 @@
       opacity: 0;
       background: #fff;
     }
+  }
+  .report-debug-panel {
+    height: 180px;
+    overflow-y: auto;
+    background: #111827;
+    color: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #374151;
+    padding: .75rem;
+  }
+  .report-debug-panel pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: .875rem;
+    color: #ffffff;
   }
 </style>
 
@@ -1442,6 +1463,7 @@ const reportState = {
   stopped: false,
   finished: false,
   rawMarkdown: '',
+  rawEvents: [],
 };
 
 function getCsrfToken() {
@@ -1451,6 +1473,21 @@ function getCsrfToken() {
 
 function scrollReportPaneToBottom(el) {
   if (el) el.scrollTop = el.scrollHeight;
+}
+
+function appendReportDebugLine(text) {
+  const panel = document.getElementById('reportDebugPanel');
+  const textEl = document.getElementById('reportDebugText');
+  if (!textEl) return;
+  reportState.rawEvents.push(text);
+  textEl.textContent = reportState.rawEvents.join('\n');
+  scrollReportPaneToBottom(panel);
+}
+
+function resetReportDebugPanel() {
+  reportState.rawEvents = [];
+  const textEl = document.getElementById('reportDebugText');
+  if (textEl) textEl.textContent = '';
 }
 
 function setStreamingPaneText(containerId, textId, cursorId, text) {
@@ -1544,6 +1581,7 @@ async function runReportGeneration(patientId, patientName) {
   reportState.stopped = false;
   reportState.finished = false;
   reportState.rawMarkdown = '';
+  resetReportDebugPanel();
   title.textContent = `生成报告 - ${patientName}`;
   thinkingEl.innerHTML = '<span id="reportThinkingText"></span><span id="reportThinkingCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
   outputEl.innerHTML = '<span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
@@ -1577,7 +1615,9 @@ async function runReportGeneration(patientId, patientName) {
       for (const chunk of parts) {
         if (!chunk.startsWith('data: ')) continue;
         const payload = JSON.parse(chunk.slice(6));
-        if (payload.type === 'thinking') {
+        if (payload.type === 'raw') {
+          appendReportDebugLine(JSON.stringify(payload.data, null, 2));
+        } else if (payload.type === 'thinking') {
           const nextThinking = (document.getElementById('reportThinkingText')?.textContent || '') + payload.text;
           setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', nextThinking);
         } else if (payload.type === 'output') {
@@ -1628,6 +1668,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const regenerateBtn = document.getElementById('reportRegenerateBtn');
   const exportWordBtn = document.getElementById('reportExportWordBtn');
   const exportPdfBtn = document.getElementById('reportExportPdfBtn');
+  const reportDebugToggleBtn = document.getElementById('reportDebugToggleBtn');
+  const reportDebugPanel = document.getElementById('reportDebugPanel');
 
   stopBtn.addEventListener('click', function () {
     if (reportState.controller && reportState.generating) {
@@ -1654,6 +1696,12 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (err) {
       window.alert(`导出 PDF 失败：${err}`);
     }
+  });
+
+  reportDebugToggleBtn.addEventListener('click', function () {
+    const isHidden = reportDebugPanel.style.display === 'none';
+    reportDebugPanel.style.display = isHidden ? 'block' : 'none';
+    reportDebugToggleBtn.textContent = isHidden ? '隐藏原始 JSON' : '显示原始 JSON';
   });
 
   $('#reportModal').on('hidden.bs.modal', function () {
