@@ -2,3 +2,10 @@
 venv/
 .env/
 .venv/
+
+# Visual Studio workspace artifacts
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates

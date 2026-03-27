@@ -596,7 +596,8 @@
           </div>
           <div class="col-md-7">
             <h6>Output</h6>
-            <div id="reportOutput" class="report-pane report-pane-markdown"><span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span></div>
+            <div id="reportOutput" class="report-pane report-pane-markdown"></div>
+            <div id="reportOutputTail" class="report-pane report-pane-text report-pane-tail mt-2"><span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span></div>
           </div>
         </div>
         <div id="reportExportActions" class="mt-3" style="display:none;">
@@ -629,6 +630,11 @@
   }
   .report-pane-markdown {
     white-space: normal;
+  }
+  .report-pane-tail {
+    height: 120px;
+    background: #fffdf2;
+    border-style: dashed;
   }
   .report-pane-markdown h1,
   .report-pane-markdown h2,
@@ -1464,6 +1470,9 @@ const reportState = {
   finished: false,
   rawMarkdown: '',
   rawEvents: [],
+  renderedMarkdown: '',
+  pendingMarkdown: '',
+  renderRequestId: 0,
 };
 
 function getCsrfToken() {
@@ -1472,7 +1481,7 @@ function getCsrfToken() {
 }
 
 function scrollReportPaneToBottom(el) {
-  if (el) el.scrollTop = el.scrollHeight;
+  return;
 }
 
 function appendReportDebugLine(text) {
@@ -1515,6 +1524,7 @@ function setReportButtons() {
 
 async function renderReportMarkdown(markdownText) {
   const outputEl = document.getElementById('reportOutput');
+  const tailTextEl = document.getElementById('reportOutputText');
   try {
     const response = await fetch(`/epilepsy/reports/render-markdown/`, {
       method: 'POST',
@@ -1528,11 +1538,134 @@ async function renderReportMarkdown(markdownText) {
     if (!response.ok) throw new Error('Markdown 渲染失败');
     const data = await response.json();
     outputEl.innerHTML = data.html || '';
+    if (tailTextEl) tailTextEl.textContent = '';
   } catch (err) {
     outputEl.innerHTML = '';
     setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', markdownText || `Markdown 渲染失败：${err}`);
   }
-  scrollReportPaneToBottom(outputEl);
+}
+
+function escapeHtml(text) {
+  return (text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function findIncrementalMarkdownBoundary(markdownText) {
+  if (!markdownText) return 0;
+
+  let lastBoundary = 0;
+  let inFence = false;
+  const lines = markdownText.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (/^```/.test(trimmed)) {
+      inFence = !inFence;
+      if (!inFence) {
+        lastBoundary += line.length;
+        if (i < lines.length - 1) lastBoundary += 1;
+      } else {
+        lastBoundary += line.length;
+        if (i < lines.length - 1) lastBoundary += 1;
+      }
+      continue;
+    }
+
+    lastBoundary += line.length;
+    if (i < lines.length - 1) lastBoundary += 1;
+
+    if (inFence) continue;
+
+    if (trimmed === '') {
+      return lastBoundary;
+    }
+
+    if (/^(#{1,6})\s+/.test(trimmed)) {
+      return lastBoundary;
+    }
+
+    if (/^>\s?/.test(trimmed)) {
+      const next = lines[i + 1];
+      if (typeof next === 'undefined' || next.trim() === '' || !/^>\s?/.test(next.trim())) {
+        return lastBoundary;
+      }
+    }
+
+    if (/^([-*+]\s+|\d+[.)]\s+)/.test(trimmed)) {
+      const next = lines[i + 1];
+      if (typeof next === 'undefined' || next.trim() === '' || !/^([-*+]\s+|\d+[.)]\s+)/.test(next.trim())) {
+        return lastBoundary;
+      }
+    }
+
+    if (/^\|.*\|$/.test(trimmed)) {
+      const next = lines[i + 1];
+      if (typeof next === 'undefined' || next.trim() === '' || !/^\|.*\|$/.test(next.trim())) {
+        return lastBoundary;
+      }
+    }
+  }
+
+  return inFence ? 0 : 0;
+}
+
+async function renderReportMarkdownIncrementally() {
+  const outputEl = document.getElementById('reportOutput');
+  const tailEl = document.getElementById('reportOutputTail');
+  if (!outputEl) return;
+
+  const boundary = findIncrementalMarkdownBoundary(reportState.pendingMarkdown);
+  if (boundary <= 0) {
+    setStreamingPaneText('reportOutputTail', 'reportOutputText', 'reportOutputCursor', reportState.pendingMarkdown || '');
+    setReportButtons();
+    return;
+  }
+
+  const completedChunk = reportState.pendingMarkdown.slice(0, boundary);
+  const remainingChunk = reportState.pendingMarkdown.slice(boundary);
+  const nextRenderedMarkdown = reportState.renderedMarkdown + completedChunk;
+  const requestId = ++reportState.renderRequestId;
+
+  try {
+    const response = await fetch(`/epilepsy/reports/render-markdown/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({ markdown: nextRenderedMarkdown }),
+    });
+    if (!response.ok) throw new Error('Markdown 增量渲染失败');
+    const data = await response.json();
+    if (requestId !== reportState.renderRequestId) return;
+
+    reportState.renderedMarkdown = nextRenderedMarkdown;
+    reportState.pendingMarkdown = remainingChunk;
+
+    outputEl.innerHTML = data.html || '';
+    setStreamingPaneText('reportOutputTail', 'reportOutputText', 'reportOutputCursor', reportState.pendingMarkdown || '');
+    setReportButtons();
+
+    if (findIncrementalMarkdownBoundary(reportState.pendingMarkdown) > 0) {
+      await renderReportMarkdownIncrementally();
+    }
+  } catch (err) {
+    outputEl.innerHTML = '';
+    setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', reportState.rawMarkdown || `Markdown 渲染失败：${err}`);
+  }
+}
+
+function queueIncrementalReportMarkdown(text) {
+  reportState.rawMarkdown += text || '';
+  reportState.pendingMarkdown += text || '';
+  renderReportMarkdownIncrementally();
 }
 
 async function exportGeneratedReport(fmt) {
@@ -1581,12 +1714,17 @@ async function runReportGeneration(patientId, patientName) {
   reportState.stopped = false;
   reportState.finished = false;
   reportState.rawMarkdown = '';
+  reportState.renderedMarkdown = '';
+  reportState.pendingMarkdown = '';
+  reportState.renderRequestId = 0;
   resetReportDebugPanel();
   title.textContent = `生成报告 - ${patientName}`;
   thinkingEl.innerHTML = '<span id="reportThinkingText"></span><span id="reportThinkingCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
-  outputEl.innerHTML = '<span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
+  outputEl.innerHTML = '';
+  const outputTailEl = document.getElementById('reportOutputTail');
+  outputTailEl.innerHTML = '<span id="reportOutputText"></span><span id="reportOutputCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
   setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', '正在连接 Ollama...');
-  setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', '');
+  setStreamingPaneText('reportOutputTail', 'reportOutputText', 'reportOutputCursor', '');
   setReportButtons();
 
   try {
@@ -1621,8 +1759,7 @@ async function runReportGeneration(patientId, patientName) {
           const nextThinking = (document.getElementById('reportThinkingText')?.textContent || '') + payload.text;
           setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', nextThinking);
         } else if (payload.type === 'output') {
-          reportState.rawMarkdown += payload.text;
-          setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', reportState.rawMarkdown);
+          queueIncrementalReportMarkdown(payload.text);
         } else if (payload.type === 'error') {
           const nextOutput = (document.getElementById('reportOutputText')?.textContent || '') + `\n[错误] ${payload.text}`;
           setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', nextOutput);
