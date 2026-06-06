@@ -55,6 +55,34 @@
   </div>
 
   <div class="card shadow-sm mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">📚 知识库设置</h5>
+      <a href="{% url 'knowledge:settings' %}" class="btn btn-outline-primary btn-sm">⚙ 配置</a>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2 small">配置向量数据库、分块策略、检索参数等知识库相关选项。</p>
+      <div class="row text-muted small">
+        <div class="col-md-3">
+          <strong>向量后端</strong><br>
+          {{ knowledge_settings.get_vector_backend_display }}
+        </div>
+        <div class="col-md-3">
+          <strong>分块策略</strong><br>
+          {{ knowledge_settings.get_chunk_strategy_display }}
+        </div>
+        <div class="col-md-3">
+          <strong>共享范围</strong><br>
+          {{ knowledge_settings.get_knowledge_scope_display }}
+        </div>
+        <div class="col-md-3">
+          <strong>编辑学习</strong><br>
+          {{ knowledge_settings.get_learning_mode_display }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mt-4">
     <div class="card-header">
       <h5 class="mb-0">Ollama 服务器</h5>
     </div>

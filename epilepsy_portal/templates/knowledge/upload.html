@@ -1,0 +1,167 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+{% load static %}
+
+{% block epilepsy_content %}
+<div class="container mt-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'epilepsy:user_list' %}">管理设置</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'knowledge:list' %}">知识库</a></li>
+      <li class="breadcrumb-item active">上传文档</li>
+    </ol>
+  </nav>
+
+  <!-- Card 1: Upload Form -->
+  <div class="card shadow-sm mb-4" id="uploadCard" {% if preview_doc %}style="opacity: 0.5;"{% endif %}>
+    <div class="card-header">
+      <h5 class="mb-0">📤 上传新文档</h5>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data"
+            {% if preview_doc %}onsubmit="return true;"{% endif %}>
+        {% csrf_token %}
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="{{ form.doc_type.id_for_label }}">{{ form.doc_type.label }}</label>
+            {{ form.doc_type }}
+          </div>
+          <div class="col-md-8 mb-3">
+            <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+            {{ form.title }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label>{{ form.file.label }}</label>
+          <div id="dropZone" class="border rounded p-4 text-center"
+               style="border-style: dashed !important; cursor: pointer; transition: background .2s;"
+               {% if preview_doc %}onclick="return false;"{% endif %}>
+            <p class="text-muted mb-2">拖拽文件到此处，或点击选择</p>
+            <p class="text-muted small mb-0">{{ form.file.help_text }}</p>
+            {{ form.file }}
+          </div>
+          <div id="fileInfo" class="mt-2 small text-muted" style="display:none;"></div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <a href="{% url 'knowledge:list' %}" class="btn btn-outline-secondary">返回列表</a>
+          <button type="submit" class="btn btn-primary" {% if preview_doc %}disabled{% endif %}>
+            🔍 提取元数据
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if preview_doc %}
+  <!-- Card 2: Preview -->
+  <div class="card shadow-sm mb-4" id="previewCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">📋 文本预览与元数据 — {{ preview_doc.title }}</h5>
+      <span class="badge badge-info">{{ text_total_chars }} 字符</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-7">
+          <h6 class="text-muted">文本预览（前 2000 字符）</h6>
+          <pre class="border rounded p-3"
+               style="max-height: 500px; overflow: auto; white-space: pre-wrap; font-size: 13px; background: #f8f9fa;">{{ text_preview }}</pre>
+        </div>
+
+        <div class="col-md-5">
+          <h6 class="text-muted">AI 提取的元数据（可修改）</h6>
+          <div id="metadataFields">
+            {% for key, value in preview_doc.metadata.items %}
+            <div class="form-group mb-2">
+              <label class="small mb-1"><strong>{{ key }}</strong></label>
+              <input type="text" class="form-control form-control-sm meta-field"
+                     data-key="{{ key }}" value="{{ value|default:'' }}"
+                     placeholder="未提取到">
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr>
+          <form method="post" id="confirmForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="confirm">
+            <input type="hidden" name="doc_id" value="{{ preview_doc.pk }}">
+            <div id="confirmMetadataInputs">
+              {% for key, value in preview_doc.metadata.items %}
+              <input type="hidden" name="meta_{{ key }}" value="{{ value|default:'' }}">
+              {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-success btn-block">
+              ✅ 确认上传并入库
+            </button>
+          </form>
+          <a href="{% url 'knowledge:upload' %}" class="btn btn-outline-warning btn-block mt-2">
+            🔄 重新上传
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+  // Sync metadata edits to hidden form inputs
+  document.addEventListener('DOMContentLoaded', function() {
+    var metadataFields = document.getElementById('metadataFields');
+    if (!metadataFields) return;
+
+    metadataFields.querySelectorAll('.meta-field').forEach(function(input) {
+      input.addEventListener('input', function() {
+        var hidden = document.querySelector(
+          '#confirmMetadataInputs input[name="meta_' + input.getAttribute('data-key') + '"]'
+        );
+        if (hidden) hidden.value = input.value;
+      });
+    });
+
+    // Drag-and-drop for file input
+    var dropZone = document.getElementById('dropZone');
+    if (dropZone) {
+      var fileInput = dropZone.querySelector('input[type="file"]');
+      var fileInfo = document.getElementById('fileInfo');
+
+      dropZone.addEventListener('click', function() { fileInput.click(); });
+      dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.style.background = '#e9f7ef'; });
+      dropZone.addEventListener('dragleave', function() { dropZone.style.background = ''; });
+      dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.style.background = '';
+        if (e.dataTransfer.files.length > 0) {
+          fileInput.files = e.dataTransfer.files;
+          if (fileInfo) {
+            var f = fileInput.files[0];
+            fileInfo.style.display = '';
+            fileInfo.textContent = '已选择: ' + f.name + ' (' + (f.size/1024/1024).toFixed(1) + ' MB)';
+          }
+        }
+      });
+      if (fileInput && fileInfo) {
+        fileInput.addEventListener('change', function() {
+          if (fileInput.files.length > 0) {
+            var f = fileInput.files[0];
+            fileInfo.style.display = '';
+            fileInfo.textContent = '已选择: ' + f.name + ' (' + (f.size/1024/1024).toFixed(1) + ' MB)';
+          }
+        });
+      }
+    }
+  });
+</script>
+{% endblock %}

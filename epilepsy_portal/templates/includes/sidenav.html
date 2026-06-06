@@ -44,6 +44,24 @@
             </a>
           </li>
           {% endif %}
+
+          {% if user.is_authenticated %}
+            {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'knowledge:list' %}">
+                <i class="ni ni-books text-default"></i>
+                <span class="nav-link-text">知识库</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'knowledge:upload' %}">
+                <i class="ni ni-cloud-upload-96 text-success"></i>
+                <span class="nav-link-text">上传文档</span>
+              </a>
+            </li>
+            {% endif %}
+          {% endif %}
+
           <li class="nav-item">
             <a class="nav-link" href="{% url 'epilepsy:about' %}">
               <i class="ni ni-support-16 text-default"></i>

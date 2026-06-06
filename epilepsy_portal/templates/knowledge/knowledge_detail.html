@@ -1,0 +1,130 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block epilepsy_content %}
+<div class="container mt-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'epilepsy:user_list' %}">管理设置</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'knowledge:list' %}">知识库</a></li>
+      <li class="breadcrumb-item active">{{ doc.title|truncatechars:50 }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">{{ doc.title }}</h3>
+    <div>
+      <a href="{% url 'knowledge:list' %}" class="btn btn-outline-secondary">返回列表</a>
+      <form method="post" action="{% url 'knowledge:delete' doc.pk %}" style="display:inline;"
+            onsubmit="return confirm('确认删除此文档？');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger ml-2">删除</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header"><h6 class="mb-0">文档信息</h6></div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-5">类型</dt>
+            <dd class="col-sm-7"><span class="badge badge-secondary">{{ doc.get_doc_type_display }}</span></dd>
+
+            <dt class="col-sm-5">审核状态</dt>
+            <dd class="col-sm-7">
+              {% if doc.is_approved %}<span class="badge badge-success">已审核</span>
+              {% else %}<span class="badge badge-warning">待审核</span>{% endif %}
+            </dd>
+
+            {% if doc.source_patient %}
+            <dt class="col-sm-5">关联患者</dt>
+            <dd class="col-sm-7">
+              <a href="{% url 'epilepsy:patient_detail' doc.source_patient.pk %}" target="_blank">
+                {{ doc.source_patient.name }}
+              </a>
+            </dd>
+            {% endif %}
+
+            <dt class="col-sm-5">上传者</dt>
+            <dd class="col-sm-7">{{ doc.created_by.username|default:"-" }}</dd>
+
+            <dt class="col-sm-5">上传时间</dt>
+            <dd class="col-sm-7">{{ doc.created_at|date:"Y-m-d H:i" }}</dd>
+
+            <dt class="col-sm-5">分块数</dt>
+            <dd class="col-sm-7">{{ chunks.count }}</dd>
+
+            <dt class="col-sm-5">文本长度</dt>
+            <dd class="col-sm-7">{{ doc.text_content|length }} 字符</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header"><h6 class="mb-0">文档内容</h6></div>
+        <div class="card-body">
+          <pre style="max-height: 500px; overflow: auto; white-space: pre-wrap; font-size: 13px;">{{ doc.text_content }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if doc.metadata %}
+  <div class="card shadow-sm mb-3">
+    <div class="card-header"><h6 class="mb-0">结构化元数据</h6></div>
+    <div class="card-body">
+      <table class="table table-sm table-striped mb-0">
+        <tbody>
+          {% for key, value in doc.metadata.items %}
+          <tr>
+            <td style="width: 180px;"><strong>{{ key }}</strong></td>
+            <td>{{ value|default:"-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header"><h6 class="mb-0">分块列表（{{ chunks.count }} 个）</h6></div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-striped mb-0">
+        <thead>
+          <tr>
+            <th style="width: 60px;">#</th>
+            <th style="width: 140px;">分区块</th>
+            <th style="width: 70px;">Tokens</th>
+            <th>文本预览</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in chunks %}
+          <tr>
+            <td>{{ c.chunk_index }}</td>
+            <td>{{ c.section_label|default:"-" }}</td>
+            <td>{{ c.token_count }}</td>
+            <td><small style="white-space: pre-wrap;">{{ c.text|truncatechars:200 }}</small></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted">暂无分块</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

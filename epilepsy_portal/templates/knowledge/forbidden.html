@@ -1,0 +1,19 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block epilepsy_content %}
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'epilepsy:user_list' %}">管理设置</a></li>
+    </ol>
+  </nav>
+
+  <div class="card shadow-sm">
+    <div class="card-body text-center py-5">
+      <h2 class="text-muted mb-3">⛔ 无权访问</h2>
+      <p class="text-muted">您没有访问此页面的权限。如需使用知识库功能，请联系管理员。</p>
+      <a href="{% url 'epilepsy:dashboard' %}" class="btn btn-primary">返回首页</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

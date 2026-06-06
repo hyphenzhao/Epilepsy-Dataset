@@ -74,6 +74,53 @@ def _build_patient_report_messages(patient, server):
     return messages
 
 
+# ============================================================
+#  RAG 增强报告生成
+# ============================================================
+
+def _build_rag_system_prompt(server):
+    """构建 RAG 模式下的 system prompt"""
+    from knowledge.rag_prompts import RAG_SYSTEM_PROMPT
+    custom_prompt = (getattr(server, "prompt", "") or "").strip()
+    if custom_prompt:
+        return RAG_SYSTEM_PROMPT + "\n\n## 额外要求\n" + custom_prompt
+    return RAG_SYSTEM_PROMPT
+
+
+def _build_rag_patient_report_messages(patient, server):
+    """构建带知识库检索上下文的 RAG 消息列表"""
+    export_json = build_patient_export_json(patient)
+    user_content = json.dumps(export_json, ensure_ascii=False, indent=2)
+
+    # 检索知识库
+    retrieval_result = {"cases": [], "literature": [], "total_found": 0}
+    context_text = ""
+    try:
+        from knowledge.retriever import retrieve_context, format_context_for_prompt
+        retrieval_result = retrieve_context(export_json)
+        context_text = format_context_for_prompt(retrieval_result)
+    except Exception as exc:
+        log.warning("RAG 检索失败，降级为普通生成: %s", exc)
+
+    # 组装 messages
+    system_prompt = _build_rag_system_prompt(server)
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if context_text:
+        messages.append({
+            "role": "user",
+            "content": f"【参考以下相似病例和文献作为写作参考。请参考其风格、结构和术语，但不要直接复制内容】\n\n{context_text}",
+        })
+
+    messages.append({
+        "role": "user",
+        "content": f"请基于以下患者数据生成癫痫术前评估报告：\n\n{user_content}",
+    })
+
+    return messages, retrieval_result
+    return messages
+
+
 def _split_report_thinking_delta(delta, state):
     if not delta:
         return "", ""
@@ -107,8 +154,9 @@ def _split_report_thinking_delta(delta, state):
     return "".join(thinking_parts), "".join(answer_parts)
 
 
-def stream_ollama_report(patient, server):
-    messages = _build_patient_report_messages(patient, server)
+def stream_ollama_report(patient, server, messages=None, pre_events=None):
+    if messages is None:
+        messages = _build_patient_report_messages(patient, server)
     payload = {
         "model": server.model,
         "messages": messages,
@@ -117,6 +165,12 @@ def stream_ollama_report(patient, server):
     if getattr(server, "enable_thinking", False):
         payload["think"] = True
     think_state = {"in_think": False}
+
+    # 在流式输出前 yield 额外事件（如检索结果）
+    if pre_events:
+        for evt in pre_events:
+            yield evt
+
     req = urllib.request.Request(
         f"{server.base_url}/api/chat",
         data=json.dumps(payload).encode("utf-8"),
@@ -1323,6 +1377,68 @@ def patient_generate_report_stream(request, pk):
 
 
 @login_required
+def patient_generate_report_stream_rag(request, pk):
+    """RAG 增强版报告生成（SSE 流式）"""
+    patient = get_object_or_404(Patient, pk=pk)
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限生成报告")
+
+    server = OllamaServer.objects.filter(is_enabled=True).first()
+    if not server:
+        return StreamingHttpResponse(iter([
+            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 Ollama 服务器。'})}\n\n"
+        ]), content_type="text/event-stream")
+
+    def event_stream():
+        try:
+            # 构建 RAG messages + 检索
+            messages, retrieval_result = _build_rag_patient_report_messages(patient, server)
+
+            # 预先发送检索结果事件
+            pre_events = [
+                f"data: {json.dumps({'type': 'retrieval', 'cases_count': len(retrieval_result.get('cases', [])), 'literature_count': len(retrieval_result.get('literature', [])), 'total': retrieval_result.get('total_found', 0)}, ensure_ascii=False)}\n\n"
+            ]
+
+            yield from stream_ollama_report(patient, server, messages=messages, pre_events=pre_events)
+        except Exception as exc:
+            debug_text = f"{str(exc)}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            yield f"data: {json.dumps({'type': 'error', 'text': debug_text})}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    return response
+
+
+@login_required
+def patient_generate_report_stream_agent(request, pk):
+    """Agent 多步推理版报告生成（SSE 流式）"""
+    patient = get_object_or_404(Patient, pk=pk)
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST]:
+        return HttpResponseForbidden("无权限生成报告")
+
+    server = OllamaServer.objects.filter(is_enabled=True).first()
+    if not server:
+        return StreamingHttpResponse(iter([
+            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 Ollama 服务器。'})}\n\n"
+        ]), content_type="text/event-stream")
+
+    def event_stream():
+        try:
+            from knowledge.agent_pipeline import AgentPipeline
+            pipeline = AgentPipeline(patient, server)
+            yield from pipeline.execute()
+        except Exception as exc:
+            debug_text = f"{str(exc)}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            yield f"data: {json.dumps({'type': 'error', 'text': debug_text})}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    return response
+
+
+@login_required
 @require_POST
 def report_render_markdown(request):
     profile = getattr(request.user, "profile", None)
@@ -1382,6 +1498,11 @@ class UserListView(RoleRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["ollama_servers"] = OllamaServer.objects.all()
         context["ollama_form"] = OllamaServerForm()
+        try:
+            from knowledge.models import KnowledgeSettings
+            context["knowledge_settings"] = KnowledgeSettings.load()
+        except Exception:
+            context["knowledge_settings"] = None
         return context
 
 

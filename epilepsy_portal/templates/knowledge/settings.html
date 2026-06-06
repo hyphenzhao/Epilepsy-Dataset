@@ -1,0 +1,179 @@
+{% extends "epilepsy/base_epilepsy.html" %}
+
+{% block epilepsy_content %}
+<div class="container mt-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'epilepsy:user_list' %}">管理设置</a></li>
+      <li class="breadcrumb-item active">知识库设置</li>
+    </ol>
+  </nav>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">📚 知识库配置</h5>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <h6 class="text-muted mb-3">向量与分块</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.vector_backend.id_for_label }}" class="form-label">
+              {{ form.vector_backend.label }}
+            </label>
+            {{ form.vector_backend }}
+            {% if form.vector_backend.help_text %}
+              <small class="form-text text-muted">{{ form.vector_backend.help_text }}</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.chunk_strategy.id_for_label }}" class="form-label">
+              {{ form.chunk_strategy.label }}
+            </label>
+            {{ form.chunk_strategy }}
+            {% if form.chunk_strategy.help_text %}
+              <small class="form-text text-muted">{{ form.chunk_strategy.help_text }}</small>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <h6 class="text-muted mb-3">知识库策略</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.knowledge_scope.id_for_label }}" class="form-label">
+              {{ form.knowledge_scope.label }}
+            </label>
+            {{ form.knowledge_scope }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.learning_mode.id_for_label }}" class="form-label">
+              {{ form.learning_mode.label }}
+            </label>
+            {{ form.learning_mode }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="form-check">
+              {{ form.enable_rag }}
+              <label for="{{ form.enable_rag.id_for_label }}" class="form-check-label">
+                <strong>{{ form.enable_rag.label }}</strong>
+              </label>
+              {% if form.enable_rag.help_text %}
+                <br><small class="form-text text-muted">{{ form.enable_rag.help_text }}</small>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="form-check">
+              {{ form.enable_agent }}
+              <label for="{{ form.enable_agent.id_for_label }}" class="form-check-label">
+                <strong>{{ form.enable_agent.label }}</strong>
+              </label>
+              {% if form.enable_agent.help_text %}
+                <br><small class="form-text text-muted">{{ form.enable_agent.help_text }}</small>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <h6 class="text-muted mb-3">检索参数</h6>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.top_k_cases.id_for_label }}" class="form-label">
+              {{ form.top_k_cases.label }}
+            </label>
+            {{ form.top_k_cases }}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.top_k_literature.id_for_label }}" class="form-label">
+              {{ form.top_k_literature.label }}
+            </label>
+            {{ form.top_k_literature }}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.top_k_edits.id_for_label }}" class="form-label">
+              {{ form.top_k_edits.label }}
+            </label>
+            {{ form.top_k_edits }}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.hybrid_alpha.id_for_label }}" class="form-label">
+              {{ form.hybrid_alpha.label }}
+            </label>
+            {{ form.hybrid_alpha }}
+            {% if form.hybrid_alpha.help_text %}
+              <small class="form-text text-muted">{{ form.hybrid_alpha.help_text }}</small>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <h6 class="text-muted mb-3">Ollama 模型配置</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.embedding_model.id_for_label }}" class="form-label">
+              {{ form.embedding_model.label }}
+            </label>
+            {{ form.embedding_model }}
+            {% if form.embedding_model.help_text %}
+              <small class="form-text text-muted">{{ form.embedding_model.help_text }}</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.extraction_model.id_for_label }}" class="form-label">
+              {{ form.extraction_model.label }}
+            </label>
+            {{ form.extraction_model }}
+            {% if form.extraction_model.help_text %}
+              <small class="form-text text-muted">{{ form.extraction_model.help_text }}</small>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12 mb-3">
+            <label for="{{ form.metadata_extraction_prompt.id_for_label }}" class="form-label">
+              {{ form.metadata_extraction_prompt.label }}
+            </label>
+            {{ form.metadata_extraction_prompt }}
+            {% if form.metadata_extraction_prompt.help_text %}
+              <small class="form-text text-muted">{{ form.metadata_extraction_prompt.help_text }}</small>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <span class="text-muted small">
+              向量库：病例 {{ stats.cases_count }} 条 · 文献 {{ stats.literature_count }} 条
+            </span>
+          </div>
+          <div>
+            <a href="{% url 'epilepsy:user_list' %}" class="btn btn-outline-secondary">返回</a>
+            <button type="submit" class="btn btn-primary ml-2">💾 保存设置</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

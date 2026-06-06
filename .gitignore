@@ -3,6 +3,9 @@ venv/
 .env/
 .venv/
 
+# Codegraph knowledge graph index
+.codegraph/
+
 # Visual Studio workspace artifacts
 .vs/
 *.suo
