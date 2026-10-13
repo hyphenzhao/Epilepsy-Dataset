@@ -1,5 +1,24 @@
+from functools import wraps
+
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
+
+
+def role_required(*allowed_roles):
+    """Apply the same role checks as RoleRequiredMixin to function views."""
+    def decorator(view):
+        @login_required
+        @wraps(view)
+        def wrapper(request, *args, **kwargs):
+            profile = getattr(request.user, "profile", None)
+            if not profile or profile.role not in allowed_roles:
+                raise PermissionDenied
+            return view(request, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 class RoleRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):

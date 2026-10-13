@@ -233,9 +233,11 @@
       <button type="button" class="btn btn-sm btn-primary me-2" id="btn-batch-download-info">
           批量下载信息
       </button>
+      {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
       <button type="button" class="btn btn-sm btn-danger me-2" id="btn-batch-delete">
           批量删除
       </button>
+      {% endif %}
       <button type="button" class="btn btn-sm btn-secondary me-2" id="btn-batch-clear">
           取消选择
       </button>
@@ -1328,7 +1330,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // 批量删除（确认提示）
-    btnBatchDelete.addEventListener('click', function () {
+    if (btnBatchDelete) btnBatchDelete.addEventListener('click', function () {
         const ids = getSelectedPatientIds();
         if (ids.length === 0) {
             alert('请先选择至少一位患者。');
@@ -1571,6 +1573,7 @@ function setReportButtons() {
 async function renderReportMarkdown(markdownText) {
   const outputEl = document.getElementById('reportOutput');
   const tailTextEl = document.getElementById('reportOutputText');
+  const requestId = ++reportState.renderRequestId;
   try {
     const response = await fetch(`/epilepsy/reports/render-markdown/`, {
       method: 'POST',
@@ -1583,9 +1586,11 @@ async function renderReportMarkdown(markdownText) {
     });
     if (!response.ok) throw new Error('Markdown 渲染失败');
     const data = await response.json();
+    if (requestId !== reportState.renderRequestId) return;
     outputEl.innerHTML = data.html || '';
     if (tailTextEl) tailTextEl.textContent = '';
   } catch (err) {
+    if (requestId !== reportState.renderRequestId) return;
     outputEl.innerHTML = '';
     setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', markdownText || `Markdown 渲染失败：${err}`);
   }
@@ -1703,9 +1708,23 @@ async function renderReportMarkdownIncrementally() {
       await renderReportMarkdownIncrementally();
     }
   } catch (err) {
+    if (requestId !== reportState.renderRequestId) return;
     outputEl.innerHTML = '';
     setStreamingPaneText('reportOutput', 'reportOutputText', 'reportOutputCursor', reportState.rawMarkdown || `Markdown 渲染失败：${err}`);
   }
+}
+
+function resetReportOutput() {
+  // Invalidate outstanding draft renders before starting the revision.
+  reportState.renderRequestId++;
+  reportState.rawMarkdown = '';
+  reportState.renderedMarkdown = '';
+  reportState.pendingMarkdown = '';
+  reportState.originalMarkdown = '';
+  reportState.finished = false;
+  const outputEl = document.getElementById('reportOutput');
+  if (outputEl) outputEl.innerHTML = '';
+  setStreamingPaneText('reportOutputTail', 'reportOutputText', 'reportOutputCursor', '');
 }
 
 function queueIncrementalReportMarkdown(text) {
@@ -1759,10 +1778,7 @@ async function runReportGeneration(patientId, patientName) {
   reportState.generating = true;
   reportState.stopped = false;
   reportState.finished = false;
-  reportState.rawMarkdown = '';
-  reportState.renderedMarkdown = '';
-  reportState.pendingMarkdown = '';
-  reportState.renderRequestId = 0;
+  resetReportOutput();
   resetReportDebugPanel();
   title.textContent = `生成报告 - ${patientName}`;
   thinkingEl.innerHTML = '<span id="reportThinkingText"></span><span id="reportThinkingCursor" class="typing-cursor typing-cursor-block" style="display:none;"></span>';
@@ -1824,6 +1840,9 @@ async function runReportGeneration(patientId, patientName) {
         } else if (payload.type === 'thinking') {
           const nextThinking = (document.getElementById('reportThinkingText')?.textContent || '') + payload.text;
           setStreamingPaneText('reportThinking', 'reportThinkingText', 'reportThinkingCursor', nextThinking);
+        } else if (payload.type === 'reset_output') {
+          resetReportOutput();
+          setReportButtons();
         } else if (payload.type === 'output') {
           queueIncrementalReportMarkdown(payload.text);
         } else if (payload.type === 'error') {

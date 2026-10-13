@@ -937,9 +937,12 @@ class OllamaServerForm(forms.ModelForm):
             "name": "名称",
             "ip": "IP / Host",
             "port": "端口",
-            "model": "模型",
+            "model": "报告生成模型",
             "prompt": "提示词",
             "enable_thinking": "启用推理输出",
+        }
+        help_texts = {
+            "model": "用于普通和 RAG 报告生成，以及 Agent 报告初稿与修订，请选择支持对话的模型。",
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "例如：本地 Ollama"}),

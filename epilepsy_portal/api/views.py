@@ -7,7 +7,7 @@ from functools import wraps
 
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 import globus_sdk
@@ -18,19 +18,31 @@ def globus_authentication(function):
     @wraps(function)
     def wrapper(view_func, request, *args, **kwargs):
         if request.user.is_authenticated:
-            user = request.user.social_auth.get(user=request.user)
+            user = request.user.social_auth.filter(provider="globus").first()
+            credentials_error = "请先通过 Globus 登录并授权文件传输。"
+            if user is None or not isinstance(user.extra_data, dict):
+                raise PermissionDenied(credentials_error)
+
+            other_tokens = user.extra_data.get("other_tokens")
+            if not isinstance(other_tokens, (list, tuple)):
+                raise PermissionDenied(credentials_error)
             transfer = next(
                 (
                     token
-                    for token in user.extra_data["other_tokens"]
-                    if token["scope"]
-                    == "urn:globus:auth:scope:transfer.api.globus.org:all"
+                    for token in other_tokens
+                    if isinstance(token, dict)
+                    and isinstance(token.get("scope"), str)
+                    and "urn:globus:auth:scope:transfer.api.globus.org:all"
+                    in token["scope"].split()
                 ),
                 None,
             )
 
-            token_type = user.extra_data["token_type"]
-            transfer_token = transfer["access_token"]
+            token_type = user.extra_data.get("token_type")
+            transfer_token = transfer.get("access_token") if transfer else None
+            if not all(isinstance(value, str) and value.strip()
+                       for value in (token_type, transfer_token)):
+                raise PermissionDenied(credentials_error)
             transfer_auth_header = {"Authorization": f"{token_type} {transfer_token}"}
 
             request.session["transfer_auth_header"] = transfer_auth_header

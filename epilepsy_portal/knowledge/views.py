@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
@@ -128,7 +129,6 @@ def knowledge_upload(request):
             doc = get_object_or_404(KnowledgeDocument, pk=doc_id)
 
             # 收集用户编辑后的 metadata
-            from .pipeline import ingest_document
             from .metadata_extractor import CASE_METADATA_FIELDS, LITERATURE_METADATA_FIELDS
 
             fields = CASE_METADATA_FIELDS if doc.doc_type in ("case_report", "edited_report") else LITERATURE_METADATA_FIELDS
@@ -139,10 +139,9 @@ def knowledge_upload(request):
                     metadata[f] = val
 
             try:
-                # 更新 metadata 并运行 pipeline
+                # 保留用户编辑，但只有全部入库成功后才批准文档。
                 doc.metadata = metadata
-                doc.is_approved = True
-                doc.save(update_fields=["metadata", "is_approved"])
+                doc.save(update_fields=["metadata"])
 
                 # 重新运行分块+向量化（之前只是创建了 doc 记录）
                 from .chunker import chunk_text, estimate_tokens
@@ -150,6 +149,8 @@ def knowledge_upload(request):
 
                 strategy = KnowledgeSettings.load().chunk_strategy
                 raw_chunks = chunk_text(doc.text_content, strategy=strategy)
+                if not raw_chunks:
+                    raise ValueError("文档没有可入库的文本分块，请检查文档内容。")
                 chunk_ids = [f"doc_{doc.pk}_chunk_{i}" for i in range(len(raw_chunks))]
                 texts = [c["text"] for c in raw_chunks]
                 metadatas = [
@@ -158,15 +159,18 @@ def knowledge_upload(request):
                 ]
                 add_chunks(doc.doc_type, chunk_ids, texts, metadatas)
 
-                KnowledgeChunk.objects.filter(document=doc).delete()
-                KnowledgeChunk.objects.bulk_create([
-                    KnowledgeChunk(
-                        document=doc, chunk_index=i, text=raw["text"],
-                        embedding_id=chunk_ids[i],
-                        section_label=raw.get("section_label", ""),
-                        token_count=estimate_tokens(raw["text"]),
-                    ) for i, raw in enumerate(raw_chunks)
-                ])
+                with transaction.atomic():
+                    KnowledgeChunk.objects.filter(document=doc).delete()
+                    KnowledgeChunk.objects.bulk_create([
+                        KnowledgeChunk(
+                            document=doc, chunk_index=i, text=raw["text"],
+                            embedding_id=chunk_ids[i],
+                            section_label=raw.get("section_label", ""),
+                            token_count=estimate_tokens(raw["text"]),
+                        ) for i, raw in enumerate(raw_chunks)
+                    ])
+                    doc.is_approved = True
+                    doc.save(update_fields=["is_approved"])
 
                 messages.success(request, f"文档「{doc.title}」已入库（{len(raw_chunks)} 个分块）。")
                 return redirect("knowledge:list")

@@ -32,7 +32,7 @@ from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist, FieldError
 from django.utils import timezone
 import markdown
-from .mixins import RoleRequiredMixin
+from .mixins import RoleRequiredMixin, role_required
 from .models import *
 from .forms import *
 
@@ -121,37 +121,9 @@ def _build_rag_patient_report_messages(patient, server):
     return messages
 
 
-def _split_report_thinking_delta(delta, state):
-    if not delta:
-        return "", ""
-
-    thinking_parts = []
-    answer_parts = []
-    buf = delta
-
-    while buf:
-        if state["in_think"]:
-            end = buf.find("</think>")
-            if end == -1:
-                thinking_parts.append(buf)
-                buf = ""
-            else:
-                thinking_parts.append(buf[:end])
-                buf = buf[end + len("</think>"):]
-                state["in_think"] = False
-            continue
-
-        start = buf.find("<think>")
-        if start == -1:
-            answer_parts.append(buf)
-            buf = ""
-        else:
-            if start > 0:
-                answer_parts.append(buf[:start])
-            buf = buf[start + len("<think>"):]
-            state["in_think"] = True
-
-    return "".join(thinking_parts), "".join(answer_parts)
+def _split_report_thinking_delta(delta, state, *, final=False):
+    from knowledge.streaming import split_thinking_delta
+    return split_thinking_delta(delta, state, final=final)
 
 
 def stream_ollama_report(patient, server, messages=None, pre_events=None):
@@ -165,6 +137,7 @@ def stream_ollama_report(patient, server, messages=None, pre_events=None):
     if getattr(server, "enable_thinking", False):
         payload["think"] = True
     think_state = {"in_think": False}
+    completed = False
 
     # 在流式输出前 yield 额外事件（如检索结果）
     if pre_events:
@@ -187,6 +160,8 @@ def stream_ollama_report(patient, server, messages=None, pre_events=None):
                     obj = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+                if obj.get("error"):
+                    raise RuntimeError(f"Ollama 生成失败: {obj['error']}")
                 yield f"data: {json.dumps({'type': 'raw', 'data': obj}, ensure_ascii=False)}\n\n"
                 message = obj.get("message") or {}
                 direct_thinking_text = obj.get("thinking") or obj.get("reasoning")
@@ -209,15 +184,24 @@ def stream_ollama_report(patient, server, messages=None, pre_events=None):
                         thinking_text += tagged_thinking_text
                     if answer_text:
                         output_text = answer_text
-                    elif not direct_thinking_text:
-                        output_text = content_text
+
+                if obj.get("done"):
+                    remaining_thinking, remaining_output = _split_report_thinking_delta(
+                        "", think_state, final=True,
+                    )
+                    thinking_text += remaining_thinking
+                    output_text += remaining_output
 
                 if thinking_text:
                     yield f"data: {json.dumps({'type': 'thinking', 'text': thinking_text}, ensure_ascii=False)}\n\n"
                 if output_text:
                     yield f"data: {json.dumps({'type': 'output', 'text': output_text}, ensure_ascii=False)}\n\n"
                 if obj.get("done"):
+                    completed = True
                     yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+                    break
+            if not completed:
+                raise RuntimeError("Ollama 输出流提前结束，报告未完成，请重试。")
     except urllib.error.HTTPError as exc:
         error_body = ""
         try:
@@ -566,7 +550,7 @@ def log_invalid_form(request, form, *, tag="PatientForm"):
 
 User = get_user_model()
 
-@login_required
+@role_required(UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST)
 def patient_followup_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
     patient.ensure_default_followups()
@@ -583,14 +567,11 @@ def patient_followup_detail(request, pk):
 
     return render(request, "epilepsy/patient_followup_detail.html", context)
 
-@login_required
+@role_required(UserRole.ADMIN, UserRole.STAFF)
 def patient_followup_edit(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
     patient.ensure_default_followups()
     followups = patient.followups.all().order_by("target_date")
-
-    if not can_edit_followup(request.user):
-        return HttpResponseForbidden("无权限修改随访记录")
 
     editable_forms = []
     readonly_followups = []
@@ -677,7 +658,7 @@ def followup_file_download(request, pk):
         filename=followup.record_file.name.split("/")[-1],
     )
 
-@login_required
+@role_required(UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST)
 def dashboard(request):
     """
     仪表盘视图：只负责请求 + 渲染，业务逻辑放在 helper。
@@ -1632,10 +1613,43 @@ def ollama_server_delete(request, pk):
 
 
 def check_ollama_server_available(server, timeout=5):
-    with urllib.request.urlopen(f"{server.base_url}/api/tags", timeout=timeout) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    models_found = [m.get("name") for m in payload.get("models", [])]
+    from .ollama_models import OllamaAddressForm, fetch_ollama_models
+
+    address = OllamaAddressForm({"ip": server.ip, "port": server.port})
+    if not address.is_valid():
+        raise ValueError("Ollama 主机地址或端口无效。")
+    models_found = fetch_ollama_models(address.base_url, timeout=timeout)
     return server.model in models_found, models_found
+
+
+@login_required
+@require_POST
+def ollama_model_list(request):
+    from .ollama_models import OllamaAddressForm, OllamaModelListError, fetch_ollama_models
+
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF]:
+        return JsonResponse({"status": "error", "error": "无权限获取模型列表。"}, status=403)
+
+    explicit_address = "ip" in request.POST or "port" in request.POST
+    if explicit_address:
+        if profile.role != UserRole.ADMIN:
+            return JsonResponse({"status": "error", "error": "只有管理员可以查询指定的 Ollama 服务器。"}, status=403)
+        address_data = request.POST
+    else:
+        server = OllamaServer.objects.filter(is_enabled=True).first()
+        address_data = {"ip": server.ip, "port": server.port} if server else {"ip": "localhost", "port": 11434}
+
+    address = OllamaAddressForm(address_data)
+    if not address.is_valid():
+        error = next(iter(address.errors.values()))[0]
+        return JsonResponse({"status": "error", "error": str(error)}, status=400)
+
+    try:
+        models_found = fetch_ollama_models(address.base_url)
+    except OllamaModelListError as exc:
+        return JsonResponse({"status": "error", "error": str(exc)}, status=exc.status_code)
+    return JsonResponse({"status": "ok", "models": models_found, "server": address.base_url})
 
 
 def ollama_server_enable(request, pk):
@@ -1780,6 +1794,7 @@ def simple_logout(request):
     return redirect("login")
 
 
+@role_required(UserRole.ADMIN, UserRole.STAFF)
 def patient_edit(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
 
@@ -1810,6 +1825,7 @@ def patient_edit(request, pk):
 
 
 
+@role_required(UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST)
 def patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
     form = PatientForm(instance=patient)
@@ -1907,7 +1923,7 @@ class AboutView(TemplateView):
 
         return context
 
-@login_required
+@role_required(UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST)
 @require_POST
 def batch_download_info(request):
     ids_str = request.POST.get('patient_ids', '')
@@ -1932,7 +1948,7 @@ def batch_download_info(request):
 
     return response
 
-@login_required
+@role_required(UserRole.ADMIN, UserRole.STAFF)
 @require_POST
 def batch_delete_patients(request):
     ids_str = request.POST.get('patient_ids', '')
@@ -1955,7 +1971,7 @@ MODALITY_MODEL_MAP = {
     'sEEG': (SEEGFile, 'sEEG'),
 }
 
-@login_required
+@role_required(UserRole.ADMIN, UserRole.STAFF, UserRole.GUEST)
 @require_POST
 def batch_download_files(request):
     ids_str = request.POST.get('patient_ids', '')

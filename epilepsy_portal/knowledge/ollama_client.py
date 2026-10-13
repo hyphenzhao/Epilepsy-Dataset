@@ -182,7 +182,6 @@ def summarize_edit(original_markdown: str, edited_markdown: str) -> str:
     try:
         response = ollama_chat(
             messages=messages,
-            model=DEFAULT_CHAT_MODEL,
             temperature=0.1,
             format_json=False,
         )

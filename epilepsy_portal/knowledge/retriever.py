@@ -119,7 +119,7 @@ def _retrieve(doc_type: str, query: str, top_k: int) -> List[dict]:
 
         results.append({
             "text": text,
-            "score": round(1.0 - distance, 4) if distance else 0.0,  # cosine distance → similarity
+            "score": round(1.0 - distance, 4) if distance is not None else 0.0,  # cosine distance → similarity
             "section": meta.get("section_label", ""),
             "doc_id": doc_id,
             "doc_title": doc_title,

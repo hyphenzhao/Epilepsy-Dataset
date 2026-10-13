@@ -56,9 +56,12 @@ SOCIAL_AUTH_GLOBUS_SCOPE = [
 ]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+    if host.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -177,4 +180,4 @@ except ImportError:
     expected_path = Path(__file__).resolve().parent / 'search.py'
     log.warning(f'You should create a file for your search settings at {expected_path}')
 
-LARGE_FILE_BASE_DIR = "/Volumes/Workspace/large_files"    
+LARGE_FILE_BASE_DIR = "/Volumes/Workspace/large_files"

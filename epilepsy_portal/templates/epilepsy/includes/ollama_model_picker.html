@@ -1,0 +1,23 @@
+<div data-ollama-model-picker
+     data-field-name="{{ field.html_name }}"
+     data-models-url="{% url 'epilepsy:ollama_model_list' %}"
+     data-server-fields="{{ server_fields|yesno:'true,false' }}">
+  <label for="{{ field.id_for_label }}_picker">{{ field.label }}</label>
+  <div class="d-flex align-items-start">
+    <select id="{{ field.id_for_label }}_picker" class="form-control mr-2"
+            data-model-select aria-describedby="{{ field.id_for_label }}_model_status">
+      <option value="">手动输入模型名称</option>
+    </select>
+    <button type="button" class="btn btn-outline-primary text-nowrap" data-model-fetch>获取模型</button>
+  </div>
+  <div class="mt-2" data-model-manual>
+    <label for="{{ field.id_for_label }}" class="sr-only">手动输入{{ field.label }}</label>
+    {{ field }}
+  </div>
+  {{ field.errors }}
+  <small id="{{ field.id_for_label }}_model_status" class="form-text text-muted"
+         data-model-status role="status" aria-live="polite">点击“获取模型”后可下拉选择，也可手动输入。</small>
+  {% if field.help_text %}
+    <small class="form-text text-muted">{{ field.help_text }}</small>
+  {% endif %}
+</div>

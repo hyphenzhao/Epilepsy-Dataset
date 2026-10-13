@@ -1,4 +1,5 @@
 {% extends "epilepsy/base_epilepsy.html" %}
+{% load static %}
 
 {% block epilepsy_content %}
 <div class="container mt-4">
@@ -128,22 +129,10 @@
         <h6 class="text-muted mb-3">Ollama 模型配置</h6>
         <div class="row">
           <div class="col-md-6 mb-3">
-            <label for="{{ form.embedding_model.id_for_label }}" class="form-label">
-              {{ form.embedding_model.label }}
-            </label>
-            {{ form.embedding_model }}
-            {% if form.embedding_model.help_text %}
-              <small class="form-text text-muted">{{ form.embedding_model.help_text }}</small>
-            {% endif %}
+            {% include "epilepsy/includes/ollama_model_picker.html" with field=form.embedding_model server_fields=False %}
           </div>
           <div class="col-md-6 mb-3">
-            <label for="{{ form.extraction_model.id_for_label }}" class="form-label">
-              {{ form.extraction_model.label }}
-            </label>
-            {{ form.extraction_model }}
-            {% if form.extraction_model.help_text %}
-              <small class="form-text text-muted">{{ form.extraction_model.help_text }}</small>
-            {% endif %}
+            {% include "epilepsy/includes/ollama_model_picker.html" with field=form.extraction_model server_fields=False %}
           </div>
         </div>
 
@@ -176,4 +165,5 @@
     </div>
   </div>
 </div>
+<script src="{% static 'js/ollama-model-picker.js' %}" defer></script>
 {% endblock %}

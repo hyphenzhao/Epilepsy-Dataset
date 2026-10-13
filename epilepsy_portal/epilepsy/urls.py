@@ -37,6 +37,7 @@ urlpatterns = [
     path("users/<int:pk>/toggle-active/", views.user_toggle_active, name="user_toggle_active"),
     path("users/<int:pk>/delete/", views.user_delete, name="user_delete"),
     path("settings/ollama/create/", views.ollama_server_create, name="ollama_server_create"),
+    path("settings/ollama/models/", views.ollama_model_list, name="ollama_model_list"),
     path("settings/ollama/<int:pk>/edit/", views.ollama_server_edit, name="ollama_server_edit"),
     path("settings/ollama/<int:pk>/delete/", views.ollama_server_delete, name="ollama_server_delete"),
     path("settings/ollama/<int:pk>/enable/", views.ollama_server_enable, name="ollama_server_enable"),

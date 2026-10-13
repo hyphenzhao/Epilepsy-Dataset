@@ -1,4 +1,5 @@
 {% extends "epilepsy/base_epilepsy.html" %}
+{% load static %}
 {% block epilepsy_content %}
 <div class="container mt-4">
   <div class="card shadow-sm">
@@ -12,7 +13,9 @@
           <div class="col-md-4 mb-3">{{ form.name.label_tag }}{{ form.name }}</div>
           <div class="col-md-4 mb-3">{{ form.ip.label_tag }}{{ form.ip }}</div>
           <div class="col-md-4 mb-3">{{ form.port.label_tag }}{{ form.port }}</div>
-          <div class="col-md-6 mb-3">{{ form.model.label_tag }}{{ form.model }}</div>
+          <div class="col-md-6 mb-3">
+            {% include "epilepsy/includes/ollama_model_picker.html" with field=form.model server_fields=True %}
+          </div>
           <div class="col-12 mb-3">{{ form.prompt.label_tag }}{{ form.prompt }}</div>
           <div class="col-12 mb-3">
             <div class="form-check">
@@ -27,4 +30,5 @@
     </div>
   </div>
 </div>
+<script src="{% static 'js/ollama-model-picker.js' %}" defer></script>
 {% endblock %}

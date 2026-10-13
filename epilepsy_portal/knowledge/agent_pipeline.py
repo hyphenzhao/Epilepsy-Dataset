@@ -50,7 +50,6 @@ class AgentPipeline:
             self.export_json = build_patient_export_json(self.patient)
         except Exception as exc:
             yield self._error(f"获取患者数据失败: {exc}")
-            yield self._done()
             return
 
         try:
@@ -89,6 +88,7 @@ class AgentPipeline:
                 # 保存草稿用于 prompt，清空 draft_text 让修订版独立累积
                 draft_for_revision = self.draft_text
                 self.draft_text = ""
+                yield self._event("reset_output", {})
                 for event in self._revise(critique, draft_for_revision):
                     yield event
                 yield self._progress(5, 5, "修订完成")
@@ -100,7 +100,6 @@ class AgentPipeline:
         except Exception as exc:
             log.exception("Agent pipeline 异常")
             yield self._error(f"Agent 流水线异常: {exc}")
-            yield self._done()
 
     # ============================================================
     #  Step 1: 分析
@@ -255,6 +254,7 @@ class AgentPipeline:
             payload["think"] = True
 
         think_state = {"in_think": False}
+        completed = False
         req = urllib.request.Request(
             f"{base_url}/api/chat",
             data=json.dumps(payload).encode("utf-8"),
@@ -272,6 +272,8 @@ class AgentPipeline:
                         obj = json.loads(line)
                     except json.JSONDecodeError:
                         continue
+                    if obj.get("error"):
+                        raise RuntimeError(f"Ollama 生成失败: {obj['error']}")
 
                     message = obj.get("message") or {}
                     direct_thinking = obj.get("thinking") or obj.get("reasoning")
@@ -294,8 +296,13 @@ class AgentPipeline:
                             thinking_text += tagged_thinking
                         if answer:
                             output_text = answer
-                        elif not direct_thinking:
-                            output_text = content_text
+
+                    if obj.get("done"):
+                        remaining_thinking, remaining_output = self._split_thinking(
+                            "", think_state, final=True,
+                        )
+                        thinking_text += remaining_thinking
+                        output_text += remaining_output
 
                     if thinking_text:
                         yield self._thinking(thinking_text)
@@ -303,7 +310,10 @@ class AgentPipeline:
                         self.draft_text += output_text
                         yield self._output(output_text)
                     if obj.get("done"):
+                        completed = True
                         break
+                if not completed:
+                    raise RuntimeError("Ollama 输出流提前结束，报告未完成，请重试。")
 
         except urllib.error.HTTPError as exc:
             error_body = ""
@@ -315,42 +325,10 @@ class AgentPipeline:
         except urllib.error.URLError as exc:
             raise RuntimeError(f"无法连接 Ollama: {exc}")
 
-    def _split_thinking(self, text, state):
+    def _split_thinking(self, text, state, *, final=False):
         """处理 <think>...</think> 标签，返回 (thinking_text, answer_text)"""
-        thinking = ""
-        answer = ""
-        buf = text
-
-        while "<think>" in buf or "</think>" in buf:
-            if state["in_think"]:
-                end = buf.find("</think>")
-                if end >= 0:
-                    thinking += buf[:end]
-                    buf = buf[end + len("</think>"):]
-                    state["in_think"] = False
-                else:
-                    thinking += buf
-                    buf = ""
-            else:
-                start = buf.find("<think>")
-                if start >= 0:
-                    answer += buf[:start]
-                    buf = buf[start + len("<think>"):]
-                    state["in_think"] = True
-                else:
-                    # </think> without <think> — treat as answer
-                    end = buf.find("</think>")
-                    answer += buf[:end] if end >= 0 else buf
-                    if end >= 0:
-                        buf = buf[end + len("</think>"):]
-                    else:
-                        buf = ""
-        if buf:
-            if state["in_think"]:
-                thinking += buf
-            else:
-                answer += buf
-        return thinking, answer
+        from .streaming import split_thinking_delta
+        return split_thinking_delta(text, state, final=final)
 
     # ============================================================
     #  SSE 事件格式化

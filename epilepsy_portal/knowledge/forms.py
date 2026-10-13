@@ -48,8 +48,8 @@ class KnowledgeSettingsForm(forms.ModelForm):
             "top_k_edits": "历史编辑检索数",
             "hybrid_alpha": "混合检索权重 (α)",
             "metadata_extraction_prompt": "元数据提取 Prompt",
-            "embedding_model": "Embedding 模型",
-            "extraction_model": "信息提取模型",
+            "embedding_model": "文本向量化模型",
+            "extraction_model": "信息提取 / 思考模型",
         }
         help_texts = {
             "vector_backend": "切换后需重建索引。ChromaDB 功能完善，SQLite-vec 零额外依赖。",
@@ -58,8 +58,8 @@ class KnowledgeSettingsForm(forms.ModelForm):
             "enable_agent": "开启后，可使用多步推理（分析→检索→草稿→自查→修订）生成报告。",
             "hybrid_alpha": "0 = 纯关键词检索，1 = 纯向量语义检索。默认 0.7。",
             "metadata_extraction_prompt": "自定义 AI 提取元数据的指令。留空使用默认模板。",
-            "embedding_model": "用于文本向量化。需先在 Ollama 中 pull 该模型。",
-            "extraction_model": "用于元数据提取和编辑摘要。推荐 qwen2.5:7b。",
+            "embedding_model": "用于知识库检索，请选择支持文本向量化的模型，例如 nomic-embed-text。更换模型后需重建已有知识库索引。",
+            "extraction_model": "用于 Agent 分析与自查、文档信息提取和报告编辑摘要，请选择支持对话的模型。",
         }
 
 
