@@ -144,6 +144,8 @@ LOGGING = {
     'loggers': {
         'django': {'handlers': ['stream'], 'level': 'INFO'},
         'epilepsy_portal': {'handlers': ['stream'], 'level': 'DEBUG'},
+        'knowledge.agent_pipeline': {'handlers': ['stream'], 'level': 'INFO', 'propagate': False},
+        'epilepsy.llm': {'handlers': ['stream'], 'level': 'WARNING', 'propagate': False},
     },
 }
 
