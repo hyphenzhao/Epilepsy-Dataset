@@ -82,6 +82,7 @@ class ModelPickerCompatibilityTests(TestCase):
     def test_knowledge_models_have_pickers_and_keep_existing_values(self):
         response = self.client.get(reverse("knowledge:settings"))
         self.assert_picker_page(response, {
+            "thinking_model": "",
             "embedding_model": "old-custom-embedding:qa",
             "extraction_model": "old-custom-thinking:qa",
         }, False)
@@ -90,6 +91,7 @@ class ModelPickerCompatibilityTests(TestCase):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("knowledge:settings"))
         self.assert_picker_page(response, {
+            "thinking_model": "",
             "embedding_model": "old-custom-embedding:qa",
             "extraction_model": "old-custom-thinking:qa",
         }, False)

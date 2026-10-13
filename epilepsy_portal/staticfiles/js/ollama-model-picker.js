@@ -12,10 +12,22 @@
     if (!input || !select || !button || !manual || !status) return;
     picker.dataset.modelPickerInitialized = 'true';
 
-    const sourceFields = picker.dataset.serverFields === 'true'
-      ? [form.elements.namedItem('ip'), form.elements.namedItem('port')].filter(Boolean)
+    const roleConfig = picker.closest('[data-llm-config-role]');
+    const serverFields = picker.dataset.serverFields === 'true';
+    const fieldNames = roleConfig ? {
+      provider: roleConfig.dataset.providerField,
+      api_base_url: roleConfig.dataset.baseUrlField,
+      api_key: roleConfig.dataset.apiKeyField,
+      clear_api_key: roleConfig.dataset.clearApiKeyField,
+    } : (serverFields ? { provider: 'provider', api_base_url: 'api_base_url', api_key: 'api_key', clear_api_key: 'clear_api_key', ip: 'ip', port: 'port' } : {});
+    const sourceFields = Object.values(fieldNames).map(name => form.elements.namedItem(name)).filter(Boolean);
+    const inheritedFields = roleConfig && roleConfig.dataset.llmConfigRole === 'thinking'
+      ? ['extraction_provider', 'extraction_api_base_url', 'extraction_api_key', 'clear_extraction_api_key']
+          .map(name => form.elements.namedItem(name)).filter(Boolean)
       : [];
-    const sourceKey = () => sourceFields.map(field => field.value.trim()).join('\n');
+    sourceFields.push(...inheritedFields);
+    const fieldValue = field => field.type === 'checkbox' ? (field.checked ? '1' : '0') : field.value.trim();
+    const sourceKey = () => sourceFields.map(fieldValue).join('\n');
     let currentSource = sourceKey();
     let models = [];
     let loaded = false;
@@ -93,7 +105,13 @@
       const csrfInput = form.elements.namedItem('csrfmiddlewaretoken');
       const csrfToken = csrfInput ? csrfInput.value : '';
       body.set('csrfmiddlewaretoken', csrfToken);
-      sourceFields.forEach(field => body.set(field.name, field.value.trim()));
+      Object.entries(fieldNames).forEach(([parameter, name]) => {
+        const field = form.elements.namedItem(name);
+        if (field) body.set(parameter, fieldValue(field));
+      });
+      if (roleConfig) body.set('config_role', roleConfig.dataset.llmConfigRole);
+      inheritedFields.forEach(field => body.set(field.name, fieldValue(field)));
+      if (form.dataset.serverId) body.set('server_id', form.dataset.serverId);
       button.disabled = true;
       button.textContent = '获取中…';
       select.disabled = true;
@@ -150,6 +168,21 @@
   }
 
   function initialize(root) {
+    root.querySelectorAll('[data-llm-server-form]').forEach(form => {
+      if (form.dataset.providerInitialized === 'true') return;
+      form.dataset.providerInitialized = 'true';
+      const provider = form.elements.namedItem('provider');
+      if (!provider) return;
+      function showProviderFields() {
+        const isOllama = !provider.value || provider.value === 'ollama';
+        form.querySelectorAll('[data-llm-ollama]').forEach(element => { element.hidden = !isOllama; });
+        form.querySelectorAll('[data-llm-api]').forEach(element => { element.hidden = isOllama; });
+        const url = form.elements.namedItem('api_base_url');
+        if (url) url.placeholder = provider.value === 'anthropic' ? 'https://api.anthropic.com/v1' : 'https://api.openai.com/v1';
+      }
+      provider.addEventListener('change', showProviderFields);
+      showProviderFields();
+    });
     root.querySelectorAll('[data-ollama-model-picker]').forEach(initializePicker);
   }
 

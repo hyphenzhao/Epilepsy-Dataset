@@ -16,7 +16,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from django.conf import settings as django_settings
 
-from .embeddings import embed_text, embed_texts, embedding_dimension
+from .embeddings import embed_text, embed_texts
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +49,6 @@ def _get_client() -> chromadb.PersistentClient:
 def _get_or_create_collection(name: str) -> chromadb.Collection:
     """获取或创建 collection"""
     client = _get_client()
-    dim = embedding_dimension()
     try:
         collection = client.get_collection(name)
     except Exception:
@@ -57,7 +56,7 @@ def _get_or_create_collection(name: str) -> chromadb.Collection:
             name=name,
             metadata={"hnsw:space": "cosine"},
         )
-        log.info("ChromaDB collection '%s' 已创建 (dim=%d)", name, dim)
+        log.info("ChromaDB collection '%s' 已创建", name)
     return collection
 
 

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from epilepsy.llm_secrets import EncryptedAPIKeyField
 
 
 # ============================================================
@@ -28,6 +29,22 @@ class KnowledgeSettings(models.Model):
         ("review", "管理员审核后入库（推荐）"),
         ("auto", "自动学习"),
         ("disabled", "关闭编辑学习"),
+    ]
+    CHAT_PROVIDER_CHOICES = [
+        ("", "沿用报告服务设置"),
+        ("ollama", "Ollama"),
+        ("openai", "OpenAI / 兼容 API"),
+        ("anthropic", "Anthropic"),
+    ]
+    EMBEDDING_PROVIDER_CHOICES = [
+        ("ollama", "Ollama"),
+        ("openai", "OpenAI / 兼容 API"),
+    ]
+    THINKING_PROVIDER_CHOICES = [
+        ("", "沿用信息提取服务"),
+        ("ollama", "Ollama"),
+        ("openai", "OpenAI / 兼容 API"),
+        ("anthropic", "Anthropic"),
     ]
 
     vector_backend = models.CharField(
@@ -73,7 +90,13 @@ class KnowledgeSettings(models.Model):
         default=True, verbose_name="启用 Agent 模式",
         help_text="开启后，可使用多步推理（分析→检索→草稿→自查→修订）生成报告。",
     )
-    # Ollama 模型配置
+    # 各用途可单独选择服务；旧配置继续使用 Ollama 和原模型。
+    embedding_provider = models.CharField(
+        max_length=20, choices=EMBEDDING_PROVIDER_CHOICES, default="ollama",
+        verbose_name="向量化服务",
+    )
+    embedding_api_base_url = models.CharField(max_length=500, blank=True, default="", verbose_name="向量化 API 地址")
+    embedding_api_key = EncryptedAPIKeyField(blank=True, default="", verbose_name="向量化 API Key")
     embedding_model = models.CharField(
         max_length=100, default="nomic-embed-text",
         verbose_name="Embedding 模型",
@@ -83,6 +106,22 @@ class KnowledgeSettings(models.Model):
         max_length=100, default="qwen2.5:7b",
         verbose_name="信息提取模型",
         help_text="用于元数据提取和编辑摘要。推荐 qwen2.5:7b。",
+    )
+    extraction_provider = models.CharField(
+        max_length=20, choices=CHAT_PROVIDER_CHOICES, blank=True, default="",
+        verbose_name="信息提取服务",
+    )
+    extraction_api_base_url = models.CharField(max_length=500, blank=True, default="", verbose_name="信息提取 API 地址")
+    extraction_api_key = EncryptedAPIKeyField(blank=True, default="", verbose_name="信息提取 API Key")
+    thinking_provider = models.CharField(
+        max_length=20, choices=THINKING_PROVIDER_CHOICES, blank=True, default="",
+        verbose_name="思考与自查服务",
+    )
+    thinking_api_base_url = models.CharField(max_length=500, blank=True, default="", verbose_name="思考与自查 API 地址")
+    thinking_api_key = EncryptedAPIKeyField(blank=True, default="", verbose_name="思考与自查 API Key")
+    thinking_model = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="思考与自查模型",
+        help_text="留空沿用信息提取模型，兼容原有设置。",
     )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="最后更新")
 

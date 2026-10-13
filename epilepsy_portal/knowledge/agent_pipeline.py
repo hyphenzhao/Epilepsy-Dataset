@@ -34,7 +34,8 @@ class AgentPipeline:
         self.patient = patient
         self.server = server
         settings = KnowledgeSettings.load()
-        self.think_model = settings.extraction_model or "qwen2.5:7b"
+        from .provider_config import get_role_config
+        self.think_model = get_role_config("thinking", settings=settings).model
         self.generate_model = server.model or "qwen2.5:14b"
         self.draft_text = ""  # 累积草稿文本，供 Step 4 使用
 
@@ -112,7 +113,7 @@ class AgentPipeline:
             {"role": "user", "content": f"请分析以下患者数据，提取关键临床特征：\n\n{user_text[:5000]}"},
         ]
         from .ollama_client import ollama_chat_json
-        return ollama_chat_json(messages, model=self.think_model, temperature=0.1,
+        return ollama_chat_json(messages, model=self.think_model, temperature=0.1, role="thinking", strict=True,
                                 fallback={"key_features": [], "complexity": "moderate",
                                           "red_flags": [], "missing_data": [], "suggested_focus": ""})
 
@@ -200,7 +201,7 @@ class AgentPipeline:
             )},
         ]
         from .ollama_client import ollama_chat_json
-        return ollama_chat_json(messages, model=self.think_model, temperature=0.1,
+        return ollama_chat_json(messages, model=self.think_model, temperature=0.1, role="thinking", strict=True,
                                 fallback={"issues": [], "overall_score": 8, "needs_revision": False, "summary": ""})
 
     def _format_critique(self, critique: dict) -> str:
@@ -243,87 +244,35 @@ class AgentPipeline:
     # ============================================================
 
     def _stream_chat(self, messages, model):
-        """调用 Ollama /api/chat 流式接口，yield SSE 事件"""
-        base_url = _get_ollama_base_url()
-        payload = {
-            "model": model,
-            "messages": messages,
-            "stream": True,
-        }
-        if getattr(self.server, "enable_thinking", False):
-            payload["think"] = True
-
+        """Stream the selected report provider for both draft and revision."""
+        from epilepsy.llm import config_from_server, stream_chat
         think_state = {"in_think": False}
-        completed = False
-        req = urllib.request.Request(
-            f"{base_url}/api/chat",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-
-        try:
-            with urllib.request.urlopen(req, timeout=600) as response:
-                for raw_line in response:
-                    line = raw_line.decode("utf-8").strip()
-                    if not line:
-                        continue
-                    try:
-                        obj = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    if obj.get("error"):
-                        raise RuntimeError(f"Ollama 生成失败: {obj['error']}")
-
-                    message = obj.get("message") or {}
-                    direct_thinking = obj.get("thinking") or obj.get("reasoning")
-                    if not direct_thinking and isinstance(message, dict):
-                        direct_thinking = message.get("thinking") or message.get("reasoning")
-
-                    content_text = obj.get("response")
-                    if not content_text and isinstance(message, dict):
-                        content_text = message.get("content") or message.get("response")
-
-                    thinking_text = ""
-                    output_text = ""
-
-                    if direct_thinking:
-                        thinking_text += direct_thinking
-
-                    if content_text:
-                        tagged_thinking, answer = self._split_thinking(content_text, think_state)
-                        if tagged_thinking:
-                            thinking_text += tagged_thinking
-                        if answer:
-                            output_text = answer
-
-                    if obj.get("done"):
-                        remaining_thinking, remaining_output = self._split_thinking(
-                            "", think_state, final=True,
-                        )
-                        thinking_text += remaining_thinking
-                        output_text += remaining_output
-
-                    if thinking_text:
-                        yield self._thinking(thinking_text)
-                    if output_text:
-                        self.draft_text += output_text
-                        yield self._output(output_text)
-                    if obj.get("done"):
-                        completed = True
-                        break
-                if not completed:
-                    raise RuntimeError("Ollama 输出流提前结束，报告未完成，请重试。")
-
-        except urllib.error.HTTPError as exc:
-            error_body = ""
-            try:
-                error_body = exc.read().decode("utf-8", errors="replace")
-            except Exception:
-                pass
-            raise RuntimeError(f"Ollama HTTP {exc.code}: {error_body}")
-        except urllib.error.URLError as exc:
-            raise RuntimeError(f"无法连接 Ollama: {exc}")
+        has_output = False
+        for obj in stream_chat(
+            config_from_server(self.server, model=model), messages,
+            think=getattr(self.server, "enable_thinking", False), timeout=600,
+        ):
+            message = obj.get("message") or {}
+            thinking_text = obj.get("thinking") or obj.get("reasoning") or message.get("thinking") or message.get("reasoning") or ""
+            content = obj.get("response") or message.get("content") or message.get("response") or ""
+            output_text = ""
+            if content:
+                tagged_thinking, output_text = self._split_thinking(content, think_state)
+                thinking_text += tagged_thinking
+            if obj.get("done"):
+                remaining_thinking, remaining_output = self._split_thinking("", think_state, final=True)
+                thinking_text += remaining_thinking
+                output_text += remaining_output
+            if thinking_text:
+                yield self._thinking(thinking_text)
+            if output_text:
+                has_output = has_output or bool(output_text.strip())
+                self.draft_text += output_text
+                yield self._output(output_text)
+            if obj.get("done"):
+                if not has_output:
+                    raise RuntimeError("LLM 服务返回了空回答，报告未完成。")
+                break
 
     def _split_thinking(self, text, state, *, final=False):
         """处理 <think>...</think> 标签，返回 (thinking_text, answer_text)"""

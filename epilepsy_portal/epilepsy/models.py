@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 import os
 from datetime import timedelta
 from django.utils import timezone
+from .llm_secrets import EncryptedAPIKeyField
+from .llm import PROVIDER_CHOICES
 
 class UserRole(models.TextChoices):
     ADMIN = "ADMIN", _("管理员")
@@ -40,7 +42,10 @@ class UserProfile(models.Model):
 
 class OllamaServer(models.Model):
     name = models.CharField(max_length=100, blank=True, default="")
-    ip = models.CharField(max_length=255, verbose_name="IP / Host")
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default="ollama", verbose_name="服务类型")
+    api_base_url = models.CharField(max_length=500, blank=True, default="", verbose_name="API 地址")
+    api_key = EncryptedAPIKeyField(blank=True, default="", verbose_name="API Key")
+    ip = models.CharField(max_length=255, blank=True, verbose_name="IP / Host")
     port = models.PositiveIntegerField(default=11434)
     model = models.CharField(max_length=255, verbose_name="模型")
     prompt = models.TextField(blank=True, default="", verbose_name="提示词")
@@ -51,18 +56,21 @@ class OllamaServer(models.Model):
 
     class Meta:
         ordering = ["-is_enabled", "name", "id"]
-        verbose_name = "Ollama 服务器"
-        verbose_name_plural = "Ollama 服务器"
+        verbose_name = "LLM 服务"
+        verbose_name_plural = "LLM 服务"
 
     def __str__(self):
         return self.display_name
 
     @property
     def display_name(self):
-        return self.name or f"{self.ip}:{self.port} · {self.model}"
+        return self.name or f"{self.get_provider_display()} · {self.model}"
 
     @property
     def base_url(self):
+        if self.provider != "ollama":
+            from .llm import normalize_base_url
+            return normalize_base_url(self.provider, self.api_base_url)
         from .ollama_models import resolve_ollama_url
         host = self.ip.strip()
         if ":" in host and not (host.startswith("[") and host.endswith("]")):

@@ -36,6 +36,10 @@ def knowledge_settings(request):
         if form.is_valid():
             form.save()
             messages.success(request, "知识库设置已更新。")
+            if form.embedding_config_changed:
+                messages.warning(request, "文本向量化服务、地址或模型已改变；现有知识库索引已保留，请重建索引后再使用新的向量化配置。")
+            if form.credentials_cleared:
+                messages.warning(request, "服务或 API 地址已更改，原配置的密钥已清除，请填写新服务对应的 API Key。")
             return redirect("knowledge:settings")
         else:
             messages.error(request, "保存失败，请检查填写内容。")

@@ -36,7 +36,7 @@ class ReportStreamTests(SimpleTestCase):
 
     def stream_events(self, mode, objects):
         agent = self.make_agent()
-        with patch("urllib.request.urlopen", return_value=MockOllamaResponse(objects)), \
+        with patch("epilepsy.llm.urlopen", return_value=MockOllamaResponse(objects)), \
                 patch("knowledge.agent_pipeline._get_ollama_base_url", return_value=self.server.base_url):
             stream = (stream_ollama_report(None, self.server, messages=[])
                       if mode == "plain" else agent._stream_chat([], self.server.model))
@@ -120,7 +120,7 @@ class ReportStreamTests(SimpleTestCase):
                 agent._draft = lambda *args: agent._stream_chat([], self.server.model)
                 agent._critique = Mock()
                 with patch("epilepsy.views_helper.build_patient_export_json", return_value={"sections": []}), \
-                        patch("urllib.request.urlopen", return_value=MockOllamaResponse(objects)), \
+                        patch("epilepsy.llm.urlopen", return_value=MockOllamaResponse(objects)), \
                         patch("knowledge.agent_pipeline._get_ollama_base_url", return_value=self.server.base_url), \
                         self.assertLogs("knowledge.agent_pipeline", level="ERROR"):
                     events = [json.loads(event.removeprefix("data: ")) for event in agent.execute()]

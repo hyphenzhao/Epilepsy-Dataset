@@ -85,21 +85,25 @@
 
   <div class="card shadow-sm mt-4">
     <div class="card-header">
-      <h5 class="mb-0">Ollama 服务器</h5>
+      <h5 class="mb-0">报告生成 LLM 服务</h5>
     </div>
     <div class="card-body">
-      <form method="post" action="{% url 'epilepsy:ollama_server_create' %}" class="mb-4">
+      <form method="post" action="{% url 'epilepsy:ollama_server_create' %}" class="mb-4" data-llm-server-form>
         {% csrf_token %}
         <div class="row">
           <div class="col-md-3 mb-3">{{ ollama_form.name.label_tag }}{{ ollama_form.name }}</div>
-          <div class="col-md-3 mb-3">{{ ollama_form.ip.label_tag }}{{ ollama_form.ip }}</div>
-          <div class="col-md-2 mb-3">{{ ollama_form.port.label_tag }}{{ ollama_form.port }}</div>
+          <div class="col-md-3 mb-3">{{ ollama_form.provider.label_tag }}{{ ollama_form.provider }}</div>
+          <div class="col-md-4 mb-3" data-llm-ollama>{{ ollama_form.ip.label_tag }}{{ ollama_form.ip }}</div>
+          <div class="col-md-2 mb-3" data-llm-ollama>{{ ollama_form.port.label_tag }}{{ ollama_form.port }}</div>
+          <div class="col-md-8 mb-3" data-llm-api>{{ ollama_form.api_base_url.label_tag }}{{ ollama_form.api_base_url }}<small class="form-text text-muted">{{ ollama_form.api_base_url.help_text }}</small></div>
+          <div class="col-md-4 mb-3">{{ ollama_form.api_key.label_tag }}{{ ollama_form.api_key }}<small class="form-text text-muted">{{ ollama_form.api_key.help_text }}</small></div>
           <div class="col-md-4 mb-3">
             {% include "epilepsy/includes/ollama_model_picker.html" with field=ollama_form.model server_fields=True %}
           </div>
           <div class="col-12 mb-3">{{ ollama_form.prompt.label_tag }}{{ ollama_form.prompt }}</div>
+          <div class="col-12 mb-3"><div class="form-check">{{ ollama_form.enable_thinking }}{{ ollama_form.enable_thinking.label_tag }}</div><small class="form-text text-muted">显示模型返回的推理内容；支持程度取决于所选模型。</small></div>
         </div>
-        <button type="submit" class="btn btn-primary">添加 Ollama 服务器</button>
+        <button type="submit" class="btn btn-primary">添加 LLM 服务</button>
       </form>
 
       <div class="table-responsive">
@@ -107,6 +111,7 @@
           <thead>
             <tr>
               <th>名称</th>
+              <th>服务类型</th>
               <th>地址</th>
               <th>模型</th>
               <th>提示词</th>
@@ -118,7 +123,8 @@
             {% for server in ollama_servers %}
             <tr>
               <td>{{ server.display_name }}</td>
-              <td>{{ server.ip }}:{{ server.port }}</td>
+              <td>{{ server.get_provider_display }}</td>
+              <td>{{ server.base_url }}</td>
               <td>{{ server.model }}</td>
               <td style="max-width:320px; white-space:pre-wrap;">{{ server.prompt|truncatechars:80 }}</td>
               <td>
@@ -138,11 +144,11 @@
                   {% endif %}
                 </form>
                 <a href="{% url 'epilepsy:ollama_server_edit' server.id %}" class="btn btn-sm btn-outline-primary">编辑</a>
-                <form method="post" action="{% url 'epilepsy:ollama_server_delete' server.id %}" style="display:inline;" onsubmit="return confirm('确认删除该 Ollama 服务器？');">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">删除</button></form>
+                <form method="post" action="{% url 'epilepsy:ollama_server_delete' server.id %}" style="display:inline;" onsubmit="return confirm('确认删除该 LLM 服务？');">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">删除</button></form>
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" class="text-center text-muted">暂无 Ollama 服务器配置</td></tr>
+            <tr><td colspan="7" class="text-center text-muted">暂无 LLM 服务配置</td></tr>
             {% endfor %}
           </tbody>
         </table>

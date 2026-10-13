@@ -4,15 +4,19 @@
 <div class="container mt-4">
   <div class="card shadow-sm">
     <div class="card-header">
-      <h4 class="mb-0">编辑 Ollama 服务器</h4>
+      <h4 class="mb-0">编辑 LLM 服务</h4>
     </div>
     <div class="card-body">
-      <form method="post">
+      <form method="post" data-llm-server-form data-server-id="{{ server.pk }}">
         {% csrf_token %}
+        {{ form.non_field_errors }}
         <div class="row">
           <div class="col-md-4 mb-3">{{ form.name.label_tag }}{{ form.name }}</div>
-          <div class="col-md-4 mb-3">{{ form.ip.label_tag }}{{ form.ip }}</div>
-          <div class="col-md-4 mb-3">{{ form.port.label_tag }}{{ form.port }}</div>
+          <div class="col-md-4 mb-3">{{ form.provider.label_tag }}{{ form.provider }}{{ form.provider.errors }}</div>
+          <div class="col-md-4 mb-3" data-llm-ollama>{{ form.ip.label_tag }}{{ form.ip }}{{ form.ip.errors }}</div>
+          <div class="col-md-4 mb-3" data-llm-ollama>{{ form.port.label_tag }}{{ form.port }}{{ form.port.errors }}</div>
+          <div class="col-md-8 mb-3" data-llm-api>{{ form.api_base_url.label_tag }}{{ form.api_base_url }}{{ form.api_base_url.errors }}<small class="form-text text-muted">{{ form.api_base_url.help_text }}</small></div>
+          <div class="col-md-4 mb-3">{{ form.api_key.label_tag }}{{ form.api_key }}{{ form.api_key.errors }}<small class="form-text text-muted">{{ form.api_key.help_text }}</small><div class="mt-2">{{ form.clear_api_key }} {{ form.clear_api_key.label_tag }}</div></div>
           <div class="col-md-6 mb-3">
             {% include "epilepsy/includes/ollama_model_picker.html" with field=form.model server_fields=True %}
           </div>

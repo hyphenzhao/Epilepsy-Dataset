@@ -126,15 +126,10 @@
 
         <hr class="my-4">
 
-        <h6 class="text-muted mb-3">Ollama 模型配置</h6>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            {% include "epilepsy/includes/ollama_model_picker.html" with field=form.embedding_model server_fields=False %}
-          </div>
-          <div class="col-md-6 mb-3">
-            {% include "epilepsy/includes/ollama_model_picker.html" with field=form.extraction_model server_fields=False %}
-          </div>
-        </div>
+        <h6 class="text-muted mb-3">按用途选择模型服务</h6>
+        {% include "knowledge/includes/llm_role_settings.html" with role="thinking" title="Agent 思考与自查" purpose="用于患者关键特征分析和报告自查。默认沿用信息提取的服务、地址、密钥和模型，也可单独选择服务与模型。" provider_field=form.thinking_provider url_field=form.thinking_api_base_url key_field=form.thinking_api_key clear_field=form.clear_thinking_api_key model_field=form.thinking_model %}
+        {% include "knowledge/includes/llm_role_settings.html" with role="extraction" title="信息提取与编辑摘要" purpose="用于上传文档的信息提取和报告修改摘要。" provider_field=form.extraction_provider url_field=form.extraction_api_base_url key_field=form.extraction_api_key clear_field=form.clear_extraction_api_key model_field=form.extraction_model %}
+        {% include "knowledge/includes/llm_role_settings.html" with role="embedding" title="文本向量化" purpose="用于知识库检索，仅支持 Ollama 和 OpenAI / 兼容 API。Anthropic 不提供 Embedding API。更换服务、地址或模型后需重建已有知识库索引。" provider_field=form.embedding_provider url_field=form.embedding_api_base_url key_field=form.embedding_api_key clear_field=form.clear_embedding_api_key model_field=form.embedding_model %}
 
         <div class="row">
           <div class="col-12 mb-3">

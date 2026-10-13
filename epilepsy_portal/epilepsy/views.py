@@ -1,6 +1,6 @@
 # epilepsy/views.py
 
-import os, csv, datetime, io, zipfile, re, traceback
+import os, csv, datetime, io, zipfile, re
 import mimetypes
 import urllib.request
 import urllib.error
@@ -127,106 +127,39 @@ def _split_report_thinking_delta(delta, state, *, final=False):
 
 
 def stream_ollama_report(patient, server, messages=None, pre_events=None):
+    from .llm import config_from_server, stream_chat
     if messages is None:
         messages = _build_patient_report_messages(patient, server)
-    payload = {
-        "model": server.model,
-        "messages": messages,
-        "stream": True,
-    }
-    if getattr(server, "enable_thinking", False):
-        payload["think"] = True
     think_state = {"in_think": False}
-    completed = False
-
-    # 在流式输出前 yield 额外事件（如检索结果）
+    has_output = False
     if pre_events:
-        for evt in pre_events:
-            yield evt
-
-    req = urllib.request.Request(
-        f"{server.base_url}/api/chat",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=600) as response:
-            for raw_line in response:
-                line = raw_line.decode("utf-8").strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if obj.get("error"):
-                    raise RuntimeError(f"Ollama 生成失败: {obj['error']}")
-                yield f"data: {json.dumps({'type': 'raw', 'data': obj}, ensure_ascii=False)}\n\n"
-                message = obj.get("message") or {}
-                direct_thinking_text = obj.get("thinking") or obj.get("reasoning")
-                if not direct_thinking_text and isinstance(message, dict):
-                    direct_thinking_text = message.get("thinking") or message.get("reasoning")
-
-                content_text = obj.get("response")
-                if not content_text and isinstance(message, dict):
-                    content_text = message.get("content") or message.get("response")
-
-                thinking_text = ""
-                output_text = ""
-
-                if direct_thinking_text:
-                    thinking_text += direct_thinking_text
-
-                if content_text:
-                    tagged_thinking_text, answer_text = _split_report_thinking_delta(content_text, think_state)
-                    if tagged_thinking_text:
-                        thinking_text += tagged_thinking_text
-                    if answer_text:
-                        output_text = answer_text
-
-                if obj.get("done"):
-                    remaining_thinking, remaining_output = _split_report_thinking_delta(
-                        "", think_state, final=True,
-                    )
-                    thinking_text += remaining_thinking
-                    output_text += remaining_output
-
-                if thinking_text:
-                    yield f"data: {json.dumps({'type': 'thinking', 'text': thinking_text}, ensure_ascii=False)}\n\n"
-                if output_text:
-                    yield f"data: {json.dumps({'type': 'output', 'text': output_text}, ensure_ascii=False)}\n\n"
-                if obj.get("done"):
-                    completed = True
-                    yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
-                    break
-            if not completed:
-                raise RuntimeError("Ollama 输出流提前结束，报告未完成，请重试。")
-    except urllib.error.HTTPError as exc:
-        error_body = ""
-        try:
-            error_body = exc.read().decode("utf-8", errors="replace")
-        except Exception:
-            error_body = ""
-        debug_payload = {
-            "stage": "ollama_chat",
-            "url": f"{server.base_url}/api/chat",
-            "status": getattr(exc, "code", None),
-            "reason": getattr(exc, "reason", ""),
-            "model": server.model,
-            "response_body": error_body,
-            "request_payload": payload,
-        }
-        raise RuntimeError(f"Ollama HTTPError: {json.dumps(debug_payload, ensure_ascii=False)}")
-    except urllib.error.URLError as exc:
-        debug_payload = {
-            "stage": "ollama_chat",
-            "url": f"{server.base_url}/api/chat",
-            "reason": str(exc.reason) if hasattr(exc, 'reason') else str(exc),
-            "model": server.model,
-            "request_payload": payload,
-        }
-        raise RuntimeError(f"Ollama URLError: {json.dumps(debug_payload, ensure_ascii=False)}")
+        yield from pre_events
+    for obj in stream_chat(
+        config_from_server(server), messages,
+        think=getattr(server, "enable_thinking", False), timeout=600,
+    ):
+        yield f"data: {json.dumps({'type': 'raw', 'data': obj}, ensure_ascii=False)}\n\n"
+        message = obj.get("message") or {}
+        thinking_text = obj.get("thinking") or obj.get("reasoning") or message.get("thinking") or message.get("reasoning") or ""
+        content = obj.get("response") or message.get("content") or message.get("response") or ""
+        output_text = ""
+        if content:
+            tagged_thinking, output_text = _split_report_thinking_delta(content, think_state)
+            thinking_text += tagged_thinking
+        if obj.get("done"):
+            remaining_thinking, remaining_output = _split_report_thinking_delta("", think_state, final=True)
+            thinking_text += remaining_thinking
+            output_text += remaining_output
+        if thinking_text:
+            yield f"data: {json.dumps({'type': 'thinking', 'text': thinking_text}, ensure_ascii=False)}\n\n"
+        if output_text:
+            has_output = has_output or bool(output_text.strip())
+            yield f"data: {json.dumps({'type': 'output', 'text': output_text}, ensure_ascii=False)}\n\n"
+        if obj.get("done"):
+            if not has_output:
+                raise RuntimeError("LLM 服务返回了空回答，报告未完成。")
+            yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+            break
 
 
 def render_markdown_to_html(markdown_text):
@@ -1263,14 +1196,15 @@ def patient_generate_report_stream(request, pk):
     server = OllamaServer.objects.filter(is_enabled=True).first()
     if not server:
         return StreamingHttpResponse(iter([
-            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 Ollama 服务器。'})}\n\n"
+            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 LLM 服务。'})}\n\n"
         ]), content_type="text/event-stream")
 
     def event_stream():
         try:
             yield from stream_ollama_report(patient, server)
         except Exception as exc:
-            debug_text = f"{str(exc)}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            from .llm import LLMError
+            debug_text = str(exc) if isinstance(exc, LLMError) else "报告生成失败，请检查服务配置后重试。"
             yield f"data: {json.dumps({'type': 'error', 'text': debug_text})}\n\n"
 
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
@@ -1289,7 +1223,7 @@ def patient_generate_report_stream_rag(request, pk):
     server = OllamaServer.objects.filter(is_enabled=True).first()
     if not server:
         return StreamingHttpResponse(iter([
-            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 Ollama 服务器。'})}\n\n"
+            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 LLM 服务。'})}\n\n"
         ]), content_type="text/event-stream")
 
     def event_stream():
@@ -1304,7 +1238,8 @@ def patient_generate_report_stream_rag(request, pk):
 
             yield from stream_ollama_report(patient, server, messages=messages, pre_events=pre_events)
         except Exception as exc:
-            debug_text = f"{str(exc)}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            from .llm import LLMError
+            debug_text = str(exc) if isinstance(exc, LLMError) else "报告生成失败，请检查服务配置后重试。"
             yield f"data: {json.dumps({'type': 'error', 'text': debug_text})}\n\n"
 
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
@@ -1323,7 +1258,7 @@ def patient_generate_report_stream_agent(request, pk):
     server = OllamaServer.objects.filter(is_enabled=True).first()
     if not server:
         return StreamingHttpResponse(iter([
-            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 Ollama 服务器。'})}\n\n"
+            f"data: {json.dumps({'type': 'error', 'text': '当前没有启用的 LLM 服务。'})}\n\n"
         ]), content_type="text/event-stream")
 
     def event_stream():
@@ -1332,7 +1267,8 @@ def patient_generate_report_stream_agent(request, pk):
             pipeline = AgentPipeline(patient, server)
             yield from pipeline.execute()
         except Exception as exc:
-            debug_text = f"{str(exc)}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            from .llm import LLMError
+            debug_text = str(exc) if isinstance(exc, LLMError) else "报告生成失败，请检查服务配置后重试。"
             yield f"data: {json.dumps({'type': 'error', 'text': debug_text})}\n\n"
 
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
@@ -1500,9 +1436,9 @@ def ollama_server_create(request):
     form = OllamaServerForm(request.POST)
     if form.is_valid():
         form.save()
-        messages.success(request, "Ollama 服务器已添加。")
+        messages.success(request, "LLM 服务已添加。")
     else:
-        messages.error(request, "添加 Ollama 服务器失败，请检查填写内容。")
+        messages.error(request, "添加 LLM 服务失败，请检查填写内容。")
     return redirect("epilepsy:user_list")
 
 
@@ -1515,9 +1451,10 @@ def ollama_server_edit(request, pk):
         form = OllamaServerForm(request.POST, instance=server)
         if form.is_valid():
             form.save()
-            messages.success(request, "Ollama 服务器已更新。")
+            messages.success(request, "LLM 服务已更新。")
         else:
             messages.error(request, "更新失败，请检查填写内容。")
+            return render(request, "epilepsy/ollama_form.html", {"form": form, "server": server}, status=400)
         return redirect("epilepsy:user_list")
     return render(request, "epilepsy/ollama_form.html", {"form": OllamaServerForm(instance=server), "server": server})
 
@@ -1529,48 +1466,92 @@ def ollama_server_delete(request, pk):
     server = get_object_or_404(OllamaServer, pk=pk)
     if request.method == "POST":
         server.delete()
-        messages.success(request, "Ollama 服务器已删除。")
+        messages.success(request, "LLM 服务已删除。")
     return redirect("epilepsy:user_list")
 
 
-def check_ollama_server_available(server, timeout=5):
-    from .ollama_models import OllamaAddressForm, fetch_ollama_models
-
-    address = OllamaAddressForm({"ip": server.ip, "port": server.port})
-    if not address.is_valid():
-        raise ValueError("Ollama 主机地址或端口无效。")
-    models_found = fetch_ollama_models(address.base_url, timeout=timeout)
+def check_ollama_server_available(server, timeout=15):
+    from .llm import config_from_server, fetch_models
+    models_found = fetch_models(config_from_server(server), timeout=timeout)
     return server.model in models_found, models_found
 
 
 @login_required
 @require_POST
 def ollama_model_list(request):
-    from .ollama_models import OllamaAddressForm, OllamaModelListError, fetch_ollama_models
+    from dataclasses import replace
+    from copy import copy
+    from .llm import LLMConfig, LLMError, config_from_server, fetch_models
+    from .ollama_models import OllamaAddressForm, OllamaModelListError
 
     profile = getattr(request.user, "profile", None)
     if not profile or profile.role not in [UserRole.ADMIN, UserRole.STAFF]:
         return JsonResponse({"status": "error", "error": "无权限获取模型列表。"}, status=403)
-
-    explicit_address = "ip" in request.POST or "port" in request.POST
-    if explicit_address:
-        if profile.role != UserRole.ADMIN:
-            return JsonResponse({"status": "error", "error": "只有管理员可以查询指定的 Ollama 服务器。"}, status=403)
-        address_data = request.POST
-    else:
-        server = OllamaServer.objects.filter(is_enabled=True).first()
-        address_data = {"ip": server.ip, "port": server.port} if server else {"ip": "localhost", "port": 11434}
-
-    address = OllamaAddressForm(address_data)
-    if not address.is_valid():
-        error = next(iter(address.errors.values()))[0]
-        return JsonResponse({"status": "error", "error": str(error)}, status=400)
-
+    role = request.POST.get("config_role", "")
+    explicit = any(name in request.POST for name in ("ip", "port", "provider", "api_base_url", "api_key", "server_id"))
+    if explicit and profile.role != UserRole.ADMIN and role not in ("thinking", "extraction", "embedding"):
+        return JsonResponse({"status": "error", "error": "只有管理员可以查询指定的 LLM 服务。"}, status=403)
     try:
-        models_found = fetch_ollama_models(address.base_url)
-    except OllamaModelListError as exc:
+        if role:
+            if role not in ("thinking", "extraction", "embedding"):
+                raise ValueError("模型用途无效。")
+            from knowledge.models import KnowledgeSettings
+            from knowledge.provider_config import get_role_config
+            saved_settings = KnowledgeSettings.load()
+
+            def proposed_role(settings, selected_role, values):
+                saved_config = get_role_config(selected_role, settings=settings)
+                proposed = copy(settings)
+                for field in ("provider", "api_base_url"):
+                    if field in values:
+                        setattr(proposed, selected_role + "_" + field, values[field])
+                setattr(proposed, selected_role + "_api_key", "")
+                config = get_role_config(selected_role, settings=proposed)
+                key = values.get("api_key", "").strip()
+                saved_key = getattr(settings, selected_role + "_api_key", "") or ""
+                if values.get("clear_api_key") == "1":
+                    key = ""
+                elif not key and saved_key and (config.provider, config.base_url) == (saved_config.provider, saved_config.base_url):
+                    key = saved_key
+                else:
+                    key = key or config.api_key
+                return replace(config, api_key=key)
+
+            if role == "thinking" and not request.POST.get("provider") and "extraction_provider" in request.POST:
+                extraction_values = {name: request.POST.get("extraction_" + name, "") for name in ("provider", "api_base_url", "api_key")}
+                extraction_values["clear_api_key"] = request.POST.get("clear_extraction_api_key", "")
+                extraction = proposed_role(saved_settings, "extraction", extraction_values)
+                proposed = copy(saved_settings)
+                proposed.extraction_provider = extraction.provider
+                proposed.extraction_api_base_url = extraction.base_url
+                proposed.extraction_api_key = extraction.api_key
+                config = proposed_role(proposed, role, request.POST)
+            else:
+                config = proposed_role(saved_settings, role, request.POST)
+        elif explicit:
+            provider = request.POST.get("provider") or "ollama"
+            if provider == "ollama":
+                address = OllamaAddressForm({"ip": request.POST.get("ip", ""), "port": request.POST.get("port")})
+                if not address.is_valid():
+                    raise ValueError(str(next(iter(address.errors.values()))[0]))
+                base_url = address.base_url
+            else:
+                base_url = request.POST.get("api_base_url", "")
+            config = LLMConfig(provider, base_url, request.POST.get("api_key", "").strip(), "")
+            server_id = request.POST.get("server_id")
+            if server_id and request.POST.get("clear_api_key") != "1" and not config.api_key:
+                server = get_object_or_404(OllamaServer, pk=server_id)
+                saved = config_from_server(server)
+                if (config.provider, config.base_url) == (saved.provider, saved.base_url):
+                    config = replace(config, api_key=saved.api_key)
+        else:
+            config = config_from_server(OllamaServer.objects.filter(is_enabled=True).first())
+        models_found = fetch_models(config)
+    except ValueError as exc:
+        return JsonResponse({"status": "error", "error": str(exc)}, status=400)
+    except (LLMError, OllamaModelListError) as exc:
         return JsonResponse({"status": "error", "error": str(exc)}, status=exc.status_code)
-    return JsonResponse({"status": "ok", "models": models_found, "server": address.base_url})
+    return JsonResponse({"status": "ok", "models": models_found, "server": config.base_url})
 
 
 def ollama_server_enable(request, pk):
@@ -1584,7 +1565,7 @@ def ollama_server_enable(request, pk):
     if server.is_enabled:
         server.is_enabled = False
         server.save(update_fields=["is_enabled", "updated_at"])
-        messages.success(request, f"已停用 Ollama 服务器：{server.display_name}")
+        messages.success(request, f"已停用 LLM 服务：{server.display_name}")
         return redirect("epilepsy:user_list")
 
     try:
@@ -1602,7 +1583,7 @@ def ollama_server_enable(request, pk):
     OllamaServer.objects.exclude(pk=server.pk).update(is_enabled=False)
     server.is_enabled = True
     server.save(update_fields=["is_enabled", "updated_at"])
-    messages.success(request, f"已启用 Ollama 服务器：{server.display_name}")
+    messages.success(request, f"已启用 LLM 服务：{server.display_name}")
     return redirect("epilepsy:user_list")
 
 

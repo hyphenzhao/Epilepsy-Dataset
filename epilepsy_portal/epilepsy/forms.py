@@ -930,9 +930,54 @@ class UserWithRoleForm(forms.ModelForm):
         return user
 
 class OllamaServerForm(forms.ModelForm):
+    clear_api_key = forms.BooleanField(required=False, label="清除已保存的 API Key")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["provider"].required = False
+        self.fields["ip"].required = False
+        self.fields["port"].required = False
+        self.fields["api_key"].widget = forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password", "placeholder": "留空保留已保存的密钥"}, render_value=False)
+        self._original_key = self.instance.api_key or ""
+        self._original_provider = self.instance.provider or "ollama"
+        self._original_url = self.instance.base_url if self.instance.pk else ""
+
+    def clean(self):
+        from .llm import normalize_base_url
+        from .ollama_models import OllamaAddressForm
+        data = super().clean()
+        provider = data["provider"] = data.get("provider") or "ollama"
+        data["port"] = 11434 if data.get("port") is None else data["port"]
+        try:
+            if provider == "ollama":
+                address = OllamaAddressForm({"ip": data.get("ip", ""), "port": data["port"]})
+                if not address.is_valid():
+                    for name, errors in address.errors.items():
+                        self.add_error(name, errors[0])
+                    return data
+                data["ip"] = address.cleaned_data["ip"]
+                new_url = normalize_base_url(provider, address.base_url)
+            else:
+                new_url = normalize_base_url(provider, data.get("api_base_url", ""))
+                data["api_base_url"] = new_url
+        except ValueError as exc:
+            self.add_error("api_base_url", str(exc))
+            return data
+        if data.get("clear_api_key"):
+            data["api_key"] = ""
+        elif not data.get("api_key"):
+            data["api_key"] = self._original_key if provider == self._original_provider and new_url == self._original_url else ""
+        return data
+
+    def clean_api_key(self):
+        key = self.cleaned_data.get("api_key", "") or ""
+        if any(ord(char) < 32 or ord(char) > 126 for char in key):
+            raise forms.ValidationError("API Key 含有无效字符，请重新填写。")
+        return key
+
     class Meta:
         model = OllamaServer
-        fields = ["name", "ip", "port", "model", "prompt", "enable_thinking"]
+        fields = ["name", "provider", "ip", "port", "api_base_url", "api_key", "model", "prompt", "enable_thinking"]
         labels = {
             "name": "名称",
             "ip": "IP / Host",
@@ -943,9 +988,13 @@ class OllamaServerForm(forms.ModelForm):
         }
         help_texts = {
             "model": "用于普通和 RAG 报告生成，以及 Agent 报告初稿与修订，请选择支持对话的模型。",
+            "api_base_url": "例如 https://api.openai.com/v1、https://api.anthropic.com/v1，或服务商提供的 OpenAI 兼容地址。",
+            "api_key": "Ollama 没有认证时留空。留空保留当前密钥；更换服务类型或 API 地址时请重新填写。密钥不会在页面显示。",
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "例如：本地 Ollama"}),
+            "provider": forms.Select(attrs={"class": "form-control"}),
+            "api_base_url": forms.TextInput(attrs={"class": "form-control", "placeholder": "https://api.openai.com/v1"}),
             "ip": forms.TextInput(attrs={"class": "form-control", "placeholder": "127.0.0.1"}),
             "port": forms.NumberInput(attrs={"class": "form-control", "placeholder": 11434}),
             "model": forms.TextInput(attrs={"class": "form-control", "placeholder": "llama3.1:8b"}),

@@ -3,13 +3,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
+from epilepsy.llm import LLMConfig
 
 from knowledge.ollama_client import DEFAULT_CHAT_MODEL, summarize_edit
 
 
 class EditSummaryModelConfigurationTests(SimpleTestCase):
-    @patch("knowledge.ollama_client.urllib.request.urlopen")
-    @patch("knowledge.ollama_client._get_ollama_base_url", return_value="http://ollama.test:11434")
+    @patch("epilepsy.llm.urlopen")
+    @patch("knowledge.provider_config.get_active_server_config", return_value=LLMConfig(base_url="http://ollama.test:11434"))
     @patch("knowledge.models.KnowledgeSettings.load")
     def test_summary_request_uses_configured_extraction_model(self, load, base_url, urlopen):
         load.return_value = SimpleNamespace(extraction_model="custom-think-model:latest")
@@ -26,8 +27,8 @@ class EditSummaryModelConfigurationTests(SimpleTestCase):
         self.assertEqual(payload["model"], "custom-think-model:latest")
         self.assertFalse(payload["stream"])
 
-    @patch("knowledge.ollama_client.urllib.request.urlopen")
-    @patch("knowledge.ollama_client._get_ollama_base_url", return_value="http://ollama.test:11434")
+    @patch("epilepsy.llm.urlopen")
+    @patch("knowledge.provider_config.get_active_server_config", return_value=LLMConfig(base_url="http://ollama.test:11434"))
     @patch("knowledge.models.KnowledgeSettings.load")
     def test_summary_keeps_default_when_configuration_is_empty(self, load, base_url, urlopen):
         load.return_value = SimpleNamespace(extraction_model="")

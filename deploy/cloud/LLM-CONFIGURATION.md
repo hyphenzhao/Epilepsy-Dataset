@@ -1,0 +1,11 @@
+# 模型服务配置
+
+“管理设置”里的报告生成服务支持 Ollama、OpenAI / 兼容 API、Anthropic。选择类型，填写地址和 API Key，点击“获取模型”后选择模型，再保存并测试、启用。接口地址填写服务商提供的 API 根地址，如 `https://api.openai.com/v1`、`https://api.anthropic.com/v1` 或 `https://api.siliconflow.cn/v1`；不要填写完整的 `/chat/completions` 或 `/messages` 路径。
+
+“知识库设置”可分别配置 Agent 思考与自查、信息提取与编辑摘要、文本向量化。思考服务默认沿用信息提取的服务与模型；信息提取服务默认沿用报告服务。每一组都可单独选择模型和服务。文本向量化支持 Ollama、OpenAI / 兼容 API；Anthropic 没有 Embedding API。更换向量化服务或模型后，需要使用已有的索引重建功能，原索引不会自动删除。
+
+API Key 不回显，留空保留同一服务地址已有的密钥，清除复选框可删除单独保存的密钥。更换类型或地址时，需要重新填写密钥；API 重定向会被拒绝，以免密钥被转发。单独保存的密钥会固定其服务类型和地址。
+
+密钥在数据库中使用 Fernet 加密，依赖部署的 Django `SECRET_KEY`。备份或迁移已配置 API Key 的数据库时，需同时安全保存原部署密钥；更换 `SECRET_KEY` 后需要重新填写 API Key。云端密钥位于权限为 `0600` 的 `/etc/epilepsy-portal/cloud.env`，不得提交到 Git。
+
+原 Ollama 数据及私有连接路径保持兼容。部署本更新需要执行 `migrate`、`collectstatic`，随后重启应用；不增加 SDK 依赖。

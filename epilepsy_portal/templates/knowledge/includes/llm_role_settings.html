@@ -1,0 +1,34 @@
+<fieldset class="border rounded p-3 mb-3"
+          data-llm-config-role="{{ role }}"
+          data-provider-field="{{ provider_field.html_name }}"
+          data-base-url-field="{{ url_field.html_name }}"
+          data-api-key-field="{{ key_field.html_name }}"
+          data-clear-api-key-field="{{ clear_field.html_name }}">
+  <legend class="w-auto px-2 mb-0" style="font-size:1rem;">{{ title }}</legend>
+  <p class="text-muted small mb-3">{{ purpose }}</p>
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <label for="{{ provider_field.id_for_label }}">服务类型</label>
+      {{ provider_field }}{{ provider_field.errors }}
+    </div>
+    <div class="col-md-8 mb-3">
+      <label for="{{ url_field.id_for_label }}">API 地址</label>
+      {{ url_field }}{{ url_field.errors }}
+      <small class="form-text text-muted">留空使用当前服务器或所选服务的默认地址。</small>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label for="{{ key_field.id_for_label }}">API Key</label>
+      {{ key_field }}{{ key_field.errors }}
+      <small class="form-text text-muted">{{ key_field.help_text }}</small>
+      <div class="form-check mt-2">
+        {{ clear_field }}
+        <label class="form-check-label" for="{{ clear_field.id_for_label }}">{{ clear_field.label }}</label>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      {% include "epilepsy/includes/ollama_model_picker.html" with field=model_field server_fields=False %}
+    </div>
+  </div>
+</fieldset>
