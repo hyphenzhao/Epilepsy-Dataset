@@ -134,9 +134,11 @@ def stream_ollama_report(patient, server, messages=None, pre_events=None):
     has_output = False
     if pre_events:
         yield from pre_events
+    config = config_from_server(server)
     for obj in stream_chat(
-        config_from_server(server), messages,
-        think=getattr(server, "enable_thinking", False), timeout=600,
+        config, messages,
+        think=getattr(server, "enable_thinking", False),
+        timeout=600 if config.provider == "ollama" else 120,
     ):
         yield f"data: {json.dumps({'type': 'raw', 'data': obj}, ensure_ascii=False)}\n\n"
         message = obj.get("message") or {}

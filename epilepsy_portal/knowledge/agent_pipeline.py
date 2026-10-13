@@ -336,9 +336,11 @@ class AgentPipeline:
         think_state = {"in_think": False}
         has_output = False
         completed = False
+        config = config_from_server(self.server, model=model)
         for obj in stream_chat(
-            config_from_server(self.server, model=model), messages,
-            think=getattr(self.server, "enable_thinking", False), timeout=600,
+            config, messages,
+            think=getattr(self.server, "enable_thinking", False),
+            timeout=600 if config.provider == "ollama" else 120,
         ):
             message = obj.get("message") or {}
             thinking_text = obj.get("thinking") or obj.get("reasoning") or message.get("thinking") or message.get("reasoning") or ""
