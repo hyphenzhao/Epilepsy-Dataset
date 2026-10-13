@@ -1,4 +1,5 @@
 import importlib.util
+from importlib import metadata
 import json
 import os
 from pathlib import Path
@@ -9,11 +10,22 @@ from django.http import HttpResponse
 from django.middleware.security import SecurityMiddleware
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from whitenoise.storage import CompressedStaticFilesStorage
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 from epilepsy_portal.settings import base
 
 
 class CloudSettingsTests(SimpleTestCase):
+    def cloud_requirements(self):
+        path = Path(base.__file__).resolve().parents[3] / "requirements-cloud.txt"
+        lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
+        return lines, {
+            canonicalize_name(requirement.name): requirement
+            for line in lines if line and not line.startswith(("#", "-"))
+            for requirement in [Requirement(line)]
+        }
+
     def load_cloud(self, **environment):
         values = {"DJANGO_SECRET_KEY": "isolated-test-secret-" + "x" * 64}
         values.update(environment)
@@ -113,3 +125,57 @@ class CloudSettingsTests(SimpleTestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ImproperlyConfigured):
                     self.load_cloud(DJANGO_OLLAMA_URL_OVERRIDES=value)
+
+    def test_cloud_requirements_are_independent_runtime_dependencies(self):
+        lines, requirements = self.cloud_requirements()
+        self.assertFalse(any(line.startswith("-") for line in lines))
+        expected = {
+            "django", "django-globus-portal-framework", "djangorestframework",
+            "social-auth-app-django", "social-auth-core", "globus-sdk", "python-jose",
+            "requests", "requests-oauthlib", "markdown", "lxml", "pillow", "psutil",
+            "python-docx", "reportlab", "whitenoise", "gunicorn", "chromadb",
+            "pdfplumber", "pypinyin", "python-dateutil",
+        }
+        self.assertTrue(expected.issubset(requirements))
+        legacy = {"screen", "django-admin", "django-excel-response2", "excel-base", "django-six", "timeconvert", "cookiecutter", "xlwt"}
+        self.assertFalse(legacy.intersection(requirements))
+
+    def test_cloud_requirements_keep_source_pins_and_the_secure_django_lts_patch(self):
+        _, requirements = self.cloud_requirements()
+        path = Path(base.__file__).resolve().parents[3] / "requirements.txt"
+        source = {
+            canonicalize_name(requirement.name): requirement
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith(("#", "-"))
+            for requirement in [Requirement(line)]
+        }
+        self.assertEqual(str(requirements["django"].specifier), "==5.2.18")
+        self.assertEqual(str(source["django"].specifier), "==5.2.8")
+        for name, requirement in requirements.items():
+            if name != "django" and name in source:
+                with self.subTest(package=name):
+                    self.assertEqual(requirement.specifier, source[name].specifier)
+
+    def test_cloud_dependency_graph_does_not_pull_the_legacy_screen_chain(self):
+        _, requirements = self.cloud_requirements()
+        pending = list(requirements.values())
+        visited = set()
+        names = set()
+        while pending:
+            requirement = pending.pop()
+            name = canonicalize_name(requirement.name)
+            key = (name, tuple(sorted(requirement.extras)))
+            if key in visited:
+                continue
+            visited.add(key)
+            names.add(name)
+            distribution = metadata.distribution(name)
+            for text in distribution.requires or ():
+                dependency = Requirement(text)
+                extras = requirement.extras or {""}
+                if dependency.marker is None or any(dependency.marker.evaluate({
+                    "extra": extra, "python_version": "3.14", "python_full_version": "3.14.4",
+                    "sys_platform": "linux", "os_name": "posix",
+                }) for extra in extras):
+                    pending.append(dependency)
+        self.assertFalse(names.intersection({"screen", "django-admin", "django-excel-response2", "excel-base", "timeconvert", "cookiecutter"}))
