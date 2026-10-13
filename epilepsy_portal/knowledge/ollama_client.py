@@ -61,6 +61,8 @@ def ollama_chat_json(
         log.warning("模型未返回有效的 JSON 对象，使用回退值 (%s)", type(exc).__name__)
     except Exception as exc:
         if strict:
+            if isinstance(exc, LLMError):
+                raise
             raise LLMError("模型调用失败，请检查服务、模型、密钥和配额后重试。", getattr(exc, "status_code", 502)) from None
         log.warning("知识库模型调用失败，使用回退值 (%s)", type(exc).__name__)
     return fallback

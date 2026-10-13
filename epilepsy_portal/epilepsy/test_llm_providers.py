@@ -1,4 +1,5 @@
 import io
+import http.client
 import json
 from email.message import Message
 from types import SimpleNamespace
@@ -117,6 +118,114 @@ class LLMProviderProtocolTests(SimpleTestCase):
         self.assertIn("JSON", payload["messages"][-1]["content"])
         self.assertEqual(payload["messages"][0], MESSAGES[0])
         self.assert_no_key_in_payload(payload)
+
+    @patch("epilepsy.llm.urlopen")
+    def test_siliconflow_qwen3_thinking_switch_and_budget(self, urlopen):
+        for model in ("Qwen/Qwen3-8B", "Qwen/Qwen3.8-27B"):
+            config = LLMConfig("openai", "https://api.siliconflow.cn/v1", FAKE_KEY, model)
+            for think in (False, True):
+                with self.subTest(model=model, think=think):
+                    urlopen.return_value = sse_response(openai_events(), done=True)
+                    list(stream_chat(config, MESSAGES, think=think))
+                    _, _, payload = self.request_payload(urlopen)
+                    self.assertIs(payload["enable_thinking"], think)
+                    self.assertEqual(payload["max_tokens"], 8192)
+                    if think:
+                        self.assertEqual(payload["thinking_budget"], 2048)
+                    else:
+                        self.assertNotIn("thinking_budget", payload)
+        urlopen.return_value = json_response({"choices": [{"message": {"content": "合成正文"}, "finish_reason": "stop"}]})
+        chat_completion(config, MESSAGES, max_tokens=512, think=True)
+        self.assertEqual(self.request_payload(urlopen)[2]["max_tokens"], 512)
+
+    @patch("epilepsy.llm.urlopen")
+    def test_vendor_thinking_fields_are_not_sent_to_unrelated_models_or_hosts(self, urlopen):
+        for host, model in (
+            ("api.siliconflow.cn", "Pro/Qwen/Qwen2.5-7B-Instruct"),
+            ("api.siliconflow.cn", "Qwen/Qwen3-235B-A22B-Instruct-2507"),
+            ("provider.test", "Qwen/Qwen3-8B"),
+            ("api.siliconflow.cn.provider.test", "Qwen/Qwen3-8B"),
+        ):
+            with self.subTest(host=host, model=model):
+                urlopen.return_value = json_response({"choices": [{"message": {"content": "合成正文"}, "finish_reason": "stop"}]})
+                chat_completion(LLMConfig("openai", "https://" + host + "/v1", FAKE_KEY, model), MESSAGES, think=True)
+                _, _, payload = self.request_payload(urlopen)
+                self.assertNotIn("enable_thinking", payload)
+                self.assertNotIn("thinking_budget", payload)
+
+    @patch("epilepsy.llm.urlopen")
+    def test_empty_stream_has_recovery_code_and_only_safe_diagnostics(self, urlopen):
+        for provider in ("ollama", "openai", "anthropic"):
+            with self.subTest(provider=provider):
+                if provider == "ollama":
+                    response = HTTPFixture((json.dumps({"message": {"thinking": FAKE_PROMPT}, "done": True}) + "\n").encode())
+                elif provider == "openai":
+                    response = sse_response([{"choices": [{"delta": {"reasoning_content": FAKE_PROMPT}, "finish_reason": "stop"}]}], done=True)
+                else:
+                    response = sse_response([
+                        {"type": "content_block_delta", "delta": {"thinking": FAKE_PROMPT}},
+                        {"type": "message_delta", "delta": {"stop_reason": "end_turn"}},
+                        {"type": "message_stop"},
+                    ])
+                response.headers = {"x-siliconcloud-trace-id": "synthetic_trace_123"}
+                urlopen.return_value = response
+                with self.assertLogs("epilepsy.llm", level="WARNING") as logs, self.assertRaises(LLMError) as caught:
+                    list(stream_chat(self.config(provider), MESSAGES))
+                self.assertEqual(caught.exception.code, "empty_response")
+                self.assertIn("思考", str(caught.exception))
+                self.assertIn("synthetic_trace_123", '\n'.join(logs.output))
+                self.assertNotIn(FAKE_PROMPT, '\n'.join(logs.output))
+                self.assertNotIn(FAKE_KEY, '\n'.join(logs.output))
+
+    @patch("epilepsy.llm.urlopen")
+    def test_midstream_read_timeout_has_recoverable_code(self, urlopen):
+        class BrokenStream:
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+            def __iter__(self):
+                yield b'data: {"choices":[{"delta":{"content":"partial"}}]}\n'
+                yield b'\n'
+                raise TimeoutError("synthetic private transport details")
+        urlopen.return_value = BrokenStream()
+        chunks = []
+        with self.assertRaises(LLMError) as caught:
+            for chunk in stream_chat(self.config("openai"), MESSAGES):
+                chunks.append(chunk)
+        self.assertEqual(caught.exception.code, "timeout")
+        self.assertTrue(chunks)
+        self.assertFalse(any(chunk.get("done") for chunk in chunks))
+        self.assertNotIn("private transport", str(caught.exception))
+
+    @patch("epilepsy.llm.urlopen")
+    def test_only_temporary_http_errors_are_recoverable(self, urlopen):
+        for status, code in ((401, "authentication"), (429, "rate_limit"), (400, "service_error"), (503, "transient_http")):
+            with self.subTest(status=status):
+                urlopen.side_effect = HTTPError("https://provider.test/v1", status, "synthetic", {}, io.BytesIO())
+                with self.assertRaises(LLMError) as caught:
+                    list(stream_chat(self.config("openai"), MESSAGES))
+                self.assertEqual(caught.exception.code, code)
+
+    @patch("epilepsy.llm.urlopen")
+    def test_chunked_http_body_cut_off_is_normalized(self, urlopen):
+        class CutOffBody(HTTPFixture):
+            def __iter__(self):
+                yield b'data: {"choices":[{"delta":{"content":"partial"}}]}\n'
+                yield b'\n'
+                raise http.client.IncompleteRead(FAKE_PROMPT.encode(), 128)
+            def read(self, *args):
+                raise http.client.IncompleteRead(FAKE_PROMPT.encode(), 128)
+        for stream in (True, False):
+            with self.subTest(stream=stream):
+                urlopen.return_value = CutOffBody()
+                with self.assertRaises(LLMError) as caught:
+                    if stream:
+                        list(stream_chat(self.config("openai"), MESSAGES))
+                    else:
+                        chat_completion(self.config("openai"), MESSAGES)
+                self.assertEqual(caught.exception.code, "incomplete_stream")
+                self.assert_no_sensitive_error(caught.exception)
 
     @patch("epilepsy.llm.urlopen")
     def test_anthropic_chat_separates_system_and_text_blocks(self, urlopen):

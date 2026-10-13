@@ -127,7 +127,7 @@ def _split_report_thinking_delta(delta, state, *, final=False):
 
 
 def stream_ollama_report(patient, server, messages=None, pre_events=None):
-    from .llm import config_from_server, stream_chat
+    from .llm import config_from_server, stream_chat, LLMError
     if messages is None:
         messages = _build_patient_report_messages(patient, server)
     think_state = {"in_think": False}
@@ -157,7 +157,7 @@ def stream_ollama_report(patient, server, messages=None, pre_events=None):
             yield f"data: {json.dumps({'type': 'output', 'text': output_text}, ensure_ascii=False)}\n\n"
         if obj.get("done"):
             if not has_output:
-                raise RuntimeError("LLM 服务返回了空回答，报告未完成。")
+                raise LLMError("LLM 服务只返回了思考内容，没有返回正文，报告未完成。", code="empty_response")
             yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
             break
 

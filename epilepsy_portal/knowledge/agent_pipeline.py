@@ -15,6 +15,7 @@ import re
 import urllib.request
 import urllib.error
 
+from epilepsy.llm import LLMError, _safe_metadata
 from .models import KnowledgeSettings
 from .ollama_client import _get_ollama_base_url
 from .agent_prompts import (
@@ -25,6 +26,20 @@ from .agent_prompts import (
 )
 
 log = logging.getLogger(__name__)
+RETRYABLE_CODES = frozenset({
+    "empty_response", "incomplete_stream", "timeout", "transient_http", "connection_error",
+})
+ERROR_REASONS = {
+    "empty_response": "服务未返回正文。",
+    "incomplete_stream": "输出流提前结束。",
+    "timeout": "请求超时。",
+    "transient_http": "服务暂时不可用。",
+    "connection_error": "无法连接模型服务。",
+    "authentication": "认证失败，请检查 API Key 和权限。",
+    "rate_limit": "限额或余额受限。",
+    "output_limit": "达到输出上限，报告未完成。",
+    "nontext_response": "模型未返回完整正文。",
+}
 
 
 class AgentPipeline:
@@ -35,7 +50,9 @@ class AgentPipeline:
         self.server = server
         settings = KnowledgeSettings.load()
         from .provider_config import get_role_config
-        self.think_model = get_role_config("thinking", settings=settings).model
+        thinking = get_role_config("thinking", settings=settings)
+        self.think_provider = thinking.provider
+        self.think_model = thinking.model
         self.generate_model = server.model or "qwen2.5:14b"
         self.draft_text = ""  # 累积草稿文本，供 Step 4 使用
 
@@ -45,16 +62,21 @@ class AgentPipeline:
 
     def execute(self):
         """执行五步推理，yield SSE 事件字符串"""
+        stage = "export"
+        completed_draft = ""
+        self._report_attempt = 1
         try:
             # 获取患者数据
             from epilepsy.views_helper import build_patient_export_json
             self.export_json = build_patient_export_json(self.patient)
-        except Exception as exc:
-            yield self._error(f"获取患者数据失败: {exc}")
+        except Exception:
+            self._log_diagnostic(stage, 1, "program_error", level=logging.ERROR)
+            yield self._error("无法读取报告数据，请稍后重试。")
             return
 
         try:
             # Step 1: 分析
+            stage = "analysis"
             yield self._progress(1, 5, "分析患者关键特征...")
             analysis = self._analyze()
             features_str = "、".join(analysis.get("key_features", ["未识别到突出特征"])[:5])
@@ -62,20 +84,27 @@ class AgentPipeline:
                                 detail=self._format_analysis(analysis))
 
             # Step 2: 检索
+            stage = "retrieval"
             yield self._progress(2, 5, "检索知识库...")
             retrieval = self._retrieve(analysis)
             yield self._progress(2, 5,
                 f"找到 {retrieval['total_found']} 条参考（病例 {len(retrieval['cases'])} + 文献 {len(retrieval['literature'])}）")
 
             # Step 3: 草稿（流式）
+            stage = "draft"
             yield self._progress(3, 5, "撰写报告初稿...")
             self.draft_text = ""
             for event in self._draft(analysis, retrieval):
                 yield event
+            if not self.draft_text.strip():
+                raise LLMError("初稿没有返回正文。", code="empty_response")
+            completed_draft = self.draft_text
             yield self._progress(3, 5,
                 f"初稿完成（{len(self.draft_text)} 字符）")
 
             # Step 4: 自查
+            stage = "critique"
+            self._report_attempt = 1
             yield self._progress(4, 5, "自查审核中...")
             critique = self._critique(analysis)
             issues = critique.get("issues", [])
@@ -85,12 +114,10 @@ class AgentPipeline:
 
             # Step 5: 修订（流式）
             if critique.get("needs_revision", False) or issues:
+                stage = "revision"
                 yield self._progress(5, 5, "修订定稿...")
-                # 保存草稿用于 prompt，清空 draft_text 让修订版独立累积
-                draft_for_revision = self.draft_text
-                self.draft_text = ""
-                yield self._event("reset_output", {})
-                for event in self._revise(critique, draft_for_revision):
+                # The completed draft remains visible until revised text arrives.
+                for event in self._revise(critique, completed_draft):
                     yield event
                 yield self._progress(5, 5, "修订完成")
             else:
@@ -99,8 +126,68 @@ class AgentPipeline:
             yield self._done()
 
         except Exception as exc:
-            log.exception("Agent pipeline 异常")
-            yield self._error(f"Agent 流水线异常: {exc}")
+            code = getattr(exc, "code", "service_error") if isinstance(exc, LLMError) else "program_error"
+            self._log_diagnostic(stage, self._report_attempt, code, level=logging.ERROR)
+            if completed_draft:
+                self.draft_text = completed_draft
+                yield self._event("reset_output", {})
+                yield self._output(completed_draft)
+                text = ("修订失败，已保留初稿（未经修订），请人工核对后重试。"
+                        if stage == "revision" else
+                        "报告审核失败，已保留初稿（未经完整审核），请人工核对后重试。")
+            elif stage == "draft":
+                text = "初稿生成失败，报告未完成，请人工核对后重试。"
+            else:
+                text = "Agent 处理失败，报告未完成，请检查服务配置后重试。"
+            reason = ERROR_REASONS.get(code, "服务或处理异常。")
+            yield self._error(text + " 原因：" + reason)
+
+    def _log_diagnostic(self, stage, attempt, code, *, level=logging.WARNING):
+        provider = getattr(self.server, "provider", "ollama")
+        model = getattr(self, "generate_model", self.server.model)
+        if stage in {"analysis", "critique"}:
+            provider = getattr(self, "think_provider", provider)
+            model = getattr(self, "think_model", model)
+        log.log(level, "Agent provider=%s model=%s stage=%s attempt=%s code=%s",
+                _safe_metadata(provider), _safe_metadata(model),
+                _safe_metadata(stage), attempt, _safe_metadata(code))
+
+    def _stream_report_stage(self, messages, model, *, stage):
+        """Retry the same stage input once and keep failed attempts separate."""
+        preserved = self.draft_text if stage == "revision" else ""
+        step, label = (5, "修订") if stage == "revision" else (3, "初稿生成")
+        for attempt in (1, 2):
+            self._report_attempt = attempt
+            self.draft_text = ""
+            if attempt == 2:
+                yield self._progress(step, 5, f"{label}未完成，正在进行第 2 次尝试...")
+                yield self._event("reset_output", {})
+                if preserved:
+                    yield self._output(preserved)
+            output_started = False
+            pending_output = []
+            try:
+                for event in self._stream_chat(messages, model):
+                    payload = json.loads(event.removeprefix("data: "))
+                    if payload.get("type") == "output" and not output_started:
+                        pending_output.append(event)
+                        if not self.draft_text.strip():
+                            continue
+                        if preserved:
+                            yield self._event("reset_output", {})
+                        yield from pending_output
+                        pending_output = []
+                        output_started = True
+                    else:
+                        yield event
+                if not self.draft_text.strip():
+                    raise LLMError("LLM 服务没有返回报告正文。", code="empty_response")
+                self._log_diagnostic(stage, attempt, "success", level=logging.INFO)
+                return
+            except LLMError as exc:
+                self._log_diagnostic(stage, attempt, exc.code)
+                if attempt == 2 or exc.code not in RETRYABLE_CODES:
+                    raise
 
     # ============================================================
     #  Step 1: 分析
@@ -182,7 +269,7 @@ class AgentPipeline:
         user_text = json.dumps(self.export_json, ensure_ascii=False, indent=2)
         messages.append({"role": "user", "content": f"请基于以下患者数据生成癫痫术前评估报告初稿：\n\n{user_text}"})
 
-        yield from self._stream_chat(messages, self.generate_model)
+        yield from self._stream_report_stage(messages, self.generate_model, stage="draft")
 
     # ============================================================
     #  Step 4: 自查
@@ -237,7 +324,7 @@ class AgentPipeline:
                 f"请根据审阅意见修订以上报告。"
             )},
         ]
-        yield from self._stream_chat(messages, self.generate_model)
+        yield from self._stream_report_stage(messages, self.generate_model, stage="revision")
 
     # ============================================================
     #  Ollama 流式调用（复用 stream_ollama_report 的核心逻辑）
@@ -248,6 +335,7 @@ class AgentPipeline:
         from epilepsy.llm import config_from_server, stream_chat
         think_state = {"in_think": False}
         has_output = False
+        completed = False
         for obj in stream_chat(
             config_from_server(self.server, model=model), messages,
             think=getattr(self.server, "enable_thinking", False), timeout=600,
@@ -271,8 +359,11 @@ class AgentPipeline:
                 yield self._output(output_text)
             if obj.get("done"):
                 if not has_output:
-                    raise RuntimeError("LLM 服务返回了空回答，报告未完成。")
+                    raise LLMError("LLM 服务返回了空回答，报告未完成。", code="empty_response")
+                completed = True
                 break
+        if not completed:
+            raise LLMError("LLM 输出流提前结束，报告未完成。", code="incomplete_stream")
 
     def _split_thinking(self, text, state, *, final=False):
         """处理 <think>...</think> 标签，返回 (thinking_text, answer_text)"""

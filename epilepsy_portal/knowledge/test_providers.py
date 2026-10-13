@@ -236,6 +236,14 @@ class ProviderCallTests(SimpleTestCase):
                 ollama_chat_json([], role="thinking", strict=True)
         self.assertNotIn("synthetic-private-input-echo", str(error.exception))
 
+    def test_strict_json_preserves_provider_error_classification(self):
+        provider_error = LLMError("API 认证失败。", code="authentication")
+        with patch("knowledge.ollama_client.ollama_chat", side_effect=provider_error):
+            with self.assertRaises(LLMError) as caught:
+                ollama_chat_json([], role="thinking", strict=True)
+        self.assertIs(caught.exception, provider_error)
+        self.assertEqual(caught.exception.code, "authentication")
+
     def test_metadata_types_use_extraction_config(self):
         from .metadata_extractor import extract_metadata
         config = LLMConfig("openai", "https://extraction.invalid/v1", "synthetic-key", "custom-extraction")

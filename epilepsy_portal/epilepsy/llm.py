@@ -1,7 +1,9 @@
 """Small HTTP adapter for Ollama, OpenAI compatible APIs and Anthropic."""
 
 from dataclasses import dataclass, field
+import http.client
 import json
+import logging
 import math
 import re
 import urllib.error
@@ -10,12 +12,14 @@ import urllib.request
 
 PROVIDER_CHOICES = [("ollama", "Ollama"), ("openai", "OpenAI / 兼容 API"), ("anthropic", "Anthropic")]
 DEFAULT_URLS = {"ollama": "http://localhost:11434", "openai": "https://api.openai.com/v1", "anthropic": "https://api.anthropic.com/v1"}
+log = logging.getLogger(__name__)
 
 
 class LLMError(RuntimeError):
-    def __init__(self, message, status_code=502):
+    def __init__(self, message, status_code=502, *, code="service_error"):
         super().__init__(message)
         self.status_code = status_code
+        self.code = code
 
 
 def normalize_base_url(provider, value):
@@ -98,18 +102,23 @@ def _open(config, request, timeout):
     try:
         return urlopen(request, timeout=timeout)
     except urllib.error.HTTPError as exc:
+        code = "service_error"
         if exc.code in (301, 302, 303, 307, 308):
             message = "API 地址发生重定向，请填写服务商提供的最终 API 地址后重试。"
         elif exc.code in (401, 403):
             message = "API 认证失败，请检查 API Key 和账号权限。"
+            code = "authentication"
         elif exc.code == 429:
             message = "API 请求受限，请检查余额或限额后重试。"
+            code = "rate_limit"
         else:
             message = f"LLM 服务返回 HTTP {exc.code}，请检查模型名称和服务配置。"
-        raise LLMError(message) from None
+            if exc.code in (502, 503, 504):
+                code = "transient_http"
+        raise LLMError(message, code=code) from None
     except (TimeoutError, urllib.error.URLError, OSError) as exc:
         timed_out = isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError)
-        raise LLMError("LLM 请求超时，请稍后重试。" if timed_out else "无法连接 LLM 服务，请检查 API 地址和服务状态。", 504 if timed_out else 502) from None
+        raise LLMError("LLM 请求超时，请稍后重试。" if timed_out else "无法连接 LLM 服务，请检查 API 地址和服务状态。", 504 if timed_out else 502, code="timeout" if timed_out else "connection_error") from None
 
 
 def _load_json(response):
@@ -120,6 +129,10 @@ def _load_json(response):
         return payload
     except (ValueError, UnicodeError) as exc:
         raise LLMError("LLM 服务返回了无效的 JSON 数据。") from exc
+    except (OSError, http.client.HTTPException) as exc:
+        timed_out = isinstance(exc, TimeoutError)
+        raise LLMError("LLM 响应读取超时，请重试。" if timed_out else "LLM 响应读取中断，请重试。",
+                       504 if timed_out else 502, code="timeout" if timed_out else "incomplete_stream") from None
 
 
 def _check_error(obj, config):
@@ -134,9 +147,33 @@ def _check_error(obj, config):
 
 def _check_stop(reason):
     if reason in ("length", "max_tokens", "model_context_window_exceeded"):
-        raise LLMError("模型输出达到长度上限，报告未完成，请调整模型或输出上限后重试。")
+        raise LLMError("模型输出达到长度上限，报告未完成，请调整模型或输出上限后重试。", code="output_limit")
     if reason in ("content_filter", "refusal", "tool_calls", "function_call", "tool_use", "pause_turn"):
-        raise LLMError("模型未返回完整的文本回答，请调整输入或模型后重试。")
+        raise LLMError("模型未返回完整的文本回答，请调整输入或模型后重试。", code="nontext_response")
+
+
+def _safe_metadata(value):
+    return re.sub(r"[^a-zA-Z0-9_./:-]", "_", str(value or ""))[:128]
+
+
+def _empty_response(config, *, thinking=False, reason=None, response=None, stream=False):
+    headers = getattr(response, "headers", None) or {}
+    trace = headers.get("x-siliconcloud-trace-id") or headers.get("x-request-id") or ""
+    log.warning("LLM empty response provider=%s model=%s thinking=%s stop=%s trace=%s",
+                config.provider, _safe_metadata(config.model), bool(thinking),
+                _safe_metadata(reason), _safe_metadata(trace))
+    message = "LLM 服务只返回了思考内容，没有返回正文。" if thinking else "LLM 服务返回了空回答。"
+    if stream:
+        message = message.rstrip("。") + "，报告未完成。"
+    return LLMError(message, code="empty_response")
+
+
+def _siliconflow_hybrid_model(config):
+    # Only these Qwen3 hybrid models support switching modes; do not send
+    # vendor-only parameters to another OpenAI-compatible host or other models.
+    host = urllib.parse.urlsplit(config.base_url).hostname
+    return host in ("api.siliconflow.cn", "api.siliconflow.com") and bool(re.fullmatch(
+        r"(?:Pro/)?Qwen/(?:Qwen3-(?:0\.6B|1\.7B|4B|8B|14B|32B|30B-A3B|235B-A22B)|Qwen3\.8-27B)", config.model))
 
 
 def _chat_payload(config, messages, *, stream, temperature=None, max_tokens=None, think=False, format_json=False):
@@ -160,6 +197,12 @@ def _chat_payload(config, messages, *, stream, temperature=None, max_tokens=None
         messages = list(messages) + [{"role": "user", "content": "请仅返回合法的 JSON 对象，不要添加 Markdown 代码块或其他说明。"}]
         payload["messages"] = messages
     if config.provider == "openai":
+        if _siliconflow_hybrid_model(config):
+            payload["enable_thinking"] = bool(think)
+            if think:
+                payload["thinking_budget"] = 2048
+            if max_tokens is None:
+                max_tokens = 8192
         reasoning_model = bool(re.match(r"^(o[134](?:-|$)|gpt-[56](?:[.-]|$))", config.model))
         if temperature is not None and not reasoning_model:
             payload["temperature"] = temperature
@@ -193,14 +236,21 @@ def chat_completion(config, messages, *, temperature=None, max_tokens=None, thin
     elif config.provider == "openai":
         choices = obj.get("choices") or []
         if not choices:
-            raise LLMError("LLM 服务未返回回答。")
+            raise _empty_response(config, response=response)
         _check_stop(choices[0].get("finish_reason"))
         text = (choices[0].get("message") or {}).get("content") or ""
     else:
         _check_stop(obj.get("stop_reason"))
         text = "".join(block.get("text", "") for block in obj.get("content", []) if block.get("type") == "text")
     if not isinstance(text, str) or not text.strip():
-        raise LLMError("LLM 服务返回了空回答。")
+        if config.provider == "openai":
+            thinking = (choices[0].get("message") or {}).get("reasoning_content") or (choices[0].get("message") or {}).get("reasoning")
+        elif config.provider == "ollama":
+            thinking = (obj.get("message") or {}).get("thinking") or obj.get("thinking")
+        else:
+            thinking = any(block.get("type") == "thinking" for block in obj.get("content", []))
+        raise _empty_response(config, thinking=thinking, response=response,
+                              reason=obj.get("done_reason") or obj.get("stop_reason") or (choices[0].get("finish_reason") if config.provider == "openai" else None))
     return text
 
 
@@ -220,9 +270,21 @@ def _sse_data(response):
 
 def stream_chat(config, messages, *, temperature=None, max_tokens=None, think=False, timeout=600):
     """Yield content/thinking/done events in the existing report stream format."""
+    try:
+        yield from _stream_chat_once(config, messages, temperature=temperature,
+                                     max_tokens=max_tokens, think=think, timeout=timeout)
+    except (TimeoutError, urllib.error.URLError, OSError, http.client.HTTPException) as exc:
+        timed_out = isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError)
+        raise LLMError("LLM 输出流读取超时，报告未完成。" if timed_out else "LLM 输出流连接中断，报告未完成。",
+                       504 if timed_out else 502, code="timeout" if timed_out else "incomplete_stream") from None
+
+
+def _stream_chat_once(config, messages, *, temperature=None, max_tokens=None, think=False, timeout=600):
     path, payload = _chat_payload(config, messages, stream=True, temperature=temperature, max_tokens=max_tokens, think=think)
     completed = False
     has_output = False
+    has_thinking = False
+    stop_reason = None
     with _open(config, _request(config, path, payload), timeout) as response:
         if config.provider == "ollama":
             for raw in response:
@@ -236,8 +298,9 @@ def stream_chat(config, messages, *, temperature=None, max_tokens=None, think=Fa
                 _check_stop(obj.get("done_reason"))
                 content = (obj.get("message") or {}).get("content") or obj.get("response") or ""
                 has_output = has_output or bool(content.strip())
+                has_thinking = has_thinking or bool((obj.get("message") or {}).get("thinking") or obj.get("thinking"))
                 if obj.get("done") and not has_output:
-                    raise LLMError("LLM 服务返回了空回答，报告未完成。")
+                    raise _empty_response(config, thinking=has_thinking, reason=obj.get("done_reason"), response=response, stream=True)
                 yield obj
                 if obj.get("done"):
                     completed = True
@@ -246,7 +309,7 @@ def stream_chat(config, messages, *, temperature=None, max_tokens=None, think=Fa
             for data in _sse_data(response):
                 if data == "[DONE]" and config.provider == "openai":
                     if not has_output:
-                        raise LLMError("LLM 服务返回了空回答，报告未完成。")
+                        raise _empty_response(config, thinking=has_thinking, reason=stop_reason, response=response, stream=True)
                     completed = True
                     yield {"done": True}
                     break
@@ -260,29 +323,33 @@ def stream_chat(config, messages, *, temperature=None, max_tokens=None, think=Fa
                         if choice.get("index", 0) != 0:
                             continue
                         _check_stop(choice.get("finish_reason"))
+                        stop_reason = choice.get("finish_reason") or stop_reason
                         delta = choice.get("delta") or {}
                         message = {"content": delta.get("content") or "", "thinking": delta.get("reasoning_content") or delta.get("reasoning") or ""}
                         has_output = has_output or bool(message["content"].strip())
+                        has_thinking = has_thinking or bool(message["thinking"])
                         if message["content"] or message["thinking"]:
                             yield {"message": message, "done": False}
                 else:
                     kind = obj.get("type")
                     if kind == "message_delta":
                         _check_stop((obj.get("delta") or {}).get("stop_reason"))
+                        stop_reason = (obj.get("delta") or {}).get("stop_reason")
                     elif kind in ("content_block_delta", "content_block_start"):
                         delta = obj.get("delta") or obj.get("content_block") or {}
                         message = {"content": delta.get("text") or "", "thinking": delta.get("thinking") or ""}
                         has_output = has_output or bool(message["content"].strip())
+                        has_thinking = has_thinking or bool(message["thinking"])
                         if message["content"] or message["thinking"]:
                             yield {"message": message, "done": False}
                     elif kind == "message_stop":
                         if not has_output:
-                            raise LLMError("LLM 服务返回了空回答，报告未完成。")
+                            raise _empty_response(config, thinking=has_thinking, reason=stop_reason, response=response, stream=True)
                         completed = True
                         yield {"done": True}
                         break
     if not completed:
-        raise LLMError("LLM 输出流提前结束，报告未完成，请重试。")
+        raise LLMError("LLM 输出流提前结束，报告未完成，请重试。", code="incomplete_stream")
 
 
 def fetch_models(config, timeout=None):
