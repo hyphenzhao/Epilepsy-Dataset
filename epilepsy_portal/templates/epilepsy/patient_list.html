@@ -352,6 +352,8 @@
     <td>{{ p.admission_date }}</td>
     <td>
       {% if user.is_authenticated %}
+        <a href="{% url 'eeg:workspace' p.id %}" class="btn btn-sm btn-outline-dark"
+           onclick="event.stopPropagation();">EEG/sEEG</a>
         {% if user.profile.role == 'ADMIN' or user.profile.role == 'STAFF' %}
           <button class="btn btn-sm btn-outline-primary"
                   onclick="event.stopPropagation(); openEditPanel({{ p.id }});">

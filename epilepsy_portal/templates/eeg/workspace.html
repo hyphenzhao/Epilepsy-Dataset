@@ -1,0 +1,81 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}EEG / sEEG 工作台{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{% static 'eeg/workspace.css' %}">{% endblock %}
+{% block content %}
+<div id="eeg-workspace" class="eeg-workspace" data-patient="{{ patient.pk }}" data-write="{{ can_write|yesno:'true,false' }}">
+  {% csrf_token %}
+  <header class="eeg-header">
+    <div><a class="eeg-back" href="{% url 'epilepsy:patient_list' %}">← 患者列表</a><h1>EEG <span>/</span> sEEG <small>工作台</small></h1><p>{{ patient.name }} · 患者 #{{ patient.pk }} <span class="eeg-pill">RuiSource · MNE</span></p></div>
+    <div class="eeg-header-note">从波形到源空间<br><span>原始文件保留 · 计算结果随患者保存</span></div>
+  </header>
+  <div id="eeg-notice" class="eeg-notice" role="status" aria-live="polite">正在读取检查记录…</div>
+  <div class="eeg-grid">
+    <aside class="eeg-card eeg-library">
+      <div class="eeg-card-title"><h2>检查记录</h2><span id="record-count">0</span></div>
+      <div id="recordings" class="eeg-recordings"></div>
+      {% if can_write %}
+      <details class="eeg-add" open><summary>＋ 新建检查</summary>
+        <label>检查名称<input id="record-title" maxlength="120" placeholder="如：术前长程 EEG"></label>
+        <label>信号类型<select id="record-modality"><option value="eeg">头皮 EEG</option><option value="seeg">颅内 sEEG</option></select></label>
+        <button id="new-record" class="eeg-btn eeg-primary">建立记录并绑定患者</button>
+      </details>
+      {% endif %}
+      <div class="eeg-library-foot">每次检查分别保存原始数据、辅助文件、处理参数与结果。切换患者后不会混用文件。</div>
+    </aside>
+    <main class="eeg-main">
+      <section class="eeg-card">
+        <div class="eeg-card-title"><div><h2 id="record-heading">选择或新建一份检查</h2><p id="record-meta">上传文件后读取通道与采样信息</p></div><button id="channels-open" class="eeg-btn eeg-quiet" disabled>通道设置</button></div>
+        <div class="eeg-toolbar">
+          <button id="previous-window" class="eeg-btn eeg-quiet" title="前一页" aria-label="前一页">←</button>
+          <label>起点 s<input id="window-start" type="number" min="0" step="0.1" value="0"></label>
+          <label>窗口<select id="window-duration"><option value="5">5 秒</option><option value="10" selected>10 秒</option><option value="20">20 秒</option><option value="30">30 秒</option></select></label>
+          <button id="next-window" class="eeg-btn eeg-quiet" title="后一页" aria-label="后一页">→</button>
+          <label>振幅 µV<select id="wave-scale"><option>25</option><option>50</option><option selected>100</option><option>200</option><option>500</option><option>1000</option></select></label>
+          <button id="load-wave" class="eeg-btn eeg-primary">读取波形</button>
+        </div>
+        <div class="eeg-wave-wrap"><canvas id="eeg-wave" aria-label="EEG 波形，拖动选择分析时间段"></canvas><div id="wave-empty" class="eeg-wave-empty">上传原始记录，点击“读取数据”开始浏览</div></div>
+        <div class="eeg-wave-footer"><span id="selection-label">在波形上拖动，选择分析片段</span><span>滚轮移动时间 · Ctrl + 滚轮缩放振幅</span></div>
+        <input id="time-slider" class="eeg-time-slider" aria-label="记录时间位置" type="range" min="0" max="0" step="0.1" value="0">
+        <details class="eeg-processing"><summary>滤波、参考与片段</summary><div class="eeg-fields">
+          <label>高通 Hz<input id="high-pass" type="number" min="0" step="0.1" placeholder="关闭"></label>
+          <label>低通 Hz<input id="low-pass" type="number" min="0" step="1" placeholder="关闭"></label>
+          <label>陷波<select id="notch"><option value="">关闭</option><option value="50">50 Hz</option><option value="60">60 Hz</option></select></label>
+          <label>参考<select id="reference"><option value="none">保留原始参考</option><option value="average">平均参考</option><option value="bipolar">双极导联</option></select></label>
+          <label>分析起点 s<input id="segment-start" type="number" min="0" value="0" step="0.01"></label>
+          <label>分析时长 s<input id="segment-duration" type="number" min="0.1" max="120" value="5" step="0.01"></label>
+        </div><label>双极导联（每行：阳极通道,阴极通道）<textarea id="bipolar-pairs" rows="2" placeholder="A1,A2&#10;A2,A3"></textarea></label>
+        <div class="eeg-inline"><button id="apply-filters" class="eeg-btn eeg-quiet">应用并刷新波形</button>{% if can_write %}<button data-operation="preprocess" class="eeg-btn eeg-quiet">导出所选通道片段</button>{% endif %}</div>
+        <p class="eeg-help">滤波与参考用于当前分析副本，原始记录始终保留。源定位会记录实际采用的参考与坏道。</p></details>
+      </section>
+      <section class="eeg-card">
+        <div class="eeg-card-title"><h2>检查文件</h2><button id="inspect" class="eeg-btn eeg-primary">读取数据</button></div>
+        <div id="record-files" class="eeg-file-list"><p class="eeg-help">尚未选择检查</p></div>
+        {% if can_write %}<details class="eeg-upload" open><summary>上传原始记录或辅助文件</summary>
+          <div class="eeg-inline"><label>文件用途<select id="upload-role"><option value="raw">原始记录</option><option value="companion">配套文件（eeg / vmrk / fdt 等）</option><option value="forward">Forward 正向模型（FIF）</option><option value="covariance">噪声协方差（FIF）</option><option value="electrodes">电极坐标（CSV / TSV / JSON / FIF）</option><option value="trans">配准变换（FIF）</option><option value="bem">BEM 导体模型（FIF）</option><option value="src">源空间（FIF）</option><option value="mri">MRI（NIfTI / MGZ）</option></select></label><input id="upload-files" type="file" multiple aria-label="选择检查文件"></div>
+          <p class="eeg-help">原始记录：EDF / BDF / FIF / BrainVision（vhdr + eeg + vmrk）/ EEGLAB（set + fdt）/ GDF。成套文件请保留原文件名并上传到同一检查；主文件与配套文件分开选择用途。每个文件最多 1 GB。</p>
+          <div class="eeg-inline"><button id="upload-start" class="eeg-btn eeg-primary">上传到当前检查</button><progress id="upload-progress" value="0" max="100" hidden></progress><span id="upload-status"></span></div>
+        </details>{% endif %}
+      </section>
+      <section class="eeg-card eeg-results"><div class="eeg-card-title"><h2>分析结果</h2><span id="result-label">选择已完成任务查看</span></div><div id="result-content" class="eeg-result-content"><p class="eeg-help">频谱、时频图、源定位、坐标与数据导出将显示在这里。</p></div><div id="geometry-wrap" hidden><canvas id="eeg-geometry" aria-label="可旋转的三维电极与源空间"></canvas><p id="geometry-caption" class="eeg-help"></p></div></section>
+    </main>
+    <aside class="eeg-analysis">
+      <section class="eeg-card"><div class="eeg-card-title"><h2>片段分析</h2><span class="eeg-pill">CPU 云计算</span></div><div class="eeg-analysis-body">
+        <div class="eeg-analysis-actions"><button data-operation="psd" class="eeg-btn eeg-quiet">Welch 频谱</button><button data-operation="tfr" class="eeg-btn eeg-quiet">时频分析</button></div>
+        <label>时频方法<select id="tfr-method"><option value="morlet">Morlet 小波</option><option value="multitaper">Multitaper 多窗</option><option value="stockwell">Stockwell 变换</option></select></label><div class="eeg-fields"><label>最低频率 Hz<input id="fmin" type="number" min="1" value="2"></label><label>最高频率 Hz<input id="fmax" type="number" min="2" value="40"></label></div>
+        <hr><h3>源定位</h3><label>算法<select id="source-method"><optgroup label="最小范数"><option value="eLORETA">eLORETA</option><option value="MNE">MNE</option><option value="dSPM">dSPM</option><option value="sLORETA">sLORETA</option></optgroup><optgroup label="波束形成"><option value="LCMV">LCMV</option><option value="DICS">DICS</option></optgroup><optgroup label="偶极子与子空间"><option value="dipole">Dipole fitting</option><option value="rap_music">RAP-MUSIC</option><option value="trap_music">TRAP-MUSIC</option></optgroup><optgroup label="稀疏估计"><option value="mixed_norm">MxNE</option><option value="ir_mxne">irMxNE</option><option value="tf_mixed_norm">TF-MxNE</option><option value="ir_tf_mixed_norm">irTF-MxNE</option><option value="gamma_map">Gamma-MAP</option></optgroup></select></label>
+        <p id="algorithm-help" class="eeg-help">请选择头模型，并检查通道位置与噪声基线。</p>
+        <label>头模型<select id="head-model"><option value="fsaverage">fsaverage 标准模板</option><option value="uploaded">已上传患者模型</option><option value="sphere">球模型（方法演示）</option></select></label>
+        <div class="eeg-fields"><label>基线起点 s<input id="baseline-start" type="number" min="0" step="0.1" value="0"></label><label>基线终点 s<input id="baseline-end" type="number" min="0.1" step="0.1" value="2"></label><label>假定信噪比<input id="snr" type="number" min="0.1" max="100" step="0.1" value="3"></label><label>偶极子数<input id="n-dipoles" type="number" min="1" max="3" value="1"></label></div>
+        <details><summary>事件平均与高级参数</summary><label>事件时刻 s（逗号分隔）<textarea id="event-times" rows="2" placeholder="如 5.2, 12.6, 19.8"></textarea></label><div class="eeg-fields"><label>事件前 s<input id="epoch-tmin" type="number" value="-0.2" step="0.01"></label><label>事件后 s<input id="epoch-tmax" type="number" value="0.5" step="0.01"></label><label>稀疏惩罚 α<input id="source-alpha" type="number" min="0" max="100" value="50"></label><label>Gamma-MAP 噪声方差 α<input id="source-gamma-alpha" type="number" min="0.001" max="100" step="0.1" value="0.5"></label><label>协方差正则化<input id="source-reg" type="number" min="0" max="1" step="0.01" value="0.05"></label></div></details>
+        <p class="eeg-help">源定位片段最多 10 秒。未填写事件时，使用选中片段进行探索性估计；噪声基线应选择独立的安静片段。标准模板不能代表患者个体解剖。sEEG 支持波形、频谱、时频与双极处理；深部电极不会套用头皮 EEG 源模型。</p>
+        <button data-operation="source" class="eeg-btn eeg-primary eeg-wide">开始源定位</button>
+      </div></section>
+      <section class="eeg-card"><div class="eeg-card-title"><h2>任务记录</h2><span id="job-count">0</span></div><div id="job-list" class="eeg-jobs"><p class="eeg-help">计算任务可在离开页面后继续执行。</p></div></section>
+    </aside>
+  </div>
+</div>
+<dialog id="channels-dialog" class="eeg-dialog"><form method="dialog"><div class="eeg-card-title"><h2>通道与坏道</h2><button class="eeg-btn eeg-quiet">关闭</button></div></form><p class="eeg-help">显示通道最多 32 个；源定位使用所有有效 EEG 通道（最多 128 道），不受显示数量限制。坏道从分析中排除；重命名用于匹配标准电极。</p><div class="eeg-inline"><button id="channels-all" class="eeg-btn eeg-quiet">选择前 32 道</button><button id="channels-invert" class="eeg-btn eeg-quiet">反选</button></div><div id="channel-list"></div><button id="channels-save" class="eeg-btn eeg-primary">保存并刷新</button></dialog>
+<dialog id="image-dialog" class="eeg-dialog eeg-image-dialog"><form method="dialog"><button class="eeg-btn eeg-quiet">关闭</button></form><img id="image-enlarged" alt="分析图放大"></dialog>
+{% endblock %}
+{% block javascripts %}<script defer src="{% static 'eeg/workspace.js' %}"></script>{% endblock %}

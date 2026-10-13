@@ -1,0 +1,35 @@
+[Unit]
+Description=EEG analysis worker (%i)
+After=network.target epilepsy-portal.service
+
+[Service]
+Type=simple
+User=epilepsy
+Group=epilepsy
+WorkingDirectory=/srv/epilepsy-portal/epilepsy_portal
+EnvironmentFile=/etc/epilepsy-portal/cloud.env
+Environment=PYTHONUNBUFFERED=1
+Environment=MPLBACKEND=Agg
+Environment=MPLCONFIGDIR=/var/cache/epilepsy-eeg/matplotlib
+Environment=XDG_CACHE_HOME=/var/cache/epilepsy-eeg
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=OMP_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+Environment=NUMEXPR_NUM_THREADS=1
+ExecStart=/srv/epilepsy-portal/.venv/bin/python manage.py eeg_worker --lane %i --settings=epilepsy_portal.settings.cloud
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+KillMode=control-group
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/epilepsy-portal /var/cache/epilepsy-eeg
+MemoryMax=4G
+CPUQuota=200%
+TasksMax=48
+
+[Install]
+WantedBy=multi-user.target

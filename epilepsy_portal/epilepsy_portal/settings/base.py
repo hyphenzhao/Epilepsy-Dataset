@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'social_django',
     "epilepsy",
     "knowledge",
+    "eeg",
 ]
 
 MIDDLEWARE = [
@@ -183,3 +184,11 @@ except ImportError:
     log.warning(f'You should create a file for your search settings at {expected_path}')
 
 LARGE_FILE_BASE_DIR = "/Volumes/Workspace/large_files"
+
+# Private EEG files are served only through authenticated views.
+EEG_STORAGE_ROOT = Path(os.environ.get("EEG_STORAGE_ROOT", str(BASE_DIR.parent / "eeg_data")))
+EEG_SUBJECTS_DIR = Path(os.environ.get("EEG_SUBJECTS_DIR", str(EEG_STORAGE_ROOT / "subjects")))
+EEG_MAX_FILE_BYTES = int(os.environ.get("EEG_MAX_FILE_BYTES", str(1024 ** 3)))
+EEG_PATIENT_QUOTA_BYTES = int(os.environ.get("EEG_PATIENT_QUOTA_BYTES", str(5 * 1024 ** 3)))
+EEG_MAX_QUEUED_JOBS = 4
+EEG_JOB_TIMEOUT = int(os.environ.get("EEG_JOB_TIMEOUT", "900"))

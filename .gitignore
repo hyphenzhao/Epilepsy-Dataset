@@ -2,6 +2,7 @@
 venv/
 .env/
 .venv/
+eeg_data/
 
 # Codegraph knowledge graph index
 .codegraph/

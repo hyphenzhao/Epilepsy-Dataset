@@ -33,6 +33,7 @@ urlpatterns = [
     # Our epilepsy app:
     path("epilepsy/", include("epilepsy.urls")),
     path("knowledge/", include("knowledge.urls")),
+    path("eeg/", include("eeg.urls")),
 
     # ...
     path("accounts/login/", auth_views.LoginView.as_view(
