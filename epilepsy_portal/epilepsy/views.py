@@ -230,15 +230,13 @@ def stream_ollama_report(patient, server, messages=None, pre_events=None):
 
 
 def render_markdown_to_html(markdown_text):
-    return markdown.markdown(
-        markdown_text or "",
-        extensions=["extra", "nl2br", "sane_lists", "tables", "fenced_code"],
-    )
+    from .report_markdown import render_report_markdown
+    return render_report_markdown(markdown_text)
 
 
 def parse_markdown_root(markdown_text):
     html = render_markdown_to_html(markdown_text)
-    return lxml_html.fragment_fromstring(f"<div>{html}</div>", create_parent=True)
+    return lxml_html.fragment_fromstring(html, create_parent="div")
 
 
 def _append_docx_inline(paragraph, node, *, bold=False, italic=False):
@@ -370,11 +368,11 @@ def build_docx_from_markdown(markdown_text, title="患者报告"):
             rows = node.findall(".//tr")
             if not rows:
                 continue
-            col_count = max(len(row.findall("./th|./td")) for row in rows)
+            col_count = max(len(row.xpath("./th|./td")) for row in rows)
             table = document.add_table(rows=0, cols=col_count)
             table.style = "Table Grid"
             for row in rows:
-                cells = row.findall("./th|./td")
+                cells = row.xpath("./th|./td")
                 row_cells = table.add_row().cells
                 for idx, cell in enumerate(cells):
                     row_cells[idx].text = _html_to_plain_text(cell)
@@ -392,85 +390,8 @@ def build_docx_from_markdown(markdown_text, title="患者报告"):
 
 
 def build_pdf_from_markdown(markdown_text, title="患者报告"):
-    root = parse_markdown_root(markdown_text)
-    bio = io.BytesIO()
-    doc = SimpleDocTemplate(bio, pagesize=A4)
-    styles = getSampleStyleSheet()
-
-    font_name = "STSong-Light"
-    try:
-        pdfmetrics.getFont(font_name)
-    except KeyError:
-        pdfmetrics.registerFont(UnicodeCIDFont(font_name))
-
-    for style_name in ["Title", "Heading1", "Heading2", "Heading3", "Heading4", "BodyText"]:
-        styles[style_name].fontName = font_name
-        styles[style_name].wordWrap = "CJK"
-
-    story = [Paragraph(escape(title or "患者报告"), styles["Title"]), Spacer(1, 12)]
-
-    for node in root:
-        tag = (node.tag or "").lower() if hasattr(node, "tag") else ""
-        if tag in {"h1", "h2", "h3", "h4"}:
-            style = styles[f"Heading{min(int(tag[1]), 4)}"]
-            story.append(Paragraph(_html_to_reportlab_markup(node), style))
-            story.append(Spacer(1, 8))
-        elif tag == "p":
-            story.append(Paragraph(_html_to_reportlab_markup(node), styles["BodyText"]))
-            story.append(Spacer(1, 8))
-        elif tag == "blockquote":
-            quote_style = styles["BodyText"].clone("QuoteBody")
-            quote_style.leftIndent = 18
-            quote_style.textColor = colors.HexColor("#555555")
-            story.append(Paragraph(_html_to_reportlab_markup(node), quote_style))
-            story.append(Spacer(1, 8))
-        elif tag == "pre":
-            pre_style = styles["BodyText"].clone("PreBody")
-            pre_style.fontName = font_name
-            pre_style.backColor = colors.HexColor("#F4F4F4")
-            story.append(Paragraph(escape(node.text_content()).replace("\n", "<br/>"), pre_style))
-            story.append(Spacer(1, 8))
-        elif tag in {"ul", "ol"}:
-            list_style = styles["BodyText"].clone(f"ListBody_{id(node)}")
-            list_style.leftIndent = 18
-            list_style.firstLineIndent = -10
-            for idx, li in enumerate(node.findall("./li"), start=1):
-                bullet = "•" if tag == "ul" else f"{idx}."
-                story.append(Paragraph(f"{bullet} {_html_list_item_markup(li)}", list_style))
-                story.append(Spacer(1, 4))
-            story.append(Spacer(1, 4))
-        elif tag == "table":
-            rows = node.findall(".//tr")
-            if not rows:
-                continue
-            table_data = []
-            for row in rows:
-                cells = row.findall("./th|./td")
-                table_data.append([
-                    Paragraph(_html_to_reportlab_markup(cell), styles["BodyText"])
-                    for cell in cells
-                ])
-            table = Table(table_data, repeatRows=1)
-            table.setStyle(TableStyle([
-                ("FONTNAME", (0, 0), (-1, -1), font_name),
-                ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EFEFEF")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]))
-            story.append(table)
-            story.append(Spacer(1, 10))
-        elif tag:
-            story.append(Paragraph(_html_to_reportlab_markup(node), styles["BodyText"]))
-            story.append(Spacer(1, 8))
-
-    doc.build(story)
-    bio.seek(0)
-    return bio
+    from .report_pdf import build_report_pdf
+    return build_report_pdf(markdown_text, title=title)
 
 
 def can_edit_followup(user):

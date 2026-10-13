@@ -1,0 +1,17 @@
+Report Sans SC fonts for portable Chinese report exports.
+
+Source: Google Fonts, ofl/notosanssc/NotoSansSC[wght].ttf
+https://github.com/google/fonts/tree/main/ofl/notosanssc
+Source Git blob SHA-1: fb0637bafbcd804fe32152370a1225990745b4bc
+Retrieved: 2026-10-13
+License: SIL Open Font License 1.1; see OFL.txt.
+
+Derived with fontTools 4.65.0 in a separate build environment:
+- Static weight 400 for Regular and weight 700 for Bold.
+- Oblique outlines use a horizontal shear of 0.20, with matching italic
+  metadata. BoldOblique combines weight 700 and the same shear.
+- Family and PostScript names were changed to Report Sans SC / ReportSansSC.
+- The original full character map is retained. ReportLab embeds and subsets
+  the characters actually used in each exported PDF.
+
+FontTools is a build tool and is not required by the deployed application.

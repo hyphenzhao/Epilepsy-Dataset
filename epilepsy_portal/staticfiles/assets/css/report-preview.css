@@ -1,0 +1,50 @@
+#reportModal .modal-dialog { width: calc(100vw - 48px); max-width: 1660px; margin: 24px auto; }
+#reportModal .modal-content { max-height: calc(100vh - 48px); border: 0; border-radius: 14px; box-shadow: 0 20px 70px rgba(21, 40, 60, .22); }
+#reportModal .modal-header { padding: 16px 24px; border-bottom: 1px solid #e3e9f0; }
+#reportModal .modal-title { font-size: 18px; font-weight: 600; color: #223a52; }
+#reportModal .modal-body { padding: 20px 24px; background: #f4f7fa; }
+#reportModal .report-columns { display: grid; grid-template-columns: minmax(240px, 28fr) minmax(0, 72fr); gap: 20px; }
+#reportModal .report-column { min-width: 0; }
+#reportModal .report-column-header { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; color: #435a70; }
+#reportModal .report-column-header h6 { margin: 0; font-size: 14px; font-weight: 600; }
+#reportModal .report-column-header small { color: #7e8b98; font-size: 12px; }
+#reportModal .report-pane { height: clamp(380px, 66vh, 820px); overflow: auto; border: 1px solid #e0e7ee; border-radius: 10px; }
+#reportModal .report-pane-text { background: #edf2f7; padding: 18px; white-space: pre-wrap; overflow-wrap: anywhere; color: #586b7e; font: 12px/1.75 system-ui, -apple-system, "Microsoft YaHei", sans-serif; }
+#reportModal .report-pane-markdown { background: #fff; padding: 28px 34px; color: #293c4e; font: 14px/1.75 system-ui, -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif; overflow-wrap: anywhere; }
+#reportModal .report-document > :first-child { margin-top: 0; }
+#reportModal .report-document h1 { margin: 24px 0 18px; padding-bottom: 14px; border-bottom: 2px solid #d9e6f1; color: #1f486a; font-size: 24px; line-height: 1.4; font-weight: 650; }
+#reportModal .report-document h2 { margin: 26px 0 12px; padding: 0 0 8px; border-bottom: 1px solid #e5edf4; color: #254e70; font-size: 18px; line-height: 1.45; font-weight: 650; }
+#reportModal .report-document h3 { margin: 20px 0 9px; color: #35536e; font-size: 16px; line-height: 1.5; font-weight: 650; }
+#reportModal .report-document h4, #reportModal .report-document h5, #reportModal .report-document h6 { margin: 16px 0 7px; color: #3e5870; font-size: 14px; font-weight: 650; }
+#reportModal .report-document p { margin: 0 0 12px; }
+#reportModal .report-document ul, #reportModal .report-document ol { margin: 0 0 14px; padding-left: 1.8em; }
+#reportModal .report-document li { margin: 4px 0; padding-left: 3px; }
+#reportModal .report-document li > p { margin: 5px 0; }
+#reportModal .report-document strong { font-weight: 650; color: #213e57; }
+#reportModal .report-document blockquote { margin: 16px 0; padding: 12px 16px; background: #f2f7fb; border-left: 3px solid #a6bfd4; border-radius: 0 6px 6px 0; color: #536b7f; }
+#reportModal .report-document blockquote > :last-child { margin-bottom: 0; }
+#reportModal .report-document table { width: 100%; border-collapse: collapse; margin: 16px 0 20px; font-size: 13px; line-height: 1.6; }
+#reportModal .report-document th, #reportModal .report-document td { border: 1px solid #dfe7ef; padding: 9px 12px; vertical-align: top; min-width: 70px; }
+#reportModal .report-document th { background: #eef4f9; color: #33546e; font-weight: 600; }
+#reportModal .report-document th[align="left"], #reportModal .report-document td[align="left"] { text-align: left; }
+#reportModal .report-document th[align="center"], #reportModal .report-document td[align="center"] { text-align: center; }
+#reportModal .report-document th[align="right"], #reportModal .report-document td[align="right"] { text-align: right; }
+#reportModal .report-document tbody tr:nth-child(even) { background: #f8fafc; }
+#reportModal .report-document code { color: #4c6072; background: #f0f4f7; border-radius: 4px; padding: 2px 4px; font-size: .9em; }
+#reportModal .report-document pre { padding: 14px 16px; border-radius: 7px; background: #f3f6f9; border: 1px solid #e1e8ee; white-space: pre-wrap; overflow-wrap: anywhere; }
+#reportModal .report-document pre code { padding: 0; background: none; }
+#reportModal .report-document a { color: #347299; text-decoration: underline; text-underline-offset: 2px; }
+#reportModal .report-document hr { margin: 22px 0; border-top: 1px solid #e1e9f0; }
+#reportModal .report-live-line, #reportModal .report-plain-fallback { white-space: pre-wrap; min-height: 1.75em; }
+#reportModal .report-typing-cursor { display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #5c829f; vertical-align: -.1em; animation: reportCursorBlink 1s steps(1) infinite; }
+#reportModal .report-output-notice { margin-top: 18px; padding: 10px 14px; border-radius: 6px; background: #f1f5f8; color: #647889; font-size: 13px; white-space: pre-wrap; }
+#reportModal .report-output-error { background: #fff3f1; color: #9b4b43; }
+#reportModal .typing-cursor { display: inline-block; width: 2px; height: 1em; margin-left: 3px; vertical-align: -.1em; background: #8a9bab; animation: reportCursorBlink 1s steps(1) infinite; }
+#reportModal .report-debug-panel { max-height: 180px; overflow: auto; padding: 14px; background: #203042; border: 1px solid #35495e; border-radius: 8px; }
+#reportModal .report-debug-panel pre { margin: 0; color: #d9e3ec; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+#reportModal #reportEditorTextarea { min-height: 52vh; border-color: #dce5ee; padding: 18px; line-height: 1.65; }
+@keyframes reportCursorBlink { 50% { opacity: 0; } }
+@media (min-width: 1750px) { #reportModal .modal-dialog { max-width: 1760px; } }
+@media (max-width: 991px) { #reportModal .modal-dialog { width: calc(100vw - 24px); margin: 12px auto; } #reportModal .modal-content { max-height: calc(100vh - 24px); } #reportModal .report-columns { grid-template-columns: minmax(200px, 30fr) minmax(0, 70fr); gap: 12px; } #reportModal .report-pane-markdown { padding: 22px; } #reportModal .modal-body { padding: 16px; } }
+@media (max-width: 700px) { #reportModal .report-columns { grid-template-columns: 1fr; } #reportModal .report-pane-text { height: 170px; } #reportModal .report-pane-markdown { height: 54vh; padding: 18px; } #reportModal .modal-header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; } #reportModal .modal-title { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { #reportModal .report-typing-cursor, #reportModal .typing-cursor { animation: none; } }
