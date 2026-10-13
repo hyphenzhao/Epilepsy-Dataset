@@ -7,6 +7,13 @@ import urllib.error
 import urllib.request
 
 from django import forms
+from django.conf import settings
+
+
+def resolve_ollama_url(base_url):
+    """Route configured servers through optional private deployment tunnels."""
+    overrides = getattr(settings, "OLLAMA_URL_OVERRIDES", {})
+    return overrides.get(base_url.rstrip("/"), base_url).rstrip("/")
 
 
 class OllamaAddressForm(forms.Form):
@@ -58,6 +65,7 @@ class OllamaModelListError(Exception):
 
 def fetch_ollama_models(base_url, timeout=5):
     """Read /api/tags and normalize the installed model names."""
+    base_url = resolve_ollama_url(base_url)
     try:
         with urllib.request.urlopen(f"{base_url}/api/tags", timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))

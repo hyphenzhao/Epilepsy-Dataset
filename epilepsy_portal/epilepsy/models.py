@@ -63,10 +63,11 @@ class OllamaServer(models.Model):
 
     @property
     def base_url(self):
+        from .ollama_models import resolve_ollama_url
         host = self.ip.strip()
         if ":" in host and not (host.startswith("[") and host.endswith("]")):
             host = f"[{host}]"
-        return f"http://{host}:{self.port}"
+        return resolve_ollama_url(f"http://{host}:{self.port}")
 
 class Patient(models.Model):
     GENDER_CHOICES = [("M", "男"), ("F", "女"), ("O", "其他"),]

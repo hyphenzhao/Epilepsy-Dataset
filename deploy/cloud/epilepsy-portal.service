@@ -1,0 +1,20 @@
+[Unit]
+Description=Epilepsy Dataset Portal
+After=network.target
+
+[Service]
+Type=simple
+User=epilepsy
+Group=epilepsy
+WorkingDirectory=/srv/epilepsy-portal/epilepsy_portal
+EnvironmentFile=/etc/epilepsy-portal/cloud.env
+ExecStart=/srv/epilepsy-portal/.venv/bin/gunicorn epilepsy_portal.wsgi:application --bind 127.0.0.1:8002 --workers 2 --worker-class gthread --threads 4 --timeout 1200 --graceful-timeout 30 --access-logfile - --error-logfile - --capture-output
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
